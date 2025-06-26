@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Freestyle Rap Trainer</title>
+    <style>
+        body {
+            background-color: #1a1a1a;
+            color: #ffffff;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+        }
+        #header, #gauge-container {
+            background-color: #333;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        #word-container {
+            margin: 30px 0;
+        }
+        #current-word {
+            font-size: 3.5em;
+            color: #00ff99;
+            margin-bottom: 20px;
+        }
+        #word-tree {
+            position: relative;
+            height: 100px;
+        }
+        .tree-word {
+            position: absolute;
+            color: #66ccff;
+            font-size: 1.2em;
+        }
+        .line {
+            position: absolute;
+            border-top: 1px dashed #66ccff;
+        }
+        canvas {
+            margin: 10px 0;
+        }
+        button {
+            background-color: #00ff99;
+            border: none;
+            padding: 10px 20px;
+            font-size: 1em;
+            cursor: pointer;
+            border-radius: 5px;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #00cc77;
+        }
+    </style>
+</head>
+<body>
+    <div id="header">
+        <h1>Freestyle Rap Trainer</h1>
+        <p>Beat: "Trap Flow" | BPM: 140 | Key: F# Minor</p>
+        <button onclick="toggleAudio()">▶️/⏸️</button>
+        <progress value="30" max="100"></progress>
+    </div>
+
+    <div id="word-container">
+        <div id="current-word">Loading...</div>
+        <div id="word-tree"></div>
+    </div>
+
+    <div id="gauge-container">
+        <h3>BPM Gauge</h3>
+        <canvas id="gauge" width="300" height="80"></canvas>
+        <p>Beat: 140 | You: <span id="rap-speed">120</span></p>
+        <p id="status">On Beat: Slightly Behind</p>
+    </div>
+
+    <button onclick="changeWord()">New Word</button>
+    <button onclick="toggleAudio()">Start/Stop</button>
+
+    <script>
+        let wordList = [];
+        const freebsdUrl = 'https://svnweb.freebsd.org/csrg/share/dict/words?view=co';
+
+        // Fetch FreeBSD word list
+        fetch(freebsdUrl)
+            .then(response => {
+                if (!response.ok) throw new Error('Network response was not ok');
+                return response.text();
+            })
+            .then(text => {
+                wordList = text.split('\n').filter(word => word.trim() !== '');
+                console.log(`Loaded ${wordList.length} words from FreeBSD`);
+                changeWord(); // Set initial word
+            })
+            .catch(error => {
+                console.error('Error fetching FreeBSD words:', error);
+                document.getElementById("current-word").innerText = "Error loading words";
+            });
+
+        function changeWord() {
+            if (wordList.length === 0) return;
+            const newWord = wordList[Math.floor(Math.random() * wordList.length)];
+            document.getElementById("current-word").innerText = newWord;
+            // Placeholder for word tree (no relationships yet)
+            const tree = document.getElementById("word-tree");
+            tree.innerHTML = "<span class='tree-word'>[related words coming soon]</span>";
+        }
+
+        function toggleAudio() {
+            console.log("Audio toggled (placeholder)");
+        }
+
+        const canvas = document.getElementById("gauge");
+        const ctx = canvas.getContext("2d");
+        let rapSpeed = 120;
+        const beatBPM = 140;
+
+        function drawGauge() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = "#666";
+            ctx.fillRect(0, 0, (beatBPM / 200) * canvas.width, 30);
+            ctx.fillStyle = "#00ff99";
+            ctx.fillRect(0, 40, (rapSpeed / 200) * canvas.width, 30);
+        }
+
+        setInterval(() => {
+            rapSpeed = Math.random() * 160 + 100;
+            document.getElementById("rap-speed").innerText = Math.round(rapSpeed);
+            const diff = Math.abs(beatBPM - rapSpeed);
+            document.getElementById("status").innerText = diff < 10 ? "On Beat: Perfect" : 
+                rapSpeed < beatBPM ? "On Beat: Slightly Behind" : "On Beat: Slightly Ahead";
+            drawGauge();
+        }, 2000);
+
+        drawGauge();
+    </script>
+</body>
+</html>

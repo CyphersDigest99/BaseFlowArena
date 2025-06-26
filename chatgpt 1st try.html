@@ -1,0 +1,72 @@
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Mic, Music, Star, Timer } from "lucide-react";
+import { motion } from "framer-motion";
+
+export default function FreestyleRapTool() {
+  const [word, setWord] = useState("Acquiesce");
+  const [bpm, setBpm] = useState(0);
+  const [transcript, setTranscript] = useState([]);
+  const [timeInterval, setTimeInterval] = useState(10);
+
+  const nextWord = () => {
+    // Logic to fetch next word
+    setWord("NewWord");
+  };
+
+  return (
+    <div className="min-h-screen bg-black text-white p-6 flex flex-col items-center">
+      <h1 className="text-neon-pink text-3xl font-bold">Freestyle Rap Tool</h1>
+      <div className="flex gap-4 mt-4">
+        <Button className="bg-neon-green"><Mic /> Mic</Button>
+        <Button className="bg-neon-blue">Mute</Button>
+      </div>
+      <Card className="mt-6 w-full max-w-lg bg-dark-900 text-center p-4 border-neon-pink border">
+        <CardContent>
+          <h2 className="text-neon-pink text-4xl font-bold">{word}</h2>
+          <div className="flex justify-center gap-4 mt-4">
+            <Button onClick={nextWord} className="bg-neon-blue">Next Word</Button>
+            <Button className="bg-neon-purple">Previous Word</Button>
+            <Button className="bg-neon-yellow"><Star /> Favorites</Button>
+          </div>
+        </CardContent>
+      </Card>
+      <div className="mt-6 flex gap-4 items-center">
+        <span>Mode:</span>
+        <select className="bg-dark-700 p-2 rounded">
+          <option>Random</option>
+          <option>Rhyme</option>
+          <option>Theme</option>
+        </select>
+        <span>Trigger:</span>
+        <select className="bg-dark-700 p-2 rounded">
+          <option>Voice</option>
+          <option>Time</option>
+        </select>
+        <input
+          type="range"
+          min="5"
+          max="20"
+          value={timeInterval}
+          onChange={(e) => setTimeInterval(e.target.value)}
+        />
+        <Button className="bg-neon-blue"><Timer /> {timeInterval}s</Button>
+      </div>
+      <motion.div className="mt-6 w-full max-w-lg p-4 border border-neon-green bg-dark-800">
+        <p className="text-neon-green">{transcript.join(" ")}</p>
+      </motion.div>
+      <div className="mt-6 flex gap-4">
+        <Button className="bg-neon-blue" onClick={() => setBpm(bpm + 1)}>Click for BPM</Button>
+        <span className="text-2xl">{bpm}</span>
+        <Button className="bg-neon-red" onClick={() => setBpm(0)}>Stop BPM</Button>
+      </div>
+      <div className="mt-6 grid grid-cols-3 gap-2">
+        {[...Array(9)].map((_, i) => (
+          <Button key={i} className="bg-dark-700 w-12 h-12"></Button>
+        ))}
+      </div>
+      <Button className="mt-6 bg-neon-blue">Edit Word List</Button>
+    </div>
+  );
+}

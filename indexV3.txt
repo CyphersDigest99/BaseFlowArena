@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Freestyle Rap Trainer</title>
+    <style>
+        body {
+            background-color: #1a1a1a;
+            color: white;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .container {
+            text-align: center;
+            background-color: #2d2d2d;
+            padding: 20px;
+            border-radius: 10px;
+            width: 80%;
+            max-width: 600px;
+        }
+        .beat-info {
+            margin-bottom: 20px;
+            font-size: 1.2em;
+        }
+        .controls {
+            margin-bottom: 20px;
+        }
+        #play-pause-btn {
+            font-size: 1.5em;
+            padding: 10px 20px;
+            background-color: #007bff;
+            border: none;
+            color: white;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        #play-pause-btn:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+        .word-display {
+            font-size: 2.5em;
+            color: #00ff00;
+            margin: 20px 0;
+        }
+        .word-actions {
+            margin: 20px 0;
+        }
+        .action-btn {
+            font-size: 1.5em;
+            padding: 10px 20px;
+            margin: 0 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .reject-btn { background-color: #ff4444; color: white; }
+        .accept-btn { background-color: #44ff44; color: black; }
+        .bpm-gauge {
+            margin: 20px 0;
+            background-color: #333;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        #transcript {
+            margin-top: 20px;
+            background-color: #333;
+            padding: 10px;
+            border-radius: 5px;
+            max-height: 100px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Freestyle Rap Trainer</h1>
+        <div class="beat-info">Beat: "Trap Flow" | BPM: 140 | Key: F# Minor</div>
+        <div class="controls">
+            <button id="play-pause-btn">▶</button>
+        </div>
+        <div class="word-display" id="word-display">Prognostic</div>
+        <div class="word-actions">
+            <button class="action-btn reject-btn">X</button>
+            <button class="action-btn accept-btn">♥</button>
+        </div>
+        <div class="bpm-gauge">
+            BPM Gauge
+            <div>Beat: 140 | You: <span id="user-bpm">0</span></div>
+            <div id="on-beat">On Beat: Waiting...</div>
+        </div>
+        <div id="transcript">Freestyle Transcript</div>
+    </div>
+
+    <script>
+        // Audio setup (simplified—use your own audio file or URL)
+        const audio = new Audio('https://www.myinstance.com/trap-flow.mp3'); // Replace with your beat file
+        let isPlaying = false;
+        let startTime, wordCount = 0;
+
+        // Play/Pause button functionality
+        document.getElementById('play-pause-btn').addEventListener('click', () => {
+            if (!isPlaying) {
+                audio.play();
+                isPlaying = true;
+                document.getElementById('play-pause-btn').textContent = '⏸';
+                startTime = Date.now(); // Start timing for BPM
+            } else {
+                audio.pause();
+                isPlaying = false;
+                document.getElementById('play-pause-btn').textContent = '▶';
+            }
+        });
+
+        // Word action buttons
+        document.querySelector('.reject-btn').addEventListener('click', () => {
+            document.getElementById('word-display').textContent = 'New Word'; // Replace with logic to get a new word
+        });
+
+        document.querySelector('.accept-btn').addEventListener('click', () => {
+            alert('Word accepted! Keep rapping!');
+        });
+
+        // Speech Recognition (works in secure contexts only)
+        if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
+            const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+            recognition.continuous = true;
+            recognition.interimResults = true;
+            recognition.lang = 'en-US';
+
+            recognition.onresult = (event) => {
+                const text = event.results[event.resultIndex][0].transcript;
+                document.getElementById('transcript').textContent += text + ' ';
+                
+                // Check for "Prognostic" or similar
+                if (text.toLowerCase().includes('prognostic')) {
+                    console.log(`Heard: '${text}' | Looking for: Prognostic`);
+                    wordCount++; // Increment for BPM calculation
+                }
+
+                // Update BPM every few seconds
+                const elapsedMinutes = (Date.now() - startTime) / 60000;
+                const userBPM = Math.round((wordCount / elapsedMinutes) * 60);
+                document.getElementById('user-bpm').textContent = userBPM || 0;
+
+                // Simple on-beat check (needs refinement for accuracy)
+                if (userBPM > 0 && Math.abs(userBPM - 140) < 20) {
+                    document.getElementById('on-beat').textContent = 'On Beat: Yes!';
+                } else {
+                    document.getElementById('on-beat').textContent = 'On Beat: Waiting...';
+                }
+            };
+
+            recognition.start();
+        } else {
+            alert('Speech recognition not supported in this browser.');
+        }
+    </script>
+</body>
+</html>

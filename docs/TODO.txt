@@ -1,0 +1,6 @@
+- Add tests for major features (e.g., speech recognition, word expansion).
+- Refactor `index.html` to <300 lines (currently ~350).
+- Collect audio for dialect training with Google Cloud Speech.
+- Flesh out word menu details (e.g., additional options, styling).
+- Add removal functionality for favorited and common words.
+- Add validation for word list edits (e.g., prevent empty words).
