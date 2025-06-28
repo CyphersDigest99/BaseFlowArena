@@ -50,6 +50,42 @@
                     <option value="sequential">Sequential</option>
                 </select>
             </div>
+            
+            <div class="syllable-filter-section">
+                <div class="syllable-header">
+                    <h3><i class="fas fa-sort-numeric-up"></i> Syllables</h3>
+                    <button id="reset-syllables-button" class="syllable-reset-button" title="Reset to No Limits">
+                        <i class="fas fa-undo"></i>
+                    </button>
+                </div>
+                <div class="syllable-controls">
+                    <div class="control-group">
+                        <label for="min-syllables"><i class="fas fa-sort-numeric-down"></i> Min:</label>
+                        <select id="min-syllables" class="syllable-select">
+                            <option value="0">∞</option>
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                            <option value="6">6+</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <label for="max-syllables"><i class="fas fa-sort-numeric-up"></i> Max:</label>
+                        <select id="max-syllables" class="syllable-select">
+                            <option value="0">∞</option>
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                            <option value="6">6+</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
              <div class="control-group">
                  <label><i class="fas fa-list-ul"></i> List:</label>
                  <button id="edit-word-list-button" class="icon-button" title="Edit Word List">

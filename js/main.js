@@ -127,6 +127,51 @@ function attachEventListeners() {
     // Word Order Setting
     ui.elements.wordOrderSelect?.addEventListener('change', (e) => wordManager.setWordOrder(e.target.value));
 
+    // Syllable Filter Settings
+    const handleSyllableFilterChange = () => {
+        const minSyllables = parseInt(ui.elements.minSyllablesInput.value, 10) || 0;
+        const maxSyllables = parseInt(ui.elements.maxSyllablesInput.value, 10) || 0;
+        
+        // Validate that min doesn't exceed max
+        if (minSyllables > 0 && maxSyllables > 0 && minSyllables > maxSyllables) {
+            ui.showFeedback("Min syllables cannot exceed max syllables!", true, 2000);
+            return;
+        }
+        
+        if (state.minSyllables !== minSyllables || state.maxSyllables !== maxSyllables) {
+            state.minSyllables = minSyllables;
+            state.maxSyllables = maxSyllables;
+            console.log(`Syllable filter updated: min=${minSyllables}, max=${maxSyllables}`);
+            
+            // Reapply filters and get new word if current word doesn't match
+            wordManager.applyFiltersAndSort();
+            
+            // If current word is no longer valid, get a new one
+            if (state.currentWord === "NO WORDS!" || !state.filteredWordList.includes(state.currentWord)) {
+                if (state.filteredWordList.length > 0) {
+                    wordManager.changeWord('next', false, false);
+                } else {
+                    ui.showFeedback("No words match the current syllable filter!", true, 3000);
+                }
+            }
+            
+            storage.saveSettings();
+        }
+    };
+    
+    ui.elements.minSyllablesInput?.addEventListener('change', handleSyllableFilterChange);
+    ui.elements.maxSyllablesInput?.addEventListener('change', handleSyllableFilterChange);
+    
+    // Reset Syllables Button
+    ui.elements.resetSyllablesButton?.addEventListener('click', () => {
+        if (ui.elements.minSyllablesInput && ui.elements.maxSyllablesInput) {
+            ui.elements.minSyllablesInput.value = '0';
+            ui.elements.maxSyllablesInput.value = '0';
+            handleSyllableFilterChange();
+            ui.showFeedback("Syllable filters reset to no limits", false, 1500);
+        }
+    });
+
     // Activation Mode Buttons
     ui.elements.voiceModeButton?.addEventListener('click', () => setActivationMode('voice'));
     ui.elements.timedModeButton?.addEventListener('click', () => setActivationMode('timed'));

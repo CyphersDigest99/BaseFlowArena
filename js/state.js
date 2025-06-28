@@ -50,6 +50,8 @@ export const state = {
     rngSets: 1,
     rngSurprise: false,
     cycleSpeed: 10,
+    minSyllables: 0, // Syllable filter minimum
+    maxSyllables: 0, // Syllable filter maximum (0 = no limit)
 
     // Constants
     LEVENSHTEIN_THRESHOLD: 0.7,

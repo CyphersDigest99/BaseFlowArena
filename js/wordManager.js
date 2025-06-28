@@ -6,6 +6,31 @@ import * as ui from './ui.js';
 import * as storage from './storage.js';
 import * as rhyme from './rhyme.js'; // Import rhyme module for getting rhyme list
 
+// --- Syllable Counting Function ---
+function countSyllables(word) {
+    if (!word) return 0;
+    
+    // Convert to lowercase for consistent processing
+    word = word.toLowerCase();
+    
+    // Remove common suffixes that don't add syllables
+    word = word.replace(/(?:ed|ing|er|est|ly|ful|less|ness|ment|tion|sion|able|ible|ous|ious|eous|al|ial|ic|ical|ive|ative|itive|ize|ise|ify|fy|dom|hood|ship|th|ty|cy|ry|my|ny|sy|zy|by|dy|fy|gy|hy|jy|ky|ly|my|ny|py|qy|ry|sy|ty|vy|wy|zy)$/g, '');
+    
+    // Count vowel groups (consonant-vowel-consonant pattern)
+    const vowelGroups = word.match(/[aeiouy]+/g);
+    if (!vowelGroups) return 1; // At least one syllable
+    
+    let syllableCount = vowelGroups.length;
+    
+    // Handle special cases
+    if (word.endsWith('e') && syllableCount > 1) {
+        syllableCount--; // Silent 'e' at end doesn't count
+    }
+    
+    // Ensure minimum of 1 syllable
+    return Math.max(1, syllableCount);
+}
+
 // --- Word Loading ---
 export async function loadWords() {
     console.log('Loading words...');
@@ -54,6 +79,8 @@ export function applyFiltersAndSort() {
         blacklistCount: state.blacklist.size,
         currentWord: state.currentWord,
         currentIndex: state.currentWordIndex,
+        minSyllables: state.minSyllables,
+        maxSyllables: state.maxSyllables,
         // Uncomment to see blacklist content (might be large)
         // blacklistContent: Array.from(state.blacklist).slice(0, 50)
     }); // Log state BEFORE
@@ -63,7 +90,25 @@ export function applyFiltersAndSort() {
     const oldCurrentWord = state.currentWord;
 
     // --- Actual filtering ---
-    state.filteredWordList = state.wordList.filter(word => !state.blacklist.has(word));
+    state.filteredWordList = state.wordList.filter(word => {
+        // Blacklist filter
+        if (state.blacklist.has(word)) return false;
+        
+        // Syllable filter
+        const syllableCount = countSyllables(word);
+        if (state.minSyllables > 0 && syllableCount < state.minSyllables) return false;
+        if (state.maxSyllables > 0) {
+            // Handle 6+ logic: if max is 6, accept 6 or more syllables
+            if (state.maxSyllables === 6) {
+                if (syllableCount < 6) return false;
+            } else {
+                if (syllableCount > state.maxSyllables) return false;
+            }
+        }
+        
+        return true;
+    });
+    
     const currentWordStillValid = state.filteredWordList.includes(state.currentWord);
 
     // Apply sorting

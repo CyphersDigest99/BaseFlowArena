@@ -44,6 +44,8 @@ export function saveSettings() {
             bpmMultiplier: state.bpmMultiplier,
             wordOrderMode: state.wordOrderMode,
             cycleSpeed: state.cycleSpeed,
+            minSyllables: state.minSyllables,
+            maxSyllables: state.maxSyllables,
             wordFrequencies: state.wordFrequencies,
             blacklist: Array.from(state.blacklist),
             favorites: Array.from(state.favorites),
@@ -72,6 +74,8 @@ export function loadSettings() {
              state.bpmMultiplier = parsedData.bpmMultiplier ?? 1; // Default multiplier is 1x
              state.wordOrderMode = parsedData.wordOrderMode || 'random';
              state.cycleSpeed = parsedData.cycleSpeed ?? 10;
+             state.minSyllables = parsedData.minSyllables ?? 0;
+             state.maxSyllables = parsedData.maxSyllables ?? 0;
              state.wordFrequencies = parsedData.wordFrequencies || {};
              state.blacklist = Array.isArray(parsedData.blacklist) ? new Set(parsedData.blacklist) : new Set();
              state.favorites = Array.isArray(parsedData.favorites) ? new Set(parsedData.favorites) : new Set();
@@ -120,6 +124,8 @@ export function resetToDefaults(saveAfterReset = true) {
     state.bpmMultiplier = 1; // Default multiplier is 1x (no button selected)
     state.wordOrderMode = 'random';
     state.cycleSpeed = 10;
+    state.minSyllables = 0;
+    state.maxSyllables = 0;
     state.activationMode = 'manual';
     state.rejectedRhymes = {};
     state.manualRhymes = {};

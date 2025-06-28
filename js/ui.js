@@ -26,6 +26,9 @@ export const elements = {
 
     // Left Panel Controls (Word Settings)
     wordOrderSelect: document.getElementById('word-order'),
+    minSyllablesInput: document.getElementById('min-syllables'),
+    maxSyllablesInput: document.getElementById('max-syllables'),
+    resetSyllablesButton: document.getElementById('reset-syllables-button'),
     favoritesButton: document.getElementById('favorites-button'),
     editWordListButton: document.getElementById('edit-word-list-button'),
 
@@ -176,6 +179,23 @@ export function updateActivationUI() {
     if (elements.cycleSpeedInput) elements.cycleSpeedInput.value = state.cycleSpeed;
     if (elements.cycleSpeedSlider) elements.cycleSpeedSlider.value = state.cycleSpeed;
     if (elements.wordOrderSelect) elements.wordOrderSelect.value = state.wordOrderMode;
+    
+    // Update syllable filter inputs and dropdowns
+    updateSyllableFilterUI();
+}
+
+export function updateSyllableFilterUI() {
+    if (elements.minSyllablesInput) {
+        const minValue = state.minSyllables;
+        const selectValue = minValue >= 6 ? '6' : minValue.toString();
+        elements.minSyllablesInput.value = selectValue;
+    }
+    
+    if (elements.maxSyllablesInput) {
+        const maxValue = state.maxSyllables;
+        const selectValue = maxValue >= 6 ? '6' : maxValue.toString();
+        elements.maxSyllablesInput.value = selectValue;
+    }
 }
 
 export function updateBpmIndicator(bpmValue) {
