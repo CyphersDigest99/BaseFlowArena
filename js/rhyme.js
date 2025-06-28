@@ -34,7 +34,21 @@ function getRhymePattern(word) {
     if (!state.rhymeData || !word) return null;
     // Use toLowerCase() for lookup, assumes keys in rhyme_data.json are lowercase
     const wordLower = word.toLowerCase();
-    return state.rhymeData[wordLower] || null;
+    const data = state.rhymeData[wordLower];
+    
+    if (!data) return null;
+    
+    // Handle new format (object with rhyme_pattern and syllables)
+    if (data.rhyme_pattern) {
+        return data.rhyme_pattern;
+    }
+    
+    // Handle old format (direct array) - backward compatibility
+    if (Array.isArray(data)) {
+        return data;
+    }
+    
+    return null;
 }
 
 

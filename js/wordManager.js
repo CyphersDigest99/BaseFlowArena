@@ -31,6 +31,24 @@ function countSyllables(word) {
     return Math.max(1, syllableCount);
 }
 
+// --- Get Syllable Count from JSON Data (Preferred) ---
+function getSyllableCount(word) {
+    if (!word) return 1;
+    
+    // Try to get syllable count from rhyme data first (most accurate)
+    if (state.rhymeData) {
+        const wordLower = word.toLowerCase();
+        const data = state.rhymeData[wordLower];
+        
+        if (data && data.syllables) {
+            return data.syllables; // Use accurate count from JSON
+        }
+    }
+    
+    // Fallback to JavaScript calculation if not found in JSON
+    return countSyllables(word);
+}
+
 // --- Word Loading ---
 export async function loadWords() {
     console.log('Loading words...');
@@ -95,7 +113,7 @@ export function applyFiltersAndSort() {
         if (state.blacklist.has(word)) return false;
         
         // Syllable filter
-        const syllableCount = countSyllables(word);
+        const syllableCount = getSyllableCount(word);
         if (state.minSyllables > 0 && syllableCount < state.minSyllables) return false;
         if (state.maxSyllables > 0) {
             // Handle 6+ logic: if max is 6, accept 6 or more syllables

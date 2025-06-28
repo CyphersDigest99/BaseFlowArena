@@ -46,10 +46,27 @@ def get_all_vowel_pattern(word):
     return all_vowels if all_vowels else None
 
 
+def get_syllable_count(word):
+    """
+    Gets the syllable count for a word using the pronouncing library.
+    Returns the syllable count as an integer, or None if the word is not found.
+    """
+    word_lower = word.lower()
+    phones_list = pronouncing.phones_for_word(word_lower)
+    if not phones_list:
+        return None  # Word not found in dictionary
+
+    # Use the first pronunciation
+    pronunciation = phones_list[0]
+    # Count all phonemes that end with a digit (0, 1, or 2)
+    syllable_count = len([ph for ph in pronunciation.split() if ph[-1].isdigit()])
+    return max(1, syllable_count)
+
+
 # --- Main Processing Logic ---
 def process_word_list():
     """
-    Reads the input word list, processes each word to find its vowel pattern,
+    Reads the input word list, processes each word to find its vowel pattern and syllable count,
     and writes the results to the output JSON file.
     """
     rhyme_patterns = {}
@@ -57,7 +74,7 @@ def process_word_list():
     processed_count = 0
     word_count = 0
 
-    print(f"Starting rhyme pattern processing...")
+    print(f"Starting rhyme pattern and syllable processing...")
     print(f"Reading words from: {INPUT_PATH}")
 
     # Check if the input file exists
@@ -66,13 +83,6 @@ def process_word_list():
          print(f"Input file '{WORD_LIST_FILE}' not found in the directory:")
          print(f"'{SCRIPT_DIR}'")
          print(f"Please create this file with one word per line and run the script again.")
-         # Optional: Create a default file if it doesn't exist?
-         # try:
-         #     with open(INPUT_PATH, 'w', encoding='utf-8') as f:
-         #         f.write("example\nword\nlist\n")
-         #     print(f"\nCreated a default '{WORD_LIST_FILE}'. Please populate it and run the script again.")
-         # except Exception as e:
-         #     print(f"Could not create default file: {e}")
          return # Stop execution if file not found
 
     # Read words from the input file
@@ -86,18 +96,21 @@ def process_word_list():
          return # Stop execution if file cannot be read
 
     print(f"Found {word_count} words/phrases in the list.")
-    print(f"Processing phonetic patterns (this may take a moment for large lists)...")
+    print(f"Processing phonetic patterns and syllable counts (this may take a moment for large lists)...")
 
     # Process each word
     for word in words:
         # Get the vowel pattern using the helper function
         pattern = get_all_vowel_pattern(word)
+        # Get the syllable count
+        syllable_count = get_syllable_count(word)
 
-        if pattern:
-            # Store the pattern with the original (case preserved) word as the key
-            # This assumes your web app uses the case from random word list.txt
-            # If the web app uses lowercase, store rhyme_patterns[word.lower()] = pattern
-            rhyme_patterns[word] = pattern
+        if pattern and syllable_count is not None:
+            # Store both pattern and syllable count with the original (case preserved) word as the key
+            rhyme_patterns[word] = {
+                "rhyme_pattern": pattern,
+                "syllables": syllable_count
+            }
             processed_count += 1
         else:
             # Word's pronunciation not found in the CMU dictionary
