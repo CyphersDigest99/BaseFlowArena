@@ -138,36 +138,14 @@ export function updateStreakDisplay(newStreak, grew) {
     }
 }
 
-// Define font size thresholds and values (adjust as needed)
-const WORD_FONT_BASE_SIZE = 4; // Base size in 'em'
-const WORD_FONT_SIZE_UNIT = 'em';
-const WORD_LENGTH_MEDIUM = 9; // Apply medium size starting at this length
-const WORD_FONT_MEDIUM_SIZE = 3.4;
-const WORD_LENGTH_LONG = 14; // Apply long size starting at this length
-const WORD_FONT_LONG_SIZE = 2.8;
-const WORD_LENGTH_EXTRA_LONG = 18; // Apply extra-long size
-const WORD_FONT_XLONG_SIZE = 2.2;
-
 export function displayWord(word) { // word is the word to display (could be base or rhyme)
     if(!elements.wordDisplay) return;
 
     elements.wordDisplay.textContent = word;
 
-    // --- DYNAMIC FONT SIZE LOGIC ---
-    const len = word.length;
-    let targetSize = WORD_FONT_BASE_SIZE;
-
-    if (len >= WORD_LENGTH_EXTRA_LONG) {
-        targetSize = WORD_FONT_XLONG_SIZE;
-    } else if (len >= WORD_LENGTH_LONG) {
-        targetSize = WORD_FONT_LONG_SIZE;
-    } else if (len >= WORD_LENGTH_MEDIUM) {
-        targetSize = WORD_FONT_MEDIUM_SIZE;
-    }
-    // Apply the calculated size
-    elements.wordDisplay.style.fontSize = `${targetSize}${WORD_FONT_SIZE_UNIT}`;
-    // --- END DYNAMIC FONT SIZE LOGIC ---
-
+    // --- REMOVED DYNAMIC FONT SIZE LOGIC ---
+    // All words will now use the base font size from CSS (4em)
+    // This eliminates the font-size transitions that cause jittering
 
     // Update action buttons based on the *displayed* word
     elements.blacklistButton?.classList.toggle('active', state.blacklist.has(word));
