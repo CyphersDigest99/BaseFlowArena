@@ -1,0 +1,67 @@
+
+Project Handoff: Rhyming Application Architecture
+Hello Copilot. I'm being brought in to assist on a project whose architecture was developed with another AI. To get you up to speed, here is a complete breakdown of the project's logic, file structure, and core rhyming system.
+1. High-Level Goal
+The application is a rhyming dictionary. The user enters a word, and the system finds all other words in its database that rhyme with it. The core challenge is that it doesn't use a simple "ends with" logic; it uses a phonetic system based on a custom data file.
+2. The Core Data Source: rhymeData.json
+This file is the single source of truth for all rhyming information. It is not a simple list of words. It's a JSON object where each key is a word (in uppercase), and its value is an object containing phonetic data.
+The most critical piece of data for each word is the rhymeKey. This key represents the phonetic sound of the word's final rhyming syllable. Words that share the same rhymeKey are considered rhymes.
+Example structure of rhymeData.json:
+Generated json
+{
+  "HELLO": {
+    "word": "hello",
+    "syllables": 2,
+    "rhymeKey": "EH-LOH"
+  },
+  "FELLOW": {
+    "word": "fellow",
+    "syllables": 2,
+    "rhymeKey": "EH-LOH"
+  },
+  "BELOW": {
+    "word": "below",
+    "syllables": 2,
+    "rhymeKey": "EH-LOH"
+  },
+  "COMPUTER": {
+    "word": "computer",
+    "syllables": 3,
+    "rhymeKey": "OO-TER"
+  },
+  "NEUTER": {
+    "word": "neuter",
+    "syllables": 2,
+    "rhymeKey": "OO-TER"
+  }
+}
+Use code with caution.
+Json
+As you can see, "HELLO", "FELLOW", and "BELOW" all rhyme because they share the rhymeKey "EH-LOH".
+3. The Logic Engine: RhymeFinder.js (or similar name)
+This JavaScript file contains the class or set of functions that perform the rhyming logic. It is completely decoupled from the UI.
+class RhymeFinder:
+constructor(rhymeData): It's initialized by passing in the entire dataset from rhymeData.json. It stores this data internally.
+findRhymingWords(inputWord): This is the main method. Here's its step-by-step process:
+It takes a single inputWord string.
+It standardizes the input (e.g., converts to uppercase) to match the keys in rhymeData.json.
+It searches the JSON data to find the entry for the inputWord.
+If found, it extracts that word's rhymeKey.
+If not found, it returns an empty list or an error.
+It then iterates through the entire rhymeData.json object again. For every word in the database, it checks if its rhymeKey matches the rhymeKey of the original inputWord.
+It collects all matching words (excluding the original input word itself) into a list.
+It returns the final list of rhyming words.
+4. The UI and Integration Layer: script.js and index.html
+These files connect the user to the logic engine.
+index.html: Contains the necessary HTML elements: an <input> field for the user to type a word, a <button> to trigger the search, and a <div> (e.g., #results-container) where the rhyming words will be displayed.
+script.js: This is the main application script that orchestrates everything.
+On page load, it uses the fetch() API to asynchronously load rhymeData.json.
+Once the data is loaded, it creates an instance of our logic engine: const rhymeFinder = new RhymeFinder(data);.
+It sets up an event listener on the search button's click event.
+When the button is clicked:
+a. It gets the value from the input field.
+b. It calls rhymeFinder.findRhymingWords() with the user's word.
+c. It takes the returned list of rhymes and dynamically generates HTML to display them in the #results-container div.
+Summary of Workflow:
+User types word -> clicks button -> script.js -> calls RhymeFinder.findRhymingWords() -> RhymeFinder -> looks up rhymeKey in rhymeData.json -> scans all of rhymeData.json for matching keys -> returns list to script.js -> script.js updates the HTML.
+With this context, you should now be able to understand any requests to modify existing features or add new ones to this application. Please confirm you have parsed this information.
