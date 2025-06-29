@@ -1421,10 +1421,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     function triggerConfetti() {
-        if (typeof confetti === 'function') {
-            confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 }, colors: ['#00ffff', '#ff00ff', '#ffffff', '#f9a826'] });
+        // Use the new pixel block dissolve/construct effect
+        if (typeof utils !== 'undefined' && utils.triggerPixelBlockEffect) {
+            utils.triggerPixelBlockEffect();
         } else {
-            console.warn("Confetti function not found.");
+            // Fallback to simple glow effect if utils not available
+            const wordDisplay = document.getElementById('word-display');
+            if (wordDisplay) {
+                wordDisplay.style.textShadow = '0 0 20px #00ffff, 0 0 40px #ff00ff';
+                setTimeout(() => {
+                    wordDisplay.style.textShadow = '';
+                }, 500);
+            }
         }
     }
 

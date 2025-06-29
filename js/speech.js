@@ -213,9 +213,11 @@ function checkForWordMatch(utterance) {
               wordManager.updateStreak(true); // Update streak
               wordManager.updateScore(pointsEarned); // Update score
               ui.showFeedback(`HIT! +${pointsEarned} pts`);
-              utils.triggerConfetti();
+              utils.triggerPixelBlockEffect(); // Use new pixel block effect
 
-              // Schedule the next word change with a short delay
+              // TIMING COORDINATION: Schedule the next word change with a longer delay
+              // This allows the dissolve animation to complete before the new word appears
+              // The animation effect waits for the word change to happen naturally
               setTimeout(() => {
                   // Double-check the mode hasn't changed during the timeout
                   if (state.activationMode === 'voice' && targetWord === state.lastMatchedWord) {
@@ -234,7 +236,7 @@ function checkForWordMatch(utterance) {
                   } else {
                       console.warn("Mode changed or word advanced before match timeout completed.");
                   }
-              }, 150); // Delay for feedback visibility
+              }, 800); // Increased delay to allow dissolve animation to complete
 
               break; // Match found for this utterance, stop checking words
          }

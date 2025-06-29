@@ -5,6 +5,7 @@ import { state } from './state.js';
 import * as ui from './ui.js';
 import * as storage from './storage.js';
 import * as rhyme from './rhyme.js'; // Import rhyme module for getting rhyme list
+import * as utils from './utils.js'; // Import utils module for swipe animations
 
 // --- Syllable Counting Function ---
 function countSyllables(word) {
@@ -276,8 +277,14 @@ export function selectRhyme(direction) {
 
     console.log(`Rhyme navigated (${direction}): "${selectedRhymeWord}" (Rhyme Index ${state.currentRhymeIndex})`);
 
-    // --- Update UI ONLY ---
-    ui.displayWord(selectedRhymeWord); // Show the selected rhyme temporarily
+    // Trigger vertical swipe animation for rhyme navigation
+    utils.triggerVerticalSwipe(direction);
+    
+    // Delay the UI update to allow animation to complete
+    setTimeout(() => {
+        // --- Update UI ONLY ---
+        ui.displayWord(selectedRhymeWord); // Show the selected rhyme temporarily
+    }, 200);
 }
 
 // --- Voice Rhyme Navigation ---
@@ -314,8 +321,18 @@ export function navigateNextRhymeForVoice() {
 }
 
 // Helper function export for listeners
-export function nextWord() { changeWord('next', false, false); }
-export function previousWord() { changeWord('previous', false, false); }
+export function nextWord() { 
+    // Trigger horizontal swipe animation for right navigation
+    utils.triggerHorizontalSwipe('right');
+    // Delay the actual word change to allow animation to complete
+    setTimeout(() => changeWord('next', false, false), 200);
+}
+export function previousWord() { 
+    // Trigger horizontal swipe animation for left navigation
+    utils.triggerHorizontalSwipe('left');
+    // Delay the actual word change to allow animation to complete
+    setTimeout(() => changeWord('previous', false, false), 200);
+}
 export function stayWord() { changeWord('stay', false, false); }
 
 
