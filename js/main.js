@@ -19,6 +19,11 @@ import * as wordApi from './wordApi.js'; // Import the new word API module
 let lastWordData = { synonyms: '', definition: '', word: '' };
 let tooltipCurrentWord = '';
 
+// Helper function to get the currently displayed word (moved to module scope)
+function getCurrentlyDisplayedWord() {
+    return ui.elements.wordDisplay?.textContent || state.currentWord;
+}
+
 // Prefetch synonyms/definition for the current word
 async function prefetchWordData(word) {
     if (!word || word === 'NO WORDS!') {
@@ -29,6 +34,7 @@ async function prefetchWordData(word) {
         const data = await wordApi.fetchWordData(word);
         lastWordData = { ...data, word };
     } catch (e) {
+        console.error(`Error fetching word data for "${word}":`, e);
         lastWordData = { synonyms: '', definition: '', word };
     }
 }
@@ -45,9 +51,17 @@ function isAnyTooltipHovered() {
 // --- Initialization ---
 async function initializeApp() {
     console.log("--- Freestyle Flow Arena Initializing ---");
+    
+    // Ensure tooltip starts in unpinned state
+    state.tooltip.isPinned = false;
+    state.tooltip.displayMode = 'both';
+    state.tooltip.lastClickTimestamp = 0;
 
     // Set up the callback for displayed word changes EARLY
     ui.setDisplayedWordChangeCallback(onDisplayedWordChange);
+    
+    // Set up the callback for word changes (for tooltip data prefetching)
+    wordManager.setWordChangeCallback(onWordChange);
 
     // 1. Init UI Background
     threeBackground.initBackground(ui.elements.bgCanvas);
@@ -154,6 +168,9 @@ function attachEventListeners() {
     // Synonyms/Definition Hover Events
     let infoTimeout;
     function hideAllIfNotHovered() {
+        // Don't hide tooltip if it's pinned
+        if (state.tooltip.isPinned) return;
+        
         if (!isAnyTooltipHovered()) {
             ui.hideSynonyms();
             ui.hideDefinition();
@@ -161,12 +178,10 @@ function attachEventListeners() {
         }
     }
     
-    // Helper function to get the currently displayed word
-    function getCurrentlyDisplayedWord() {
-        return ui.elements.wordDisplay?.textContent || state.currentWord;
-    }
-    
     ui.elements.meansLikeButton?.addEventListener('mouseenter', async () => {
+        // Only show tooltip on hover if not pinned
+        if (state.tooltip.isPinned) return;
+        
         if (infoTimeout) clearTimeout(infoTimeout);
         const displayedWord = getCurrentlyDisplayedWord();
         tooltipCurrentWord = displayedWord;
@@ -185,18 +200,115 @@ function attachEventListeners() {
         }
     });
     ui.elements.meansLikeButton?.addEventListener('mouseleave', () => {
-        infoTimeout = setTimeout(hideAllIfNotHovered, 100);
+        // Only hide tooltip on mouseleave if not pinned
+        if (!state.tooltip.isPinned) {
+            infoTimeout = setTimeout(hideAllIfNotHovered, 100);
+        }
     });
+    
+    // Add mousedown event listener for tooltip button (to capture both left and right clicks)
+    ui.elements.meansLikeButton?.addEventListener('mousedown', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        
+        // Right-click always unpins the tooltip
+        if (event.button === 2) {
+            if (state.tooltip.isPinned) {
+                state.tooltip.isPinned = false;
+                console.log('Right-click: unpinning tooltip');
+                ui.updateTooltipView();
+            }
+            return;
+        }
+        
+        // Left-click behavior (existing logic)
+        const now = Date.now();
+        const timeSinceLastClick = now - state.tooltip.lastClickTimestamp;
+        
+        // Use CSS :hover selector directly for reliable hover detection
+        const isCurrentlyHovered = ui.elements.meansLikeButton?.matches(':hover');
+        
+        console.log(`Click detected - hover state: ${isCurrentlyHovered}, pinned: ${state.tooltip.isPinned}, mode: ${state.tooltip.displayMode}`);
+        
+        if (state.tooltip.isPinned) {
+            // Tooltip is pinned - behavior depends on hover state
+            if (isCurrentlyHovered) {
+                // Mouse is hovering - cycle through modes regardless of time
+                const modes = ['both', 'synonyms', 'definition'];
+                const currentIndex = modes.indexOf(state.tooltip.displayMode);
+                const nextIndex = (currentIndex + 1) % modes.length;
+                state.tooltip.displayMode = modes[nextIndex];
+                console.log(`Hovering click: cycling to ${state.tooltip.displayMode} mode`);
+            } else {
+                // Mouse not hovering - unpin if enough time has passed
+                if (timeSinceLastClick >= 2000) {
+                    state.tooltip.isPinned = false;
+                    console.log('Non-hovering click: unpinning tooltip');
+                } else {
+                    // Still in rapid click window - cycle through modes
+                    const modes = ['both', 'synonyms', 'definition'];
+                    const currentIndex = modes.indexOf(state.tooltip.displayMode);
+                    const nextIndex = (currentIndex + 1) % modes.length;
+                    state.tooltip.displayMode = modes[nextIndex];
+                    console.log(`Rapid click: cycling to ${state.tooltip.displayMode} mode`);
+                }
+            }
+        } else {
+            // Tooltip is unpinned - always pin it
+            state.tooltip.isPinned = true;
+            state.tooltip.displayMode = 'both';
+            console.log('Fresh click: pinning tooltip in both mode');
+        }
+        
+        state.tooltip.lastClickTimestamp = now;
+        
+        // Always ensure we have current data when pinning
+        if (state.tooltip.isPinned) {
+            const displayedWord = getCurrentlyDisplayedWord();
+            
+            if (displayedWord && displayedWord !== lastWordData.word) {
+                // If we don't have data for the current word, fetch it first
+                prefetchWordData(displayedWord).then(() => {
+                    ui.updateTooltipView(lastWordData.synonyms, lastWordData.definition);
+                });
+            } else {
+                ui.updateTooltipView(lastWordData.synonyms, lastWordData.definition);
+            }
+        } else {
+            ui.updateTooltipView();
+        }
+        
+        // Force update tooltip text immediately after click
+        setTimeout(() => {
+            if (state.tooltip.isPinned) {
+                ui.updateTooltipView(lastWordData.synonyms, lastWordData.definition);
+            }
+        }, 10);
+    });
+    
+    // Prevent context menu on tooltip button
+    ui.elements.meansLikeButton?.addEventListener('contextmenu', (event) => {
+        event.preventDefault();
+    });
+    
     ui.elements.synonymsBox?.addEventListener('mouseenter', () => {
+        // Don't interfere with timeout if tooltip is pinned
+        if (state.tooltip.isPinned) return;
         if (infoTimeout) clearTimeout(infoTimeout);
     });
     ui.elements.synonymsBox?.addEventListener('mouseleave', () => {
+        // Don't set timeout if tooltip is pinned
+        if (state.tooltip.isPinned) return;
         infoTimeout = setTimeout(hideAllIfNotHovered, 100);
     });
     ui.elements.definitionBox?.addEventListener('mouseenter', () => {
+        // Don't interfere with timeout if tooltip is pinned
+        if (state.tooltip.isPinned) return;
         if (infoTimeout) clearTimeout(infoTimeout);
     });
     ui.elements.definitionBox?.addEventListener('mouseleave', () => {
+        // Don't set timeout if tooltip is pinned
+        if (state.tooltip.isPinned) return;
         infoTimeout = setTimeout(hideAllIfNotHovered, 100);
     });
 
@@ -386,6 +498,16 @@ async function onDisplayedWordChange(newWord, previousWord) {
                 ui.showDefinition(lastWordData.definition);
             }
         }, 50);
+    } else if (state.tooltip.isPinned && newWord !== previousWord) {
+        // Tooltip is pinned - update it with new data
+        console.log(`Tooltip is pinned, updating for word change: "${previousWord}" -> "${newWord}"`);
+        
+        // Fetch new data for the displayed word
+        await prefetchWordData(newWord);
+        tooltipCurrentWord = newWord;
+        
+        // Update the pinned tooltip view
+        ui.updateTooltipView(lastWordData.synonyms, lastWordData.definition);
     } else {
         console.log(`Tooltip not hovered or word didn't change, skipping update`);
     }

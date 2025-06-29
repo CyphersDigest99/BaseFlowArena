@@ -441,7 +441,28 @@ input[type="range"] {
     opacity: 0.6;
     z-index: 5; /* Above word display */
 }
-.word-action-icon:hover { opacity: 1; transform: translateY(-50%) scale(1.1); }
+.word-action-icon:hover { 
+    opacity: 1; 
+    transform: translateY(-50%) scale(1.1); 
+}
+
+/* Override general hover rule for means-like icon to respect pinned state */
+.word-action-icon.means-like-icon.pinned {
+    color: var(--highlight-color) !important;
+    opacity: 1 !important; /* Always full opacity when pinned */
+    animation: none; /* Remove hover animation when pinned */
+    box-shadow: 0 0 8px var(--highlight-color);
+    border-radius: 50%;
+    background-color: rgba(249, 168, 38, 0.1);
+}
+
+.word-action-icon.means-like-icon.pinned:hover {
+    color: var(--highlight-color) !important;
+    opacity: 1 !important; /* Keep full opacity when pinned and hovering */
+    transform: scale(1.1);
+    box-shadow: 0 0 12px var(--highlight-color);
+    animation: shimmer 1.5s ease-in-out infinite;
+}
 
 /* Adjust positioning for 3 icons */
 .word-action-icon.blacklist-icon { left: 5px; }
@@ -471,12 +492,57 @@ input[type="range"] {
     z-index: 20;
     transition: color 0.2s, transform 0.2s;
     padding: 0 2px;
+    cursor: pointer; /* Make it clear it's clickable */
 }
-.word-action-icon.means-like-icon:hover,
-.word-action-icon.means-like-icon.active {
+
+/* Unpinned tooltip state - starts dim */
+.word-action-icon.means-like-icon:not(.pinned) {
+    color: var(--secondary-accent);
+    opacity: 0.7;
+}
+
+.word-action-icon.means-like-icon:not(.pinned):hover {
     color: var(--primary-accent);
-    animation: pulse-grow-book 0.35s cubic-bezier(.4,2,.6,1);
+    opacity: 1;
+    animation: pulse-grow-book 0.35s cubic-bezier(.4,2,.6,1), shimmer 1.5s ease-in-out infinite;
 }
+
+/* Shimmer animation for hover effects */
+@keyframes shimmer {
+    0% { 
+        background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
+        background-size: 200% 200%;
+        background-position: -200% 0;
+    }
+    50% {
+        background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.15) 50%, transparent 70%);
+        background-size: 200% 200%;
+        background-position: 200% 0;
+    }
+    100% { 
+        background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
+        background-size: 200% 200%;
+        background-position: -200% 0;
+    }
+}
+
+/* Different icons for different modes */
+.word-action-icon.means-like-icon:not(.pinned) i.fa-book {
+    color: var(--secondary-accent);
+}
+
+.word-action-icon.means-like-icon.pinned i.fa-book-open {
+    color: var(--highlight-color);
+}
+
+.word-action-icon.means-like-icon.pinned i.fa-random {
+    color: var(--green-color);
+}
+
+.word-action-icon.means-like-icon.pinned i.fa-paragraph {
+    color: var(--primary-accent);
+}
+
 @keyframes pulse-grow-book {
     0% { transform: scale(1); }
     40% { transform: scale(1.18); }
@@ -1265,8 +1331,7 @@ body.screen-shaking {
     /* Keep text for specific important buttons */
     .activation-button .btn-text,
     #edit-word-list-button .btn-text,
-    #favorites-button .btn-text,
-    #generate-numbers-button .btn-text { display: inline; }
+    #favorites-button .btn-text { display: inline; }
     .large-button { padding: 12px; font-size: 1em;} /* Adjust large button padding/size */
     .large-button .btn-text { display: inline; } /* Ensure text shows on large */
     .control-panel { padding: 10px; }

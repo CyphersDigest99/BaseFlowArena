@@ -298,17 +298,14 @@ async function showDefinitionForCurrentWord() {
     try {
         const wordData = await wordApi.fetchWordData(currentDisplayedWord);
         
-        // Use the same functions as the hover behavior
-        ui.showSynonyms(wordData.synonyms);
-        ui.showDefinition(wordData.definition);
+        // Set tooltip state for pinned display
+        state.tooltip.isPinned = true;
+        state.tooltip.displayMode = 'both';
         
-        // Auto-hide after 5 seconds
-        setTimeout(() => {
-            ui.hideSynonyms();
-            ui.hideDefinition();
-        }, 5000);
+        // Update the pinned tooltip view with the fetched data
+        ui.updateTooltipView(wordData.synonyms, wordData.definition);
         
-        ui.showFeedback(`Definition for "${currentDisplayedWord}"`, false, 2000);
+        ui.showFeedback(`Definition pinned for "${currentDisplayedWord}"`, false, 2000);
     } catch (error) {
         console.error('Error fetching definition for voice command:', error);
         ui.showFeedback("Failed to fetch definition", true, 2000);

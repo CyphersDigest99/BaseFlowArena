@@ -203,6 +203,12 @@ export function displayWord(word) { // word is the word to display (could be bas
     updateWordDisplayAnimation();
     updateRhymeNavButtons(); // Update up/down button states
     
+    // Update tooltip view if pinned
+    if (state.tooltip.isPinned) {
+        // Note: updateTooltipView will be called from main.js with the correct data
+        // when the word changes and tooltip data is fetched
+    }
+    
     // Notify callback if word actually changed and callback exists
     if (previousWord !== word && onDisplayedWordChangeCallback) {
         console.log(`Calling onDisplayedWordChangeCallback: "${previousWord}" -> "${word}"`);
@@ -485,5 +491,50 @@ export function hideDefinition() {
         el.textContent = '';
         el.classList.remove('visible');
         el.classList.remove('shrink');
+    }
+}
+
+// Update tooltip view based on state
+export function updateTooltipView(synonyms = null, definition = null) {
+    if (!elements.meansLikeButton || !elements.synonymsBox || !elements.definitionBox) return;
+    
+    if (!state.tooltip.isPinned) {
+        // Not pinned - hide tooltip and show default closed book icon
+        hideSynonyms();
+        hideDefinition();
+        elements.meansLikeButton.innerHTML = '<i class="fas fa-book"></i>';
+        elements.meansLikeButton.classList.remove('pinned');
+        elements.meansLikeButton.title = 'Show definition and synonyms';
+        return;
+    }
+    
+    // Pinned - show tooltip and update icon based on display mode
+    elements.meansLikeButton.classList.add('pinned');
+    
+    // Update icon and title based on display mode - always show next action
+    switch (state.tooltip.displayMode) {
+        case 'both':
+            elements.meansLikeButton.innerHTML = '<i class="fas fa-book-open"></i>';
+            elements.meansLikeButton.title = 'Show synonyms only';
+            if (synonyms !== null) showSynonyms(synonyms);
+            if (definition !== null) showDefinition(definition);
+            break;
+        case 'synonyms':
+            elements.meansLikeButton.innerHTML = '<i class="fas fa-random"></i>';
+            elements.meansLikeButton.title = 'Show definition only';
+            if (synonyms !== null) showSynonyms(synonyms);
+            hideDefinition();
+            break;
+        case 'definition':
+            elements.meansLikeButton.innerHTML = '<i class="fas fa-paragraph"></i>';
+            elements.meansLikeButton.title = 'Show both definition and synonyms';
+            hideSynonyms();
+            if (definition !== null) showDefinition(definition);
+            break;
+        default:
+            elements.meansLikeButton.innerHTML = '<i class="fas fa-book-open"></i>';
+            elements.meansLikeButton.title = 'Show synonyms only';
+            if (synonyms !== null) showSynonyms(synonyms);
+            if (definition !== null) showDefinition(definition);
     }
 }

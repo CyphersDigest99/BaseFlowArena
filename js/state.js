@@ -64,4 +64,11 @@ export const state = {
     // Rhyme Navigation State
     currentRhymeList: [], // Holds the valid rhymes for the currentWord
     currentRhymeIndex: -1, // Index within currentRhymeList (-1 means none selected, displaying base word)
+
+    // --- Tooltip State Management ---
+    tooltip: {
+        isPinned: false,
+        displayMode: 'both', // 'both', 'synonyms', or 'definition'
+        lastClickTimestamp: 0
+    },
 };

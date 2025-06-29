@@ -7,6 +7,13 @@ import * as storage from './storage.js';
 import * as rhyme from './rhyme.js'; // Import rhyme module for getting rhyme list
 import * as utils from './utils.js'; // Import utils module for swipe animations
 
+// Callback for when words change (for tooltip updates)
+let onWordChangeCallback = null;
+
+export function setWordChangeCallback(callback) {
+    onWordChangeCallback = callback;
+}
+
 // --- Syllable Counting Function ---
 function countSyllables(word) {
     if (!word) return 0;
@@ -238,6 +245,7 @@ export function changeWord(direction = 'next', isInitial = false, isVoiceMatch =
     if (nextIndex >= 0 && nextIndex < state.filteredWordList.length) {
         const newWord = state.filteredWordList[nextIndex];
         if (state.currentWord !== newWord || isInitial || state.currentWord === "NO WORDS!") {
+            const previousWord = state.currentWord;
             state.currentWordIndex = nextIndex;
             state.currentWord = newWord; // Set the new BASE word
             state.lastMatchedWord = null;
@@ -247,6 +255,11 @@ export function changeWord(direction = 'next', isInitial = false, isVoiceMatch =
             state.currentRhymeIndex = -1;
 
             ui.displayWord(state.currentWord);
+            
+            // Call the word change callback if set
+            if (onWordChangeCallback) {
+                onWordChangeCallback(state.currentWord, previousWord);
+            }
 
         } else if (direction === 'stay') {
             // Ensure rhymes are up-to-date even if base word is same
@@ -257,12 +270,18 @@ export function changeWord(direction = 'next', isInitial = false, isVoiceMatch =
     } else if (state.filteredWordList.length > 0 && state.currentWord !== "NO WORDS!") {
          // Fallback if index invalid
          console.warn(`Invalid next index ${nextIndex}. Resetting to 0.`);
+         const previousWord = state.currentWord;
          state.currentWordIndex = 0;
          state.currentWord = state.filteredWordList[0];
          state.lastMatchedWord = null;
          state.currentRhymeList = rhyme.getValidRhymesForWord(state.currentWord);
          state.currentRhymeIndex = -1;
          ui.displayWord(state.currentWord);
+         
+         // Call the word change callback if set
+         if (onWordChangeCallback) {
+             onWordChangeCallback(state.currentWord, previousWord);
+         }
     }
      // No else needed - empty list handled at start
 }
