@@ -305,11 +305,11 @@ input[type="range"] {
     display: flex;
     align-items: center;
     justify-content: center;
-    /* Fixed height to prevent any resizing */
-    height: 180px;
+    /* Increased height to accommodate subtext */
+    height: 220px;
     /* Prevent any size changes */
-    min-height: 180px;
-    max-height: 180px;
+    min-height: 220px;
+    max-height: 220px;
     box-sizing: border-box;
 }
 
@@ -319,8 +319,8 @@ input[type="range"] {
     /* Adjusted padding to potentially accommodate 3 icons */
     padding: 10px 60px;
     flex-grow: 1;
-    /* Add fixed height to prevent jittering */
-    height: 120px;
+    /* Increased height to accommodate subtext */
+    height: 160px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -457,6 +457,42 @@ input[type="range"] {
     transform: translate(-50%, -50%) scale(1.1); /* Keep centering transform */
  }
 
+/* Means Like Icon - place it in the lower right corner */
+.word-action-icon.means-like-icon {
+    bottom: 5px;
+    right: 5px;
+    top: auto;
+    left: auto;
+    transform: none;
+    color: var(--text-color); /* Subtle color */
+    font-size: 1.2em; /* Slightly smaller */
+}
+.word-action-icon.means-like-icon:hover {
+    opacity: 1;
+    transform: scale(1.1);
+    color: var(--primary-accent);
+}
+
+/* Word Subtext Styling */
+.word-subtext {
+    position: absolute;
+    bottom: 25px; /* Position above the means-like icon */
+    left: 50%;
+    transform: translateX(-50%);
+    color: var(--secondary-accent);
+    font-size: 0.9em;
+    font-style: italic;
+    text-align: center;
+    max-width: 80%;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+    z-index: 5;
+}
+
+.word-subtext.visible {
+    opacity: 1;
+}
 
 .word-action-icon.blacklist-icon.active { color: var(--red-color); opacity: 1; }
 
@@ -1162,10 +1198,6 @@ input[type="range"] {
     box-shadow: 0 0 8px var(--green-color);
 }
 
-/* --- Shaking Animations --- */
-/* ... (rest of the file) ... */
-
-/* --- END OF CODE TO PASTE --- */
 /* --- Shaking Animations --- */
 /* Modified shake for brief tap effect */
 @keyframes shake {

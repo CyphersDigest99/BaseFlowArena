@@ -16,6 +16,8 @@ export const elements = {
     wordDisplayContainer: document.getElementById('word-display-container'),
     blacklistButton: document.getElementById('blacklist-word'),
     favoriteButton: document.getElementById('favorite-word'),
+    meansLikeButton: document.getElementById('means-like-button'),
+    wordSubtext: document.getElementById('word-subtext'),
     findRhymesButton: document.getElementById('find-rhymes-button'), // Button below word box
 
     // Word Display Area Arrows
@@ -198,6 +200,19 @@ export function updateSyllableFilterUI() {
     }
 }
 
+export function showTooltip(text) {
+    if (elements.meansLikeTooltip && elements.tooltipText) {
+        elements.tooltipText.textContent = text;
+        elements.meansLikeTooltip.style.display = 'block';
+    }
+}
+
+export function hideTooltip() {
+    if (elements.meansLikeTooltip) {
+        elements.meansLikeTooltip.style.display = 'none';
+    }
+}
+
 export function updateBpmIndicator(bpmValue) {
     if(elements.bpmDisplay) elements.bpmDisplay.textContent = bpmValue;
     const beatIntervalSeconds = bpmValue > 0 ? 60 / bpmValue : 0.5;
@@ -354,5 +369,19 @@ export function updateRhymeNavButtons() {
         downButton.disabled = !hasRhymes;
         downButton.style.opacity = hasRhymes ? '1' : '0.3';
         downButton.style.cursor = hasRhymes ? 'pointer' : 'not-allowed';
+    }
+}
+
+export function showSubtext(text) {
+    if (elements.wordSubtext) {
+        elements.wordSubtext.textContent = text;
+        elements.wordSubtext.classList.add('visible');
+    }
+}
+
+export function hideSubtext() {
+    if (elements.wordSubtext) {
+        elements.wordSubtext.textContent = '';
+        elements.wordSubtext.classList.remove('visible');
     }
 }

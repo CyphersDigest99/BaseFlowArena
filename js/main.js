@@ -13,6 +13,7 @@ import * as bpm from './bpm.js';
 import * as rng from './rng.js';
 import * as modal from './modal.js';
 import * as autoBpm from './autoBpm.js'; // Import the Web Audio API version
+import * as datamuse from './datamuse.js'; // Import the Datamuse API module
 
 // --- Initialization ---
 async function initializeApp() {
@@ -119,6 +120,38 @@ function attachEventListeners() {
     ui.elements.blacklistButton?.addEventListener('click', wordManager.toggleBlacklist);
     ui.elements.favoriteButton?.addEventListener('click', wordManager.toggleFavorite);
     ui.elements.findRhymesButton?.addEventListener('click', rhyme.showRhymeFinder);
+
+    // Means Like Button Hover Events
+    let subtextTimeout;
+    ui.elements.meansLikeButton?.addEventListener('mouseenter', async () => {
+        if (subtextTimeout) {
+            clearTimeout(subtextTimeout);
+        }
+        ui.showSubtext('Loading related words...');
+        try {
+            const relatedWords = await datamuse.fetchMeansLike(state.currentWord);
+            ui.showSubtext(relatedWords);
+        } catch (error) {
+            console.error('Error fetching related words:', error);
+            ui.showSubtext('Unable to fetch related words.');
+        }
+    });
+
+    ui.elements.meansLikeButton?.addEventListener('mouseleave', () => {
+        subtextTimeout = setTimeout(() => {
+            ui.hideSubtext();
+        }, 100);
+    });
+
+    // Keep subtext visible if mouse is over it
+    ui.elements.wordSubtext?.addEventListener('mouseenter', () => {
+        if (subtextTimeout) {
+            clearTimeout(subtextTimeout);
+        }
+    });
+    ui.elements.wordSubtext?.addEventListener('mouseleave', () => {
+        ui.hideSubtext();
+    });
 
     // Rhyme Navigation Listeners
     ui.elements.upWordButton?.addEventListener('click', () => wordManager.selectRhyme('up'));
