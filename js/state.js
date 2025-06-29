@@ -28,6 +28,7 @@ export const state = {
     interimTranscript: '',
     transcriptTimeout: null,
     timedInterval: null,
+    voiceRhymeMode: false, // NEW: Controls whether voice matches should navigate rhymes
 
     // BPM / Rhythm
     bpm: 0,

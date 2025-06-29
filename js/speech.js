@@ -5,6 +5,7 @@ import { state } from './state.js';
 import * as ui from './ui.js';
 import * as wordManager from './wordManager.js';
 import * as utils from './utils.js';
+import * as wordApi from './wordApi.js';
 
 export function setupSpeechRecognition() {
     window.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -65,6 +66,14 @@ function onRecognitionResult(event) {
     // --- Process Final Transcript for Frequencies ---
     if (currentFinal) {
         wordManager.updateFrequencies(currentFinal);
+    }
+
+    // --- Check for Voice Commands First ---
+    if (currentFinal && state.activationMode === 'voice') {
+        const commandProcessed = processVoiceCommands(currentFinal);
+        if (commandProcessed) {
+            return; // Skip word matching if command was processed
+        }
     }
 
     // --- Word Matching ---
@@ -174,8 +183,16 @@ function checkForWordMatch(utterance) {
          return; // Exit if no utterance or not in active voice mode
      }
 
-     const targetWord = state.currentWord?.toLowerCase(); // Safely access currentWord
-     if (!targetWord || targetWord === "no words!" || targetWord.length < 2) {
+     // Skip word matching if utterance contains command keywords
+     if (containsCommandKeywords(utterance)) {
+         console.log('Skipping word matching - utterance contains command keywords');
+         return;
+     }
+
+     // Get the currently displayed word (could be base word or rhyme)
+     const displayedWord = ui.elements.wordDisplay?.textContent;
+     const targetWord = displayedWord?.toLowerCase(); // Safely access displayed word
+     if (!targetWord || targetWord === "no words!" || targetWord === "loading..." || targetWord === "error" || targetWord.length < 2) {
          return; // Exit if no valid target word
      }
 
@@ -202,7 +219,18 @@ function checkForWordMatch(utterance) {
               setTimeout(() => {
                   // Double-check the mode hasn't changed during the timeout
                   if (state.activationMode === 'voice' && targetWord === state.lastMatchedWord) {
-                      wordManager.changeWord('next', false, true); // isVoiceMatch = true
+                      // Check if we should navigate rhymes or get a random word
+                      if (state.voiceRhymeMode) {
+                          // Try to navigate to next rhyme, fallback to random word if no more rhymes
+                          const rhymeNavigated = wordManager.navigateNextRhymeForVoice();
+                          if (!rhymeNavigated) {
+                              // No more rhymes, get next random word
+                              wordManager.changeWord('next', false, true);
+                          }
+                      } else {
+                          // Normal behavior - get next random word
+                          wordManager.changeWord('next', false, true);
+                      }
                   } else {
                       console.warn("Mode changed or word advanced before match timeout completed.");
                   }
@@ -211,4 +239,92 @@ function checkForWordMatch(utterance) {
               break; // Match found for this utterance, stop checking words
          }
      }
+}
+
+// --- Voice Command Processing ---
+function processVoiceCommands(utterance) {
+    if (!utterance || state.activationMode !== 'voice') {
+        return false;
+    }
+
+    const lowerUtterance = utterance.toLowerCase().trim();
+    
+    // Command: "next word"
+    if (lowerUtterance.includes('next word')) {
+        console.log('Voice command detected: "next word"');
+        wordManager.changeWord('next', false, false);
+        ui.showFeedback("Next word!", false, 1500);
+        return true;
+    }
+    
+    // Command: "show rhymes"
+    if (lowerUtterance.includes('show rhymes')) {
+        console.log('Voice command detected: "show rhymes"');
+        state.voiceRhymeMode = true;
+        ui.showFeedback("Rhyme mode ON - voice matches will navigate rhymes", false, 3000);
+        return true;
+    }
+    
+    // Command: "hide rhymes"
+    if (lowerUtterance.includes('hide rhymes')) {
+        console.log('Voice command detected: "hide rhymes"');
+        state.voiceRhymeMode = false;
+        ui.showFeedback("Rhyme mode OFF - voice matches will get random words", false, 3000);
+        return true;
+    }
+    
+    // Command: "show definition"
+    if (lowerUtterance.includes('show definition')) {
+        console.log('Voice command detected: "show definition"');
+        showDefinitionForCurrentWord();
+        return true;
+    }
+    
+    return false; // No command processed
+}
+
+// --- Helper function for showing definition ---
+async function showDefinitionForCurrentWord() {
+    const currentDisplayedWord = ui.elements.wordDisplay?.textContent;
+    if (!currentDisplayedWord || currentDisplayedWord === "NO WORDS!" || currentDisplayedWord === "LOADING..." || currentDisplayedWord === "ERROR") {
+        ui.showFeedback("No word available for definition", true, 2000);
+        return;
+    }
+    
+    ui.showFeedback("Fetching definition...", false, 2000);
+    
+    try {
+        const wordData = await wordApi.fetchWordData(currentDisplayedWord);
+        
+        // Use the same functions as the hover behavior
+        ui.showSynonyms(wordData.synonyms);
+        ui.showDefinition(wordData.definition);
+        
+        // Auto-hide after 5 seconds
+        setTimeout(() => {
+            ui.hideSynonyms();
+            ui.hideDefinition();
+        }, 5000);
+        
+        ui.showFeedback(`Definition for "${currentDisplayedWord}"`, false, 2000);
+    } catch (error) {
+        console.error('Error fetching definition for voice command:', error);
+        ui.showFeedback("Failed to fetch definition", true, 2000);
+    }
+}
+
+// --- Check if utterance contains command keywords ---
+function containsCommandKeywords(utterance) {
+    if (!utterance) return false;
+    const lowerUtterance = utterance.toLowerCase();
+    
+    // Check for exact command phrases, not just individual words
+    const commandPhrases = [
+        'next word',
+        'show rhymes', 
+        'hide rhymes',
+        'show definition'
+    ];
+    
+    return commandPhrases.some(phrase => lowerUtterance.includes(phrase));
 }

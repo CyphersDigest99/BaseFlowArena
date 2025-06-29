@@ -280,6 +280,38 @@ export function selectRhyme(direction) {
     ui.displayWord(selectedRhymeWord); // Show the selected rhyme temporarily
 }
 
+// --- Voice Rhyme Navigation ---
+export function navigateNextRhymeForVoice() {
+    // If no rhymes available, return false to indicate we should get a random word
+    if (!state.currentRhymeList || state.currentRhymeList.length === 0) {
+        console.log('No rhymes available for voice navigation, will get random word');
+        return false;
+    }
+
+    const rhymeList = state.currentRhymeList;
+    const count = rhymeList.length;
+    
+    // Move to next rhyme (or first rhyme if we're at base word)
+    let nextRhymeIndex = state.currentRhymeIndex + 1;
+    
+    // If we've gone through all rhymes, return false to get a new random word
+    if (nextRhymeIndex >= count) {
+        console.log('All rhymes navigated, will get new random word');
+        return false;
+    }
+    
+    // Navigate to the next rhyme
+    state.currentRhymeIndex = nextRhymeIndex;
+    const selectedRhymeWord = rhymeList[state.currentRhymeIndex];
+    
+    console.log(`Voice rhyme navigation: "${selectedRhymeWord}" (Rhyme Index ${state.currentRhymeIndex})`);
+    
+    // Update UI to show the rhyme
+    ui.displayWord(selectedRhymeWord);
+    ui.showFeedback(`Rhyme: ${selectedRhymeWord}`, false, 1500);
+    
+    return true; // Successfully navigated to a rhyme
+}
 
 // Helper function export for listeners
 export function nextWord() { changeWord('next', false, false); }
