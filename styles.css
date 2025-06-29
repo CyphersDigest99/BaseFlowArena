@@ -457,20 +457,30 @@ input[type="range"] {
     transform: translate(-50%, -50%) scale(1.1); /* Keep centering transform */
  }
 
-/* Means Like Icon - place it in the lower right corner */
+/* Means Like Icon - book with pulse effect */
 .word-action-icon.means-like-icon {
     bottom: 5px;
     right: 5px;
     top: auto;
     left: auto;
     transform: none;
-    color: var(--text-color); /* Subtle color */
-    font-size: 1.2em; /* Slightly smaller */
+    color: var(--text-color);
+    font-size: 1.5em;
+    background: none;
+    border: none;
+    z-index: 20;
+    transition: color 0.2s, transform 0.2s;
+    padding: 0 2px;
 }
-.word-action-icon.means-like-icon:hover {
-    opacity: 1;
-    transform: scale(1.1);
+.word-action-icon.means-like-icon:hover,
+.word-action-icon.means-like-icon.active {
     color: var(--primary-accent);
+    animation: pulse-grow-book 0.35s cubic-bezier(.4,2,.6,1);
+}
+@keyframes pulse-grow-book {
+    0% { transform: scale(1); }
+    40% { transform: scale(1.18); }
+    100% { transform: scale(1); }
 }
 
 /* Word Subtext Styling */
@@ -1415,4 +1425,83 @@ body.screen-shaking {
         padding: 4px 5px;
         padding-right: 20px;
     }
+}
+
+/* Word Info Boxes (Synonyms & Definition) */
+.word-info-box {
+    width: 90%;
+    max-width: 600px;
+    min-height: 36px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    z-index: 10;
+    pointer-events: none;
+}
+
+.synonyms-box {
+    margin-bottom: 10px;
+    margin-top: 0;
+    min-height: 38px;
+}
+
+.definition-box {
+    margin-top: 10px;
+    margin-bottom: 0;
+    min-height: 38px;
+}
+
+.word-info-content {
+    width: 100%;
+    text-align: center;
+    color: var(--primary-accent);
+    background: rgba(0,0,0,0.25);
+    border: 1.5px solid var(--primary-accent);
+    border-radius: 7px;
+    font-family: var(--font-main);
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    min-height: 32px;
+    min-width: 120px;
+    margin: 0 auto;
+    opacity: 0;
+    filter: blur(6px);
+    transition: opacity 0.7s cubic-bezier(.4,2,.6,1), filter 0.7s cubic-bezier(.4,2,.6,1);
+    padding: 7px 18px 7px 18px;
+    box-shadow: 0 0 12px 0 rgba(0,255,255,0.13);
+    pointer-events: auto;
+    user-select: text;
+    overflow-wrap: break-word;
+    white-space: pre-line;
+}
+
+.word-info-content.visible {
+    opacity: 1;
+    filter: blur(0);
+}
+
+/* Synonyms: allow up to 2 lines, spaced out */
+#synonyms-content {
+    font-size: 1.08em;
+    line-height: 1.5;
+    max-height: 3.2em;
+    overflow: hidden;
+    display: block;
+    word-break: break-word;
+}
+
+/* Definition: dynamic font size to fit one line */
+#definition-content {
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: clamp(1.1em, 2.2vw, 1.5em);
+    transition: font-size 0.3s cubic-bezier(.4,2,.6,1);
+}
+
+#definition-content.shrink {
+    font-size: 1em;
 }

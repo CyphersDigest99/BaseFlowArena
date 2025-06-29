@@ -14,6 +14,24 @@ import * as rng from './rng.js';
 import * as modal from './modal.js';
 import * as autoBpm from './autoBpm.js'; // Import the Web Audio API version
 import * as datamuse from './datamuse.js'; // Import the Datamuse API module
+import * as wordApi from './wordApi.js'; // Import the new word API module
+
+let lastWordData = { synonyms: '', definition: '', word: '' };
+let tooltipCurrentWord = '';
+
+// Prefetch synonyms/definition for the current word
+async function prefetchWordData(word) {
+    if (!word || word === 'NO WORDS!') {
+        lastWordData = { synonyms: '', definition: '', word: word };
+        return;
+    }
+    try {
+        const data = await wordApi.fetchWordData(word);
+        lastWordData = { ...data, word };
+    } catch (e) {
+        lastWordData = { synonyms: '', definition: '', word };
+    }
+}
 
 // --- Initialization ---
 async function initializeApp() {
@@ -121,36 +139,53 @@ function attachEventListeners() {
     ui.elements.favoriteButton?.addEventListener('click', wordManager.toggleFavorite);
     ui.elements.findRhymesButton?.addEventListener('click', rhyme.showRhymeFinder);
 
-    // Means Like Button Hover Events
-    let subtextTimeout;
+    // Synonyms/Definition Hover Events
+    let infoTimeout;
+    function isAnyTooltipHovered() {
+        return (
+            ui.elements.meansLikeButton?.matches(':hover') ||
+            ui.elements.synonymsBox?.matches(':hover') ||
+            ui.elements.definitionBox?.matches(':hover')
+        );
+    }
+    function hideAllIfNotHovered() {
+        if (!isAnyTooltipHovered()) {
+            ui.hideSynonyms();
+            ui.hideDefinition();
+            tooltipCurrentWord = '';
+        }
+    }
     ui.elements.meansLikeButton?.addEventListener('mouseenter', async () => {
-        if (subtextTimeout) {
-            clearTimeout(subtextTimeout);
-        }
-        ui.showSubtext('Loading related words...');
-        try {
-            const relatedWords = await datamuse.fetchMeansLike(state.currentWord);
-            ui.showSubtext(relatedWords);
-        } catch (error) {
-            console.error('Error fetching related words:', error);
-            ui.showSubtext('Unable to fetch related words.');
+        if (infoTimeout) clearTimeout(infoTimeout);
+        tooltipCurrentWord = state.currentWord;
+        // Show cached data immediately
+        ui.showSynonyms(lastWordData.synonyms);
+        ui.showDefinition(lastWordData.definition);
+        // Fetch fresh data in background
+        if (state.currentWord && state.currentWord !== lastWordData.word) {
+            const word = state.currentWord;
+            await prefetchWordData(word);
+            // Only update if still hovered and word matches
+            if (isAnyTooltipHovered() && tooltipCurrentWord === word) {
+                ui.showSynonyms(lastWordData.synonyms);
+                ui.showDefinition(lastWordData.definition);
+            }
         }
     });
-
     ui.elements.meansLikeButton?.addEventListener('mouseleave', () => {
-        subtextTimeout = setTimeout(() => {
-            ui.hideSubtext();
-        }, 100);
+        infoTimeout = setTimeout(hideAllIfNotHovered, 100);
     });
-
-    // Keep subtext visible if mouse is over it
-    ui.elements.wordSubtext?.addEventListener('mouseenter', () => {
-        if (subtextTimeout) {
-            clearTimeout(subtextTimeout);
-        }
+    ui.elements.synonymsBox?.addEventListener('mouseenter', () => {
+        if (infoTimeout) clearTimeout(infoTimeout);
     });
-    ui.elements.wordSubtext?.addEventListener('mouseleave', () => {
-        ui.hideSubtext();
+    ui.elements.synonymsBox?.addEventListener('mouseleave', () => {
+        infoTimeout = setTimeout(hideAllIfNotHovered, 100);
+    });
+    ui.elements.definitionBox?.addEventListener('mouseenter', () => {
+        if (infoTimeout) clearTimeout(infoTimeout);
+    });
+    ui.elements.definitionBox?.addEventListener('mouseleave', () => {
+        infoTimeout = setTimeout(hideAllIfNotHovered, 100);
     });
 
     // Rhyme Navigation Listeners
@@ -272,6 +307,30 @@ function attachEventListeners() {
     window.addEventListener('beforeunload', storage.saveSettings);
 
     console.log('Event listeners attached.');
+}
+
+// Prefetch on page load
+window.addEventListener('DOMContentLoaded', () => {
+    prefetchWordData(state.currentWord);
+});
+
+// Prefetch on word change
+async function onWordChange(newWord) {
+    await prefetchWordData(newWord);
+    if (isAnyTooltipHovered()) {
+        // Clear boxes first to force fade-out
+        ui.hideSynonyms();
+        ui.hideDefinition();
+        tooltipCurrentWord = newWord;
+        // Wait a frame for fade-out, then show new data
+        setTimeout(() => {
+            // Only show if still hovered and word matches
+            if (isAnyTooltipHovered() && tooltipCurrentWord === newWord) {
+                ui.showSynonyms(lastWordData.synonyms);
+                ui.showDefinition(lastWordData.definition);
+            }
+        }, 50);
+    }
 }
 
 // --- Start Application ---

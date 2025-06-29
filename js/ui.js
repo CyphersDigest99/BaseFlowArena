@@ -18,6 +18,9 @@ export const elements = {
     favoriteButton: document.getElementById('favorite-word'),
     meansLikeButton: document.getElementById('means-like-button'),
     wordSubtext: document.getElementById('word-subtext'),
+    wordDefinitionTooltip: document.getElementById('word-definition-tooltip'),
+    tooltipSynonyms: document.getElementById('tooltip-synonyms'),
+    tooltipDefinition: document.getElementById('tooltip-definition'),
     findRhymesButton: document.getElementById('find-rhymes-button'), // Button below word box
 
     // Word Display Area Arrows
@@ -88,6 +91,10 @@ export const elements = {
     rhymeNoResults: document.getElementById('rhyme-no-results'),
     manualRhymeInput: document.getElementById('manual-rhyme-input'),
     addManualRhymeButton: document.getElementById('add-manual-rhyme-button'),
+    synonymsBox: document.getElementById('synonyms-box'),
+    synonymsContent: document.getElementById('synonyms-content'),
+    definitionBox: document.getElementById('definition-box'),
+    definitionContent: document.getElementById('definition-content'),
 };
 
 // --- UI Update Functions ---
@@ -200,16 +207,17 @@ export function updateSyllableFilterUI() {
     }
 }
 
-export function showTooltip(text) {
-    if (elements.meansLikeTooltip && elements.tooltipText) {
-        elements.tooltipText.textContent = text;
-        elements.meansLikeTooltip.style.display = 'block';
+export function showTooltip(data) {
+    if (elements.wordDefinitionTooltip && elements.tooltipSynonyms && elements.tooltipDefinition) {
+        elements.tooltipSynonyms.textContent = data.synonyms || 'No synonyms found.';
+        elements.tooltipDefinition.textContent = data.definition || 'No definition found.';
+        elements.wordDefinitionTooltip.style.display = 'block';
     }
 }
 
 export function hideTooltip() {
-    if (elements.meansLikeTooltip) {
-        elements.meansLikeTooltip.style.display = 'none';
+    if (elements.wordDefinitionTooltip) {
+        elements.wordDefinitionTooltip.style.display = 'none';
     }
 }
 
@@ -383,5 +391,54 @@ export function hideSubtext() {
     if (elements.wordSubtext) {
         elements.wordSubtext.textContent = '';
         elements.wordSubtext.classList.remove('visible');
+    }
+}
+
+export function showSynonyms(synonyms) {
+    const el = elements.synonymsContent;
+    if (!el) return;
+    if (synonyms && synonyms.trim()) {
+        el.textContent = synonyms;
+        el.classList.add('visible');
+    } else {
+        el.textContent = '';
+        el.classList.remove('visible');
+    }
+}
+
+export function hideSynonyms() {
+    const el = elements.synonymsContent;
+    if (el) {
+        el.textContent = '';
+        el.classList.remove('visible');
+    }
+}
+
+export function showDefinition(definition) {
+    const el = elements.definitionContent;
+    if (!el) return;
+    if (definition && definition.trim()) {
+        el.textContent = definition;
+        el.classList.add('visible');
+        // Dynamic font size: shrink if doesn't fit
+        el.classList.remove('shrink');
+        setTimeout(() => {
+            if (el.scrollWidth > el.clientWidth) {
+                el.classList.add('shrink');
+            }
+        }, 10);
+    } else {
+        el.textContent = '';
+        el.classList.remove('visible');
+        el.classList.remove('shrink');
+    }
+}
+
+export function hideDefinition() {
+    const el = elements.definitionContent;
+    if (el) {
+        el.textContent = '';
+        el.classList.remove('visible');
+        el.classList.remove('shrink');
     }
 }

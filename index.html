@@ -144,8 +144,8 @@
                      <button id="favorite-word" class="word-action-icon favorite-icon" title="Favorite Word">
                          <i class="far fa-star"></i> <i class="fas fa-star solid-star"></i>
                      </button>
-                     <button id="means-like-button" class="word-action-icon means-like-icon" title="Find Similar Words">
-                         <i class="fas fa-expand-alt"></i>
+                     <button id="means-like-button" class="word-action-icon means-like-icon" title="Show Synonyms & Definition">
+                         <i class="fas fa-book"></i>
                      </button>
                      <div id="word-subtext" class="word-subtext"></div>
                  </div>
@@ -157,6 +157,15 @@
                 </button>
             </div>
             <!-- END Word Display Area -->
+
+            <!-- Synonyms Box (above word, below up arrow) -->
+            <div id="synonyms-box" class="word-info-box synonyms-box">
+                <div id="synonyms-content" class="word-info-content"></div>
+            </div>
+            <!-- Definition Box (below word, above down arrow) -->
+            <div id="definition-box" class="word-info-box definition-box">
+                <div id="definition-content" class="word-info-content"></div>
+            </div>
 
             <button id="find-rhymes-button" class="icon-button rhyme-find-trigger" title="Find Rhymes">
                 <i class="fas fa-music"></i> Find Rhymes
