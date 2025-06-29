@@ -3,6 +3,13 @@
 
 import { state } from './state.js';
 
+// Callback for when displayed word changes (for tooltip updates)
+let onDisplayedWordChangeCallback = null;
+
+export function setDisplayedWordChangeCallback(callback) {
+    onDisplayedWordChangeCallback = callback;
+}
+
 // --- Get DOM Elements ---
 export const elements = {
     // Header & Feedback
@@ -166,11 +173,28 @@ export function updateStreakDisplay(newStreak, grew) {
 export function displayWord(word) { // word is the word to display (could be base or rhyme)
     if(!elements.wordDisplay) return;
 
+    const previousWord = elements.wordDisplay.textContent;
+    console.log(`displayWord called: "${previousWord}" -> "${word}"`);
+    
     elements.wordDisplay.textContent = word;
 
-    // --- REMOVED DYNAMIC FONT SIZE LOGIC ---
-    // All words will now use the base font size from CSS (4em)
-    // This eliminates the font-size transitions that cause jittering
+    // --- DYNAMIC FONT SIZE LOGIC RESTORED ---
+    // Calculate appropriate font size to fit word between arrows and buttons
+    const container = elements.wordDisplayContainer;
+    const maxWidth = container ? container.offsetWidth - 120 : 400; // Account for arrows and buttons
+    const currentFontSize = parseFloat(window.getComputedStyle(elements.wordDisplay).fontSize);
+    
+    // Reset to base size first
+    elements.wordDisplay.style.fontSize = '4em';
+    
+    // Check if word overflows and reduce font size if needed
+    if (elements.wordDisplay.scrollWidth > maxWidth) {
+        let fontSize = 4;
+        while (elements.wordDisplay.scrollWidth > maxWidth && fontSize > 1) {
+            fontSize -= 0.1;
+            elements.wordDisplay.style.fontSize = `${fontSize}em`;
+        }
+    }
 
     // Update action buttons based on the *displayed* word
     elements.blacklistButton?.classList.toggle('active', state.blacklist.has(word));
@@ -178,6 +202,14 @@ export function displayWord(word) { // word is the word to display (could be bas
 
     updateWordDisplayAnimation();
     updateRhymeNavButtons(); // Update up/down button states
+    
+    // Notify callback if word actually changed and callback exists
+    if (previousWord !== word && onDisplayedWordChangeCallback) {
+        console.log(`Calling onDisplayedWordChangeCallback: "${previousWord}" -> "${word}"`);
+        onDisplayedWordChangeCallback(word, previousWord);
+    } else if (previousWord !== word) {
+        console.log(`Word changed but no callback set: "${previousWord}" -> "${word}"`);
+    }
 }
 
 export function updateWordDisplayAnimation() {

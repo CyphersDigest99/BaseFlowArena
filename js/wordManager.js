@@ -293,6 +293,7 @@ export function selectRhyme(direction) {
     setTimeout(() => {
         // --- Update UI ONLY ---
         ui.displayWord(selectedRhymeWord); // Show the selected rhyme temporarily
+        // Tooltip will be updated automatically via callback
     }, 200);
 }
 
@@ -325,6 +326,8 @@ export function navigateNextRhymeForVoice() {
     // Update UI to show the rhyme
     ui.displayWord(selectedRhymeWord);
     ui.showFeedback(`Rhyme: ${selectedRhymeWord}`, false, 1500);
+    
+    // Tooltip will be updated automatically via callback
     
     return true; // Successfully navigated to a rhyme
 }

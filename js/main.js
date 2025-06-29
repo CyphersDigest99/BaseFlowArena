@@ -33,9 +33,21 @@ async function prefetchWordData(word) {
     }
 }
 
+// Helper function to check if any tooltip is being hovered (moved to higher scope)
+function isAnyTooltipHovered() {
+    return (
+        ui.elements.meansLikeButton?.matches(':hover') ||
+        ui.elements.synonymsBox?.matches(':hover') ||
+        ui.elements.definitionBox?.matches(':hover')
+    );
+}
+
 // --- Initialization ---
 async function initializeApp() {
     console.log("--- Freestyle Flow Arena Initializing ---");
+
+    // Set up the callback for displayed word changes EARLY
+    ui.setDisplayedWordChangeCallback(onDisplayedWordChange);
 
     // 1. Init UI Background
     threeBackground.initBackground(ui.elements.bgCanvas);
@@ -141,13 +153,6 @@ function attachEventListeners() {
 
     // Synonyms/Definition Hover Events
     let infoTimeout;
-    function isAnyTooltipHovered() {
-        return (
-            ui.elements.meansLikeButton?.matches(':hover') ||
-            ui.elements.synonymsBox?.matches(':hover') ||
-            ui.elements.definitionBox?.matches(':hover')
-        );
-    }
     function hideAllIfNotHovered() {
         if (!isAnyTooltipHovered()) {
             ui.hideSynonyms();
@@ -155,15 +160,22 @@ function attachEventListeners() {
             tooltipCurrentWord = '';
         }
     }
+    
+    // Helper function to get the currently displayed word
+    function getCurrentlyDisplayedWord() {
+        return ui.elements.wordDisplay?.textContent || state.currentWord;
+    }
+    
     ui.elements.meansLikeButton?.addEventListener('mouseenter', async () => {
         if (infoTimeout) clearTimeout(infoTimeout);
-        tooltipCurrentWord = state.currentWord;
+        const displayedWord = getCurrentlyDisplayedWord();
+        tooltipCurrentWord = displayedWord;
         // Show cached data immediately
         ui.showSynonyms(lastWordData.synonyms);
         ui.showDefinition(lastWordData.definition);
         // Fetch fresh data in background
-        if (state.currentWord && state.currentWord !== lastWordData.word) {
-            const word = state.currentWord;
+        if (displayedWord && displayedWord !== lastWordData.word) {
+            const word = displayedWord;
             await prefetchWordData(word);
             // Only update if still hovered and word matches
             if (isAnyTooltipHovered() && tooltipCurrentWord === word) {
@@ -336,15 +348,62 @@ async function onWordChange(newWord) {
         // Clear boxes first to force fade-out
         ui.hideSynonyms();
         ui.hideDefinition();
-        tooltipCurrentWord = newWord;
+        const displayedWord = getCurrentlyDisplayedWord();
+        tooltipCurrentWord = displayedWord;
         // Wait a frame for fade-out, then show new data
         setTimeout(() => {
             // Only show if still hovered and word matches
-            if (isAnyTooltipHovered() && tooltipCurrentWord === newWord) {
+            if (isAnyTooltipHovered() && tooltipCurrentWord === displayedWord) {
                 ui.showSynonyms(lastWordData.synonyms);
                 ui.showDefinition(lastWordData.definition);
             }
         }, 50);
+    }
+}
+
+// Handle displayed word changes (for tooltip updates)
+async function onDisplayedWordChange(newWord, previousWord) {
+    console.log(`onDisplayedWordChange called: "${previousWord}" -> "${newWord}"`);
+    
+    // Only update tooltip if it's currently being shown and the word actually changed
+    if (isAnyTooltipHovered() && newWord !== previousWord) {
+        console.log(`Tooltip is hovered, updating for word change: "${previousWord}" -> "${newWord}"`);
+        
+        // Clear current tooltip data
+        ui.hideSynonyms();
+        ui.hideDefinition();
+        
+        // Fetch new data for the displayed word
+        await prefetchWordData(newWord);
+        tooltipCurrentWord = newWord;
+        
+        // Show new data after a brief delay to allow fade-out
+        setTimeout(() => {
+            // Only show if still hovered and word matches
+            if (isAnyTooltipHovered() && tooltipCurrentWord === newWord) {
+                console.log(`Showing updated tooltip for: "${newWord}"`);
+                ui.showSynonyms(lastWordData.synonyms);
+                ui.showDefinition(lastWordData.definition);
+            }
+        }, 50);
+    } else {
+        console.log(`Tooltip not hovered or word didn't change, skipping update`);
+    }
+}
+
+// Export function to update tooltips when displayed word changes (for rhyme navigation)
+export async function updateTooltipForDisplayedWord() {
+    if (isAnyTooltipHovered()) {
+        const displayedWord = getCurrentlyDisplayedWord();
+        if (displayedWord && displayedWord !== lastWordData.word) {
+            await prefetchWordData(displayedWord);
+            tooltipCurrentWord = displayedWord;
+            // Only update if still hovered and word matches
+            if (isAnyTooltipHovered() && tooltipCurrentWord === displayedWord) {
+                ui.showSynonyms(lastWordData.synonyms);
+                ui.showDefinition(lastWordData.definition);
+            }
+        }
     }
 }
 
