@@ -291,6 +291,10 @@ function attachEventListeners() {
     ui.elements.closeWordListEditor?.addEventListener('click', () => modal.closeModal(ui.elements.wordListEditorModal));
     ui.elements.saveWordListButton?.addEventListener('click', modal.saveWordListChanges);
     ui.elements.closeRhymeModalButton?.addEventListener('click', () => modal.closeModal(ui.elements.rhymeFinderModal));
+    ui.elements.addWordButton?.addEventListener('click', modal.addNewWord);
+    ui.elements.resetWordListButton?.addEventListener('click', modal.resetWordList);
+    ui.elements.exportWordListButton?.addEventListener('click', modal.exportWordList);
+    ui.elements.importWordListButton?.addEventListener('click', modal.importWordList);
 
     // Manual Rhyme Add Listeners
     ui.elements.addManualRhymeButton?.addEventListener('click', rhyme.addManualRhyme);
@@ -303,8 +307,19 @@ function attachEventListeners() {
        if (event.target === ui.elements.favoritesModal) modal.closeModal(ui.elements.favoritesModal);
        if (event.target === ui.elements.wordListEditorModal) modal.closeModal(ui.elements.wordListEditorModal);
        if (event.target === ui.elements.rhymeFinderModal) modal.closeModal(ui.elements.rhymeFinderModal);
+       if (event.target === ui.elements.settingsModal) modal.closeModal(ui.elements.settingsModal);
     });
     window.addEventListener('beforeunload', storage.saveSettings);
+
+    // Settings Modal
+    ui.elements.settingsButton?.addEventListener('click', modal.showSettingsModal);
+    ui.elements.closeSettingsModal?.addEventListener('click', () => modal.closeModal(ui.elements.settingsModal));
+    ui.elements.exportAllSettingsButton?.addEventListener('click', modal.exportAllSettings);
+    ui.elements.importAllSettingsButton?.addEventListener('click', modal.importAllSettings);
+    ui.elements.clearBlacklistButton?.addEventListener('click', modal.clearBlacklist);
+    ui.elements.clearFavoritesButton?.addEventListener('click', modal.clearAllFavorites);
+    ui.elements.clearWordFrequenciesButton?.addEventListener('click', modal.clearWordFrequencies);
+    ui.elements.resetAllSettingsButton?.addEventListener('click', modal.resetAllSettings);
 
     console.log('Event listeners attached.');
 }

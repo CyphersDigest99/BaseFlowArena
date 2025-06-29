@@ -5,7 +5,7 @@ import { state } from './state.js';
 import * as ui from './ui.js';
 import { updateGrid } from './bpm.js'; // For updating grid visuals after load/reset
 
-const STORAGE_KEY = 'freestyleArenaSettings_v5';
+const STORAGE_KEY = 'freestyleArenaSettings_v6'; // Increment version for word list persistence
 
 // --- Serialization Helpers for Sets within Objects ---
 function serializeNestedSets(objWithSets) {
@@ -51,6 +51,7 @@ export function saveSettings() {
             favorites: Array.from(state.favorites),
             rejectedRhymes: serializeNestedSets(state.rejectedRhymes),
             manualRhymes: serializeNestedSets(state.manualRhymes),
+            wordList: state.wordList, // NEW: Save the word list
         };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(settingsToSave));
         // console.log('Settings saved.');
@@ -81,6 +82,12 @@ export function loadSettings() {
              state.favorites = Array.isArray(parsedData.favorites) ? new Set(parsedData.favorites) : new Set();
              state.rejectedRhymes = parsedData.rejectedRhymes ? deserializeNestedSets(parsedData.rejectedRhymes) : {};
              state.manualRhymes = parsedData.manualRhymes ? deserializeNestedSets(parsedData.manualRhymes) : {};
+             
+             // NEW: Load the word list if available
+             if (Array.isArray(parsedData.wordList) && parsedData.wordList.length > 0) {
+                 state.wordList = parsedData.wordList;
+                 console.log(`Loaded ${state.wordList.length} words from storage.`);
+             }
 
              console.log('Settings loaded successfully.');
              applyLoadedSettingsToUI();
@@ -129,6 +136,7 @@ export function resetToDefaults(saveAfterReset = true) {
     state.activationMode = 'manual';
     state.rejectedRhymes = {};
     state.manualRhymes = {};
+    // Note: Don't reset wordList here - let wordManager handle that
 
     applyLoadedSettingsToUI();
 
@@ -142,5 +150,88 @@ export function resetToDefaults(saveAfterReset = true) {
         console.log("Defaults applied and saved.");
     } else {
         console.log("Defaults applied.");
+    }
+}
+
+// --- NEW: Export/Import Functions ---
+export function exportSettings() {
+    try {
+        const exportData = {
+            version: '1.0',
+            timestamp: new Date().toISOString(),
+            settings: {
+                beatGridRows: state.beatGridRows,
+                beatGridCols: state.beatGridCols,
+                bpm: state.bpm,
+                bpmMultiplier: state.bpmMultiplier,
+                wordOrderMode: state.wordOrderMode,
+                cycleSpeed: state.cycleSpeed,
+                minSyllables: state.minSyllables,
+                maxSyllables: state.maxSyllables,
+                wordFrequencies: state.wordFrequencies,
+                blacklist: Array.from(state.blacklist),
+                favorites: Array.from(state.favorites),
+                rejectedRhymes: serializeNestedSets(state.rejectedRhymes),
+                manualRhymes: serializeNestedSets(state.manualRhymes),
+                wordList: state.wordList,
+            }
+        };
+        
+        const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `freestyle-arena-settings-${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        ui.showFeedback("Settings exported successfully!", false, 2000);
+    } catch (e) {
+        console.error("Error exporting settings:", e);
+        ui.showFeedback("Error exporting settings!", true, 2000);
+    }
+}
+
+export function importSettings(jsonData) {
+    try {
+        const importData = JSON.parse(jsonData);
+        
+        if (!importData.settings) {
+            throw new Error("Invalid settings format");
+        }
+        
+        const settings = importData.settings;
+        
+        // Apply imported settings
+        state.beatGridRows = settings.beatGridRows ?? 1;
+        state.beatGridCols = settings.beatGridCols ?? 4;
+        state.bpm = settings.bpm ?? 0;
+        state.bpmMultiplier = settings.bpmMultiplier ?? 1;
+        state.wordOrderMode = settings.wordOrderMode || 'random';
+        state.cycleSpeed = settings.cycleSpeed ?? 10;
+        state.minSyllables = settings.minSyllables ?? 0;
+        state.maxSyllables = settings.maxSyllables ?? 0;
+        state.wordFrequencies = settings.wordFrequencies || {};
+        state.blacklist = Array.isArray(settings.blacklist) ? new Set(settings.blacklist) : new Set();
+        state.favorites = Array.isArray(settings.favorites) ? new Set(settings.favorites) : new Set();
+        state.rejectedRhymes = settings.rejectedRhymes ? deserializeNestedSets(settings.rejectedRhymes) : {};
+        state.manualRhymes = settings.manualRhymes ? deserializeNestedSets(settings.manualRhymes) : {};
+        
+        if (Array.isArray(settings.wordList) && settings.wordList.length > 0) {
+            state.wordList = settings.wordList;
+        }
+        
+        // Update UI and save
+        applyLoadedSettingsToUI();
+        saveSettings();
+        
+        ui.showFeedback("Settings imported successfully!", false, 3000);
+        return true;
+    } catch (e) {
+        console.error("Error importing settings:", e);
+        ui.showFeedback("Error importing settings! Invalid format.", true, 3000);
+        return false;
     }
 }

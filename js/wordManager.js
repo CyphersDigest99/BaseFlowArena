@@ -53,6 +53,15 @@ function getSyllableCount(word) {
 // --- Word Loading ---
 export async function loadWords() {
     console.log('Loading words...');
+    
+    // Check if we have a saved word list in state (from localStorage)
+    if (state.wordList && state.wordList.length > 0) {
+        console.log(`Using ${state.wordList.length} words from saved state.`);
+        if(ui.elements.wordListTextarea) ui.elements.wordListTextarea.value = state.wordList.join('\n');
+        applyFiltersAndSort(); // Apply initial blacklist/sort
+        return;
+    }
+    
     try {
         let text;
         try {

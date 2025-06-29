@@ -82,6 +82,10 @@ export const elements = {
     closeWordListEditor: document.getElementById('close-word-list-editor'),
     wordListTextarea: document.getElementById('word-list-textarea'),
     saveWordListButton: document.getElementById('save-word-list-button'),
+    addWordButton: document.getElementById('add-word-button'),
+    resetWordListButton: document.getElementById('reset-word-list-button'),
+    exportWordListButton: document.getElementById('export-word-list-button'),
+    importWordListButton: document.getElementById('import-word-list-button'),
 
     rhymeFinderModal: document.getElementById('rhyme-finder-modal'),
     closeRhymeModalButton: document.getElementById('close-rhyme-modal'),
@@ -95,6 +99,15 @@ export const elements = {
     synonymsContent: document.getElementById('synonyms-content'),
     definitionBox: document.getElementById('definition-box'),
     definitionContent: document.getElementById('definition-content'),
+
+    settingsModal: document.getElementById('settings-modal'),
+    closeSettingsModal: document.getElementById('close-settings-modal'),
+    settingsButton: document.getElementById('settings-button'),
+    exportAllSettingsButton: document.getElementById('export-all-settings-button'),
+    importAllSettingsButton: document.getElementById('import-all-settings-button'),
+    clearBlacklistButton: document.getElementById('clear-blacklist-button'),
+    clearWordFrequenciesButton: document.getElementById('clear-word-frequencies-button'),
+    resetAllSettingsButton: document.getElementById('reset-all-settings-button'),
 };
 
 // --- UI Update Functions ---

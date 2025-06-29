@@ -94,6 +94,9 @@
                   <button id="favorites-button" class="icon-button" title="View Favorites">
                      <i class="fas fa-star"></i><span class="btn-text">Favs</span>
                   </button>
+                 <button id="settings-button" class="icon-button" title="Settings & Data Management">
+                     <i class="fas fa-cog"></i><span class="btn-text">Settings</span>
+                 </button>
              </div>
 
              <div class="control-group voice-setting"> <!-- Kept your voice setting toggle here -->
@@ -289,10 +292,26 @@
     <div id="word-list-editor-modal" class="modal">
         <div class="modal-content">
             <span class="close-button" id="close-word-list-editor">×</span>
-            <h2><i class="fas fa-edit"></i> Edit Word List (Session Only)</h2>
-            <textarea id="word-list-textarea" rows="15" cols="50"></textarea>
-            <button id="save-word-list-button" class="icon-button"><i class="fas fa-save"></i> Apply Changes</button>
-            <p><small>Note: Changes are temporary for this session.</small></p>
+            <h2><i class="fas fa-edit"></i> Edit Word List</h2>
+            <div class="word-list-controls">
+                <button id="add-word-button" class="icon-button tiny-button" title="Add New Word">
+                    <i class="fas fa-plus"></i> Add Word
+                </button>
+                <button id="reset-word-list-button" class="icon-button tiny-button red-button" title="Reset to Defaults">
+                    <i class="fas fa-undo"></i> Reset
+                </button>
+                <button id="export-word-list-button" class="icon-button tiny-button" title="Export Word List">
+                    <i class="fas fa-download"></i> Export
+                </button>
+                <button id="import-word-list-button" class="icon-button tiny-button" title="Import Word List">
+                    <i class="fas fa-upload"></i> Import
+                </button>
+            </div>
+            <textarea id="word-list-textarea" rows="15" cols="50" placeholder="Enter words, one per line..."></textarea>
+            <div class="word-list-actions">
+                <button id="save-word-list-button" class="icon-button"><i class="fas fa-save"></i> Save Changes</button>
+                <p><small>Changes are saved permanently and persist between sessions.</small></p>
+            </div>
         </div>
     </div>
 
@@ -316,6 +335,53 @@
             <div class="add-rhyme-section">
                 <input type="text" id="manual-rhyme-input" placeholder="Add your own rhyme...">
                 <button id="add-manual-rhyme-button" class="icon-button tiny-button"><i class="fas fa-plus"></i> Add</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" id="close-settings-modal">×</span>
+            <h2><i class="fas fa-cog"></i> Settings & Data Management</h2>
+            
+            <div class="settings-section">
+                <h3><i class="fas fa-download"></i> Export & Import</h3>
+                <div class="settings-controls">
+                    <button id="export-all-settings-button" class="icon-button">
+                        <i class="fas fa-download"></i> Export All Settings
+                    </button>
+                    <button id="import-all-settings-button" class="icon-button">
+                        <i class="fas fa-upload"></i> Import All Settings
+                    </button>
+                </div>
+                <p><small>Export/import all your data including word lists, favorites, blacklist, and settings.</small></p>
+            </div>
+            
+            <div class="settings-section">
+                <h3><i class="fas fa-trash"></i> Data Management</h3>
+                <div class="settings-controls">
+                    <button id="clear-blacklist-button" class="icon-button red-button">
+                        <i class="fas fa-ban"></i> Clear Blacklist
+                    </button>
+                    <button id="clear-favorites-button" class="icon-button red-button">
+                        <i class="fas fa-star"></i> Clear Favorites
+                    </button>
+                    <button id="clear-word-frequencies-button" class="icon-button red-button">
+                        <i class="fas fa-chart-bar"></i> Clear Word Frequencies
+                    </button>
+                    <button id="reset-all-settings-button" class="icon-button red-button">
+                        <i class="fas fa-undo"></i> Reset All Settings
+                    </button>
+                </div>
+                <p><small>Clear specific data or reset everything to defaults.</small></p>
+            </div>
+            
+            <div class="settings-section">
+                <h3><i class="fas fa-info-circle"></i> Data Summary</h3>
+                <div id="data-summary">
+                    <p>Loading data summary...</p>
+                </div>
             </div>
         </div>
     </div>
