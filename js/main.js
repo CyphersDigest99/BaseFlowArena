@@ -41,11 +41,9 @@ async function prefetchWordData(word) {
 
 // Helper function to check if any tooltip is being hovered (moved to higher scope)
 function isAnyTooltipHovered() {
-    return (
-        ui.elements.meansLikeButton?.matches(':hover') ||
-        ui.elements.synonymsBox?.matches(':hover') ||
-        ui.elements.definitionBox?.matches(':hover')
-    );
+    // Only check if the button itself is being hovered
+    // Don't check the tooltip boxes since they can be visible when pinned even when not hovered
+    return ui.elements.meansLikeButton?.matches(':hover') || false;
 }
 
 // --- Initialization ---

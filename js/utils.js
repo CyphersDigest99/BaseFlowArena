@@ -314,7 +314,7 @@ export function triggerPixelBlockEffect() {
     const waitForWordChange = () => {
         // Check for word changes more frequently to handle rhyme navigation
         let checkCount = 0;
-        const maxChecks = 10; // Check up to 10 times (1 second total)
+        const maxChecks = 15; // Increased to 15 checks (1.5 seconds total)
         
         const checkForWordChange = () => {
             const newWord = wordDisplay.textContent;
@@ -352,7 +352,7 @@ export function triggerPixelBlockEffect() {
             if (constructedChars >= chars.length) {
                 clearInterval(constructInterval);
                 // Construction complete, wait for rotation to finish then remove overlay
-                setTimeout(cleanup, 800); // Wait longer for rotation to complete
+                setTimeout(cleanup, 1000); // Increased wait time for rotation to complete
                 return;
             }
             
@@ -373,7 +373,8 @@ export function triggerPixelBlockEffect() {
             overlay.parentNode.removeChild(overlay);
         }
         // CRITICAL: Restore the original word display so the new word is visible
-        wordDisplay.style.display = originalDisplay;
+        // Also ensure the display is set to flex to make it visible
+        wordDisplay.style.display = 'flex';
     };
 
     // Add glow effect to the overlay for visual enhancement

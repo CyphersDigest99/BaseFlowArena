@@ -79,6 +79,32 @@ When pinned, the tooltip cycles through three display modes:
   - Pulse animation
   - Shimmer effect
 
+## Animation Logic for Word Transitions
+
+### Pixel Block Effect
+When a word is matched by voice or changed via navigation, a pixel block animation is triggered for a smooth, visually engaging transition:
+
+1. **Dissolve Phase**
+   - The current word dissolves character by character, each letter fading out, shrinking, and rotating 180°.
+   - The static word display is hidden during this phase to prevent overlap.
+
+2. **Wait Phase**
+   - The animation waits for the new word to be set in the background (e.g., after a voice match or navigation).
+   - This ensures the animation is always in sync with the actual word change.
+
+3. **Construct Phase**
+   - The new word is constructed character by character, each letter fading in, scaling up, and rotating from -180° to 0°.
+   - The static word display remains hidden until the animation is fully complete.
+
+4. **Completion**
+   - After all letters have animated in, the overlay is removed and the static word display is restored and made visible.
+   - This guarantees that the static word only appears after the animation is finished, preventing any visual overlap or timing issues.
+
+### Technical Details
+- The animation is handled entirely by an overlay element, which is positioned over the word display area.
+- The static word display (`#word-display`) is set to `display: none` during the animation and restored to `display: flex` only after the animation completes.
+- Safety timeouts ensure the overlay is always cleaned up, even if something goes wrong.
+
 ## Interaction System
 
 ### Left-Click Behavior

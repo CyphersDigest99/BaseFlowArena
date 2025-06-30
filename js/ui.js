@@ -171,12 +171,25 @@ export function updateStreakDisplay(newStreak, grew) {
 }
 
 export function displayWord(word) { // word is the word to display (could be base or rhyme)
-    if(!elements.wordDisplay) return;
+    console.log(`displayWord called with word: "${word}"`);
+    console.log(`elements.wordDisplay exists:`, !!elements.wordDisplay);
+    
+    if(!elements.wordDisplay) {
+        console.error('wordDisplay element not found!');
+        return;
+    }
 
     const previousWord = elements.wordDisplay.textContent;
     console.log(`displayWord called: "${previousWord}" -> "${word}"`);
+    console.log(`wordDisplay element:`, elements.wordDisplay);
+    console.log(`wordDisplay visibility:`, window.getComputedStyle(elements.wordDisplay).visibility);
+    console.log(`wordDisplay display:`, window.getComputedStyle(elements.wordDisplay).display);
+    console.log(`wordDisplay opacity:`, window.getComputedStyle(elements.wordDisplay).opacity);
     
     elements.wordDisplay.textContent = word;
+    
+    // Verify the text was actually set
+    console.log(`After setting textContent, wordDisplay.textContent: "${elements.wordDisplay.textContent}"`);
 
     // --- DYNAMIC FONT SIZE LOGIC RESTORED ---
     // Calculate appropriate font size to fit word between arrows and buttons
@@ -184,17 +197,47 @@ export function displayWord(word) { // word is the word to display (could be bas
     const maxWidth = container ? container.offsetWidth - 120 : 400; // Account for arrows and buttons
     const currentFontSize = parseFloat(window.getComputedStyle(elements.wordDisplay).fontSize);
     
+    console.log(`Container width: ${container?.offsetWidth}, maxWidth: ${maxWidth}`);
+    console.log(`Current font size: ${currentFontSize}`);
+    
     // Reset to base size first
     elements.wordDisplay.style.fontSize = '4em';
+    console.log(`Reset font size to 4em`);
     
     // Check if word overflows and reduce font size if needed
     if (elements.wordDisplay.scrollWidth > maxWidth) {
+        console.log(`Word overflows, reducing font size. scrollWidth: ${elements.wordDisplay.scrollWidth}, maxWidth: ${maxWidth}`);
         let fontSize = 4;
         while (elements.wordDisplay.scrollWidth > maxWidth && fontSize > 1) {
             fontSize -= 0.1;
             elements.wordDisplay.style.fontSize = `${fontSize}em`;
+            console.log(`Reduced font size to ${fontSize}em, scrollWidth: ${elements.wordDisplay.scrollWidth}`);
         }
+    } else {
+        console.log(`Word fits within maxWidth, keeping 4em font size`);
     }
+    
+    console.log(`Final font size: ${window.getComputedStyle(elements.wordDisplay).fontSize}`);
+    console.log(`Final scrollWidth: ${elements.wordDisplay.scrollWidth}`);
+    console.log(`Final container width: ${container?.offsetWidth}`);
+    
+    // Final visibility check
+    const finalStyle = window.getComputedStyle(elements.wordDisplay);
+    console.log(`Final visibility check:`);
+    console.log(`- visibility: ${finalStyle.visibility}`);
+    console.log(`- display: ${finalStyle.display}`);
+    console.log(`- opacity: ${finalStyle.opacity}`);
+    console.log(`- height: ${finalStyle.height}`);
+    console.log(`- width: ${finalStyle.width}`);
+    console.log(`- position: ${finalStyle.position}`);
+    console.log(`- top: ${finalStyle.top}`);
+    console.log(`- left: ${finalStyle.left}`);
+    console.log(`- transform: ${finalStyle.transform}`);
+    
+    // Check if the element is actually visible in the viewport
+    const rect = elements.wordDisplay.getBoundingClientRect();
+    console.log(`Bounding rect:`, rect);
+    console.log(`Element is in viewport: ${rect.width > 0 && rect.height > 0}`);
 
     // Update action buttons based on the *displayed* word
     elements.blacklistButton?.classList.toggle('active', state.blacklist.has(word));
