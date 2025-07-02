@@ -15,6 +15,7 @@ import * as modal from './modal.js';
 import * as autoBpm from './autoBpm.js'; // Import the Web Audio API version
 import * as datamuse from './datamuse.js'; // Import the Datamuse API module
 import * as wordApi from './wordApi.js'; // Import the new word API module
+import * as beatManager from './beatManager.js'; // Import the beat player module
 
 let lastWordData = { synonyms: '', definition: '', word: '' };
 let tooltipCurrentWord = '';
@@ -75,6 +76,7 @@ async function initializeApp() {
 
     // 3. Setup Features
     speech.setupSpeechRecognition();
+    beatManager.initializeBeatPlayer(); // Initialize beat player
 
     // 4. Display Initial Word & Sync Final UI
     ui.updateActivationUI(); // Sync activation/mode controls
@@ -119,35 +121,40 @@ function startTimedCycleInternal() {
 
 // --- Handle Detect BPM Click ---
 async function handleDetectBpmClick() {
-    if (state.isDetectingBpm) return; // Prevent multiple simultaneous detections
-
-    // --- REMOVED AUBIO CHECKS ---
-    // No need to check for 'aubio' global or call initAubio here.
-    // The autoBpm module now handles errors within startDetection if Web Audio API fails.
+    if (state.isDetectingBpm) {
+        // If already detecting, stop the detection
+        console.log("Stopping BPM detection...");
+        state.isDetectingBpm = false;
+        ui.updateDetectBpmButtonState(false);
+        await autoBpm.stopDetection();
+        ui.showFeedback("BPM detection stopped", false, 2000);
+        return;
+    }
 
     state.isDetectingBpm = true;
-    ui.updateDetectBpmButtonState(true); // Update button UI to 'detecting'
+    ui.updateDetectBpmButtonState(true);
 
     try {
-        // Start detection process using the Web Audio API version
-        const result = await autoBpm.startDetection(8); // Specify duration
-        console.log("Detection Promise Resolved:", result);
+        const result = await autoBpm.startDetection(8);
+        console.log("BPM Detection completed:", result);
 
         if (result && result.bpm > 0) {
-            // Use confidence value from the result if available/meaningful
-            const confidenceText = result.confidence ? ` (Confidence: ${result.confidence.toFixed(2)})` : '';
-            ui.showFeedback(`Detected BPM: ${result.bpm}${confidenceText}`, false, 4000);
-            bpm.setBpm(result.bpm); // Update the main BPM system in bpm.js
-        } else {
-            // Feedback for failure usually shown inside autoBpm module now
-            console.log("No reliable BPM detected or detection failed.");
+            const confidenceText = result.confidence ? ` (${(result.confidence * 100).toFixed(0)}% confidence)` : '';
+            const peaksText = result.peaksDetected ? ` - ${result.peaksDetected} beats detected` : '';
+            
+            // Show correction info if the tempo was adjusted
+            let correctionText = '';
+            if (result.originalBpm && result.originalBpm !== result.bpm) {
+                correctionText = ` (corrected from ${result.originalBpm})`;
+            }
+            
+            ui.showFeedback(`🎵 BPM: ${result.bpm}${correctionText}${confidenceText}${peaksText}`, false, 5000);
+            bpm.setBpm(result.bpm);
         }
     } catch (error) {
         console.error("BPM Detection failed:", error);
-        // Display a user-friendly error message
-        ui.showFeedback(`BPM Detection Error: ${error.message || 'Mic/Audio Error'}`, true);
+        // Error messages are already shown by autoBpm module
     } finally {
-        // ALWAYS ensure the detecting state and button UI are reset
         state.isDetectingBpm = false;
         ui.updateDetectBpmButtonState(false);
     }
@@ -401,6 +408,17 @@ function attachEventListeners() {
         });
     });
     // --- END BPM CONTROLS ---
+
+    // --- BEAT PLAYER CONTROLS ---
+    ui.elements.beatPlayPauseButton?.addEventListener('click', beatManager.playPause);
+    ui.elements.beatStopButton?.addEventListener('click', beatManager.stop);
+    ui.elements.beatNextButton?.addEventListener('click', beatManager.nextBeat);
+    ui.elements.beatPreviousButton?.addEventListener('click', beatManager.previousBeat);
+    ui.elements.beatVolumeSlider?.addEventListener('input', (e) => {
+        const volume = parseInt(e.target.value, 10) / 100; // Convert percentage to 0-1
+        beatManager.setVolume(volume);
+    });
+    // --- END BEAT PLAYER CONTROLS ---
 
     // RNG Controls
     ui.elements.generateNumbersButton?.addEventListener('click', rng.generate);

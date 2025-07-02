@@ -235,3 +235,30 @@ export function importSettings(jsonData) {
         return false;
     }
 }
+
+// --- Beat Player Storage Functions ---
+const BEAT_PLAYER_STORAGE_KEY = 'freestyleArenaBeatPlayer_v1';
+
+export function saveBeatPlayerSettings(currentBeatIndex = 0, volume = 0.7) {
+    try {
+        const beatPlayerSettings = {
+            currentBeatIndex: currentBeatIndex,
+            volume: volume
+        };
+        localStorage.setItem(BEAT_PLAYER_STORAGE_KEY, JSON.stringify(beatPlayerSettings));
+    } catch (e) {
+        console.error("Error saving beat player settings:", e);
+    }
+}
+
+export function loadBeatPlayerSettings() {
+    try {
+        const savedSettings = localStorage.getItem(BEAT_PLAYER_STORAGE_KEY);
+        if (savedSettings) {
+            return JSON.parse(savedSettings);
+        }
+    } catch (e) {
+        console.error("Error loading beat player settings:", e);
+    }
+    return null;
+}

@@ -76,6 +76,13 @@ export const elements = {
     // BPM Multiplier Buttons (Need selector)
     multiplierButtons: document.querySelectorAll('.multiplier-btn'), // Use querySelectorAll
 
+    // Beat Player Controls
+    beatPlayPauseButton: document.getElementById('beat-play-pause'),
+    beatStopButton: document.getElementById('beat-stop'),
+    beatNextButton: document.getElementById('beat-next'),
+    beatPreviousButton: document.getElementById('beat-previous'),
+    beatVolumeSlider: document.getElementById('beat-volume'),
+
     // Right Panel Controls (Frequencies)
     frequentWordsContainer: document.getElementById('frequent-words'),
 
@@ -122,12 +129,16 @@ export const elements = {
 // Add function to update detect button state
 export function updateDetectBpmButtonState(isDetecting) {
     if (!elements.detectBpmButton) return;
-    elements.detectBpmButton.disabled = isDetecting;
-    elements.detectBpmButton.classList.toggle('detecting', isDetecting); // For spinner CSS
+    
+    elements.detectBpmButton.disabled = false; // Never disable, allow stopping
+    elements.detectBpmButton.classList.toggle('detecting', isDetecting);
+    
     if (isDetecting) {
-        elements.detectBpmButton.innerHTML = '<i class="fas fa-robot"></i> DETECTING...';
+        elements.detectBpmButton.innerHTML = '<i class="fas fa-stop"></i> STOP DETECTING';
+        elements.detectBpmButton.title = 'Click to stop BPM detection';
     } else {
         elements.detectBpmButton.innerHTML = '<i class="fas fa-robot"></i> DETECT';
+        elements.detectBpmButton.title = 'Detect BPM from microphone input (12 seconds)';
     }
 }
 
