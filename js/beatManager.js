@@ -1,3 +1,21 @@
+/**
+ * @fileoverview Beat Playback and Playlist Manager (Howler.js)
+ *
+ * This module manages beat playback for the BaseFlowArena application using Howler.js.
+ * It handles playlist management, audio playback controls, volume, BPM per track,
+ * and UI synchronization for the beat player.
+ *
+ * Key responsibilities:
+ * - Managing the beat playlist and adding new beats
+ * - Initializing and controlling audio playback (play, pause, stop, next, previous)
+ * - Handling volume and playback state
+ * - Storing and retrieving BPM per track
+ * - Synchronizing UI elements with playback state
+ * - Loading album art and BPM metadata (if available)
+ *
+ * Dependencies: ui.js, storage.js, bpm.js, Howler.js (global)
+ */
+
 // js/beatManager.js
 // Handles beat playback using Howler.js library
 
@@ -6,6 +24,7 @@ import * as storage from './storage.js';
 import * as bpm from './bpm.js'; // For setBpm
 
 // --- Beat Playlist Configuration ---
+// List of available beats for playback
 let BEAT_PLAYLIST = [
     {
         name: "Symphony (Storytelling Hip-Hop)",
@@ -46,6 +65,7 @@ let BEAT_PLAYLIST = [
 ];
 
 // --- Auto-Discover MP3s Function ---
+// (Currently a stub; returns manual playlist)
 async function discoverMP3Files() {
     try {
         // This would work if you had a server endpoint to list files
@@ -59,6 +79,7 @@ async function discoverMP3Files() {
 }
 
 // --- Helper Function to Add New MP3s ---
+// Adds a new MP3 file to the playlist and updates the UI
 export function addMP3ToPlaylist(filePath, displayName = null) {
     const fileName = filePath.split('/').pop().replace('.mp3', '');
     const name = displayName || fileName.replace(/[-_]/g, ' ').replace(/\s+/g, ' ').trim();
@@ -78,24 +99,27 @@ export function addMP3ToPlaylist(filePath, displayName = null) {
 }
 
 // --- State Management ---
-let currentBeatIndex = 0;
-let currentHowl = null;
-let isPlaying = false;
-let volume = 0.7; // Default volume (0.0 to 1.0)
+let currentBeatIndex = 0; // Index of the currently selected beat
+let currentHowl = null;   // Howler.js instance for current beat
+let isPlaying = false;    // Playback state
+let volume = 0.7;         // Default volume (0.0 to 1.0)
 
 // --- Simple Howler-only State ---
 let suppressSeekEvent = false;
 
 // --- BPM per Track Storage ---
+// Returns a unique storage key for a beat's BPM
 function getBpmStorageKey(beatFile) {
     return 'bpm_for_' + encodeURIComponent(beatFile);
 }
+// Saves the BPM value for the current track to localStorage
 export function saveBpmForCurrentTrack(bpmValue) {
     const beatInfo = BEAT_PLAYLIST[currentBeatIndex];
     if (beatInfo && bpmValue) {
         localStorage.setItem(getBpmStorageKey(beatInfo.file), bpmValue);
     }
 }
+// Retrieves the saved BPM value for the current track
 function getSavedBpmForCurrentTrack() {
     const beatInfo = BEAT_PLAYLIST[currentBeatIndex];
     if (beatInfo) {
@@ -110,6 +134,7 @@ let suppressPlayPause = false;
 
 // --- Core Audio Functions ---
 
+// Initializes the beat player, loads settings, and sets up UI
 export function initializeBeatPlayer() {
     // Load saved settings
     const savedSettings = storage.loadBeatPlayerSettings();
@@ -137,6 +162,7 @@ export function initializeBeatPlayer() {
     if (volSlider) volSlider.oninput = (e) => setVolume(e.target.value / 100);
 }
 
+// Toggles play/pause for the current beat
 export function playPause() {
     if (!currentHowl) {
         loadCurrentBeat();
@@ -148,6 +174,7 @@ export function playPause() {
     }
 }
 
+// Starts playback of the current beat
 export function play() {
     if (!currentHowl) {
         loadCurrentBeat();
@@ -157,12 +184,14 @@ export function play() {
     }
 }
 
+// Pauses playback of the current beat
 export function pause() {
     if (currentHowl && isPlaying) {
         currentHowl.pause();
     }
 }
 
+// Stops playback and resets state/UI
 export function stop() {
     if (currentHowl) {
         currentHowl.stop();
@@ -172,6 +201,7 @@ export function stop() {
     }
 }
 
+// Advances to the next beat in the playlist
 export function nextBeat() {
     if (currentBeatIndex < BEAT_PLAYLIST.length - 1) {
         currentBeatIndex++;
@@ -181,6 +211,7 @@ export function nextBeat() {
     switchToBeat(currentBeatIndex);
 }
 
+// Goes to the previous beat in the playlist
 export function previousBeat() {
     if (currentBeatIndex > 0) {
         currentBeatIndex--;
@@ -190,6 +221,7 @@ export function previousBeat() {
     switchToBeat(currentBeatIndex);
 }
 
+// Sets the playback volume (0.0 to 1.0)
 export function setVolume(newVolume) {
     volume = Math.max(0, Math.min(1, newVolume));
     // Only set volume, never create or reload Howl
@@ -200,6 +232,7 @@ export function setVolume(newVolume) {
     storage.saveBeatPlayerSettings(currentBeatIndex, volume);
 }
 
+// Returns info about the current beat
 export function getCurrentBeatInfo() {
     return {
         name: BEAT_PLAYLIST[currentBeatIndex].name,
@@ -212,6 +245,7 @@ export function getCurrentBeatInfo() {
 // --- Helper Functions ---
 
 // --- Robust Cleanup Function ---
+// Stops and unloads the current Howler instance
 function cleanupAudio() {
     if (currentHowl) {
         try { currentHowl.stop(); } catch (e) {}
@@ -221,6 +255,7 @@ function cleanupAudio() {
     // Don't reset isPlaying here - let the caller handle that
 }
 
+// Switches to a new beat by index, loads audio, and updates UI
 function switchToBeat(index) {
     const wasPlaying = isPlaying; // Remember if we were playing
     
@@ -241,6 +276,7 @@ function switchToBeat(index) {
     ui.showFeedback(`Switched to: ${BEAT_PLAYLIST[currentBeatIndex].name}`, false, 2000);
 }
 
+// Loads the current beat's audio, album art, and BPM metadata
 function loadCurrentBeat() {
     cleanupAudio();
     // Reset album art and BPM
@@ -334,6 +370,7 @@ function loadCurrentBeat() {
     });
 }
 
+// Updates the beat display UI with current beat info
 function updateBeatDisplay() {
     const beatDisplay = document.getElementById('current-beat-display');
     if (beatDisplay) {
@@ -342,6 +379,7 @@ function updateBeatDisplay() {
     }
 }
 
+// Updates the play/pause button icon based on playback state
 function updatePlayPauseButton() {
     const playPauseBtn = document.getElementById('beat-play-pause');
     if (playPauseBtn) {
@@ -352,6 +390,7 @@ function updatePlayPauseButton() {
     }
 }
 
+// Updates the volume slider UI to match current volume
 function updateVolumeDisplay() {
     const volumeSlider = document.getElementById('beat-volume');
     if (volumeSlider) {
@@ -360,14 +399,17 @@ function updateVolumeDisplay() {
 }
 
 // --- Public API for external access ---
+// Returns the current playlist array
 export function getPlaylist() {
     return BEAT_PLAYLIST;
 }
 
+// Returns the current playback volume
 export function getCurrentVolume() {
     return volume;
 }
 
+// Returns whether a beat is currently playing
 export function isCurrentlyPlaying() {
     return isPlaying;
 } 
