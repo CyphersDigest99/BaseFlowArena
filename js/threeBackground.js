@@ -1,3 +1,18 @@
+/**
+ * @fileoverview Three.js Animated Background Manager
+ *
+ * This module creates and manages a dynamic 3D animated background using Three.js.
+ * It renders a moving road effect with lines, handles window resizing, and provides
+ * initialization and cleanup functions for use in the main UI.
+ *
+ * Key responsibilities:
+ * - Initialize and render a 3D scene with a road and moving lines
+ * - Handle animation loop and window resizing
+ * - Provide cleanup for stopping the animation and freeing resources
+ *
+ * Dependencies: three (Three.js library)
+ */
+
 // js/threeBackground.js
 // Handles the THREE.js background animation.
 
@@ -11,6 +26,10 @@ const roadSpeed = 0.25;
 let isThreeJsInitialized = false;
 let animationFrameId = null; // To stop the animation loop if needed
 
+/**
+ * Initializes the Three.js background animation on the given canvas.
+ * @param {HTMLCanvasElement} canvas - The canvas element to render into
+ */
 export function initBackground(canvas) {
     if (!canvas || isThreeJsInitialized) return;
     console.log('Initializing Three.js background...');
@@ -30,6 +49,7 @@ export function initBackground(canvas) {
         dirLight.position.set(5, 10, 7);
         scene.add(dirLight);
 
+        // Create the road plane
         const roadGeometry = new THREE.PlaneGeometry(50, lineCount * lineSpacing * 1.5);
         const roadMaterial = new THREE.MeshStandardMaterial({ color: 0x181818, roughness: 0.9, metalness: 0.1 });
         roadPlane = new THREE.Mesh(roadGeometry, roadMaterial);
@@ -37,6 +57,7 @@ export function initBackground(canvas) {
         roadPlane.position.y = -0.1;
         scene.add(roadPlane);
 
+        // Create the moving road lines
         const lineMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
         const lineGeometry = new THREE.PlaneGeometry(0.2, lineLength);
 
@@ -62,11 +83,16 @@ export function initBackground(canvas) {
     }
 }
 
+/**
+ * Animation loop for the moving road lines and scene rendering.
+ * Uses requestAnimationFrame for smooth updates.
+ */
 function animate() {
     if (!isThreeJsInitialized) return; // Stop if not initialized
 
     animationFrameId = requestAnimationFrame(animate); // Store the frame ID
 
+    // Move each road line forward, looping back if it passes the camera
     roadLines.forEach(line => {
         line.position.z += roadSpeed;
         if (line.position.z - (lineLength / 2) > camera.position.z) {
@@ -79,6 +105,9 @@ function animate() {
     }
 }
 
+/**
+ * Handles window resize events to keep the 3D scene properly scaled.
+ */
 function onWindowResize() {
     if (!isThreeJsInitialized || !camera || !renderer) return;
     camera.aspect = window.innerWidth / window.innerHeight;
@@ -87,7 +116,9 @@ function onWindowResize() {
     // console.log('Three.js background resized.'); // Less noise
 }
 
-// Optional: Function to stop the animation and clean up resources
+/**
+ * Stops the Three.js animation and cleans up event listeners and resources.
+ */
 export function stopBackground() {
     if (animationFrameId) {
         cancelAnimationFrame(animationFrameId);
