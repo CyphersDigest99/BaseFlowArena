@@ -1,9 +1,29 @@
-let localDefinitions = null;
+/**
+ * @fileoverview Word Definition Fetcher and Cache
+ *
+ * This module provides functions to fetch word definitions from local data, the Datamuse API,
+ * and the Free Dictionary API, with caching and fallback logic for speed and reliability.
+ *
+ * Key responsibilities:
+ * - Load and use local word definitions if available
+ * - Fetch definitions from Datamuse API (fast, no API key)
+ * - Fallback to Free Dictionary API if needed (with timeout)
+ * - Cache definitions to minimize repeated API calls
+ * - Return concise definitions for UI display
+ *
+ * Dependencies: fetch API, local definitions.json (optional), Datamuse API, Free Dictionary API
+ */
+
+let localDefinitions = null; // Holds local definitions loaded from definitions.json
 
 // Simple cache to avoid repeated API calls
-const definitionCache = new Map();
+const definitionCache = new Map(); // word (lowercase) -> definition string or null
 
-// Load local definitions on startup
+/**
+ * Loads local definitions from definitions.json (if available).
+ * Populates localDefinitions for instant lookups.
+ * Call this once at app startup.
+ */
 export async function loadLocalDefinitions() {
     try {
         const response = await fetch('definitions.json');
@@ -17,6 +37,11 @@ export async function loadLocalDefinitions() {
     }
 }
 
+/**
+ * Gets a concise definition for a word, using local, Datamuse, or Free Dictionary sources.
+ * @param {string} word - The word to define
+ * @returns {Promise<string|null>} - Short definition string, or null if not found
+ */
 export async function getWordDefinition(word) {
     if (!word) return null;
     
@@ -70,6 +95,7 @@ export async function getWordDefinition(word) {
             }
         } catch (fetchError) {
             if (fetchError.name === 'AbortError') {
+                // Handle API timeout
                 console.warn(`Dictionary API timeout for "${word}"`);
             }
         }
@@ -79,6 +105,7 @@ export async function getWordDefinition(word) {
         return null;
         
     } catch (error) {
+        // Log and cache errors
         console.warn(`Error fetching definition for "${word}":`, error);
         definitionCache.set(wordLower, null);
         return null;
