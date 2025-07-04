@@ -9,8 +9,12 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <!-- Canvas Confetti -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
-    <!-- Howler.js for audio playback -->
+    <!-- Howler.js (must be before beatManager.js/main.js) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"></script>
+    <!-- Wavesurfer.js - Commented out for Howler-only player -->
+    <!-- <script src="https://unpkg.com/wavesurfer.js@7.6.0/dist/wavesurfer.min.js"></script> -->
+    <!-- jsmediatags -->
+    <script src="https://cdn.jsdelivr.net/npm/jsmediatags@3.9.7/dist/jsmediatags.min.js"></script>
     <!-- THREE.JS LIBRARY Import Map -->
     <script type="importmap">
         {
@@ -210,42 +214,6 @@
         <aside class="control-panel panel-right">
             <h2><i class="fas fa-headphones-alt"></i> Rhythm Engine</h2>
 
-            <!-- Beat Player Panel -->
-            <div id="beat-player-panel" class="panel">
-                <h3><i class="fas fa-music"></i> Beat Player</h3>
-                
-                <!-- Current Beat Display -->
-                <div id="current-beat-display" class="beat-display">
-                    1/8: Symphony (Storytelling Hip-Hop)
-                </div>
-                
-                <!-- Main Controls -->
-                <div class="beat-controls">
-                    <button id="beat-play-pause" class="icon-button large-button" title="Play/Pause Beat">
-                        <i class="fas fa-play"></i> Play
-                    </button>
-                    <button id="beat-stop" class="icon-button small-button" title="Stop Beat">
-                        <i class="fas fa-stop"></i>
-                    </button>
-                </div>
-                
-                <!-- Navigation Controls -->
-                <div class="beat-navigation">
-                    <button id="beat-previous" class="icon-button small-button" title="Previous Beat">
-                        <i class="fas fa-step-backward"></i>
-                    </button>
-                    <button id="beat-next" class="icon-button small-button" title="Next Beat">
-                        <i class="fas fa-step-forward"></i>
-                    </button>
-                </div>
-                
-                <!-- Volume Control -->
-                <div class="beat-volume-control">
-                    <label for="beat-volume"><i class="fas fa-volume-up"></i> Volume:</label>
-                    <input type="range" id="beat-volume" min="0" max="100" value="70" class="volume-slider">
-                </div>
-            </div>
-
             <!-- CORRECTED #bpm-panel Structure -->
                         <!-- CORRECTED #bpm-panel Structure -->
                         <!-- START REPLACEMENT for #bpm-panel section -->
@@ -271,7 +239,10 @@
                      <button id="bpm-adjust-plus" class="icon-button small-button" title="Increase BPM"><i class="fas fa-plus"></i></button>
                      <button id="stop-bpm-button" class="icon-button small-button red-button" title="Stop BPM">
                          <i class="fas fa-stop"></i>
-                    </button>
+                     </button>
+                     <button id="save-bpm-button" class="icon-button small-button" title="Save BPM for this track">
+                         <i class="fas fa-floppy-disk"></i>
+                     </button>
                  </div>
 
                  <!-- The Grid Container ITSELF -->
@@ -429,5 +400,41 @@
 
     <!-- Main Game Script (MODULE) -->
     <script type="module" src="js/main.js" defer></script>
+
+    <!-- Add compact Beat Player bar at the bottom -->
+    <div id="beat-player-bar">
+        <img id="album-art" width="50" height="50" style="object-fit:cover;border-radius:6px;margin:0 10px;" alt="Album Art" />
+        <div class="beat-player-controls">
+            <button id="beat-play-pause" class="icon-button"><i class="fas fa-play"></i></button>
+            <button id="beat-prev" class="icon-button"><i class="fas fa-backward"></i></button>
+            <button id="beat-next" class="icon-button"><i class="fas fa-forward"></i></button>
+        </div>
+        <div id="current-beat-display" style="margin:0 10px;min-width:180px;"></div>
+        <div id="beat-bpm" style="margin:0 10px;min-width:60px;"></div>
+                        <!-- Waveform container hidden for Howler-only player -->
+                <div id="waveform" style="display:none;flex:1 1 0%;height:40px;min-width:120px;margin:0 10px;"></div>
+        <input id="beat-volume" type="range" min="0" max="100" value="70" style="width:120px;margin:0 10px;" />
+    </div>
+
+    <!-- Add CSS for fixed bottom bar -->
+    <style>
+    #beat-player-bar {
+        position: fixed;
+        left: 0; right: 0; bottom: 0;
+        width: 100vw;
+        height: 60px;
+        background: #181c2b;
+        display: flex;
+        align-items: center;
+        z-index: 1000;
+        box-shadow: 0 -2px 12px #000a;
+        border-top: 1px solid #222;
+        padding: 0 10px;
+    }
+    #beat-player-bar .icon-button { margin: 0 2px; }
+    #album-art { background: #222; }
+    #current-beat-display, #beat-bpm { color: #fff; font-size: 1em; }
+    #waveform { background: transparent; }
+    </style>
 </body>
 </html>

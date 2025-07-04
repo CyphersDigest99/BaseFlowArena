@@ -461,6 +461,34 @@ function attachEventListeners() {
     ui.elements.clearWordFrequenciesButton?.addEventListener('click', modal.clearWordFrequencies);
     ui.elements.resetAllSettingsButton?.addEventListener('click', modal.resetAllSettings);
 
+    // Save BPM button
+    const saveBpmBtn = document.getElementById('save-bpm-button');
+    const bpmDisplay = document.getElementById('bpm-display');
+    function updateSaveBpmButtonState() {
+        const bpmValue = bpmDisplay ? parseInt(bpmDisplay.textContent) : null;
+        if (saveBpmBtn) {
+            saveBpmBtn.disabled = !bpmValue || isNaN(bpmValue);
+        }
+    }
+    if (saveBpmBtn) {
+        saveBpmBtn.onclick = () => {
+            const bpmValue = bpmDisplay ? parseInt(bpmDisplay.textContent) : null;
+            if (bpmValue && !isNaN(bpmValue)) {
+                beatManager.saveBpmForCurrentTrack(bpmValue);
+                ui.showFeedback('BPM saved for this track!', false, 1500);
+            } else {
+                ui.showFeedback('No BPM to save!', true, 1500);
+            }
+            updateSaveBpmButtonState();
+        };
+    }
+    // Update save button state whenever BPM changes
+    if (bpmDisplay) {
+        const observer = new MutationObserver(updateSaveBpmButtonState);
+        observer.observe(bpmDisplay, { childList: true, characterData: true, subtree: true });
+    }
+    updateSaveBpmButtonState();
+
     console.log('Event listeners attached.');
 }
 
