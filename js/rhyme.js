@@ -1,3 +1,21 @@
+/**
+ * @fileoverview Rhyme Data Management and Rhyme Finder Modal
+ *
+ * This module handles all rhyme-related logic for the BaseFlowArena application.
+ * It loads and manages the rhyme data, provides rhyme pattern matching,
+ * manages the rhyme finder modal, and allows users to reject or manually add rhymes.
+ *
+ * Key responsibilities:
+ * - Loading and parsing rhyme data from JSON
+ * - Determining rhyme patterns for words
+ * - Finding valid rhymes for a given word
+ * - Managing the rhyme finder modal UI
+ * - Allowing users to reject or manually add rhymes
+ * - Persisting rhyme preferences and updates
+ *
+ * Dependencies: state.js, ui.js, modal.js, storage.js
+ */
+
 // js/rhyme.js
 // Handles loading rhyme data and the rhyme finder modal logic.
 
@@ -7,6 +25,7 @@ import * as modal from './modal.js';
 import * as storage from './storage.js'; // Need saveSettings
 
 // --- Load Rhyme Data ---
+// Loads rhyme data from JSON file and updates state
 export async function loadRhymeData() {
     console.log("Loading rhyme data...");
     try {
@@ -30,6 +49,7 @@ export async function loadRhymeData() {
 }
 
 // --- Get Rhyme Pattern (Internal) ---
+// Retrieves the rhyme pattern array for a given word from rhyme data
 function getRhymePattern(word) {
     if (!state.rhymeData || !word) return null;
     // Use toLowerCase() for lookup, assumes keys in rhyme_data.json are lowercase
@@ -51,9 +71,8 @@ function getRhymePattern(word) {
     return null;
 }
 
-
-// --- NEW: Get Valid Rhymes for a Word (Needs Export) ---
-// <<<--- ADD 'export' HERE ---<<<
+// --- Get Valid Rhymes for a Word ---
+// Returns a sorted list of valid rhymes for the given base word
 export function getValidRhymesForWord(baseWord) {
     if (!baseWord || !state.rhymeData) return [];
 
@@ -91,8 +110,8 @@ export function getValidRhymesForWord(baseWord) {
     return sortedMatches;
 }
 
-
 // --- Show Rhyme Finder Modal ---
+// Opens the rhyme finder modal and populates it with rhymes for the current word
 export function showRhymeFinder() {
     if (!state.rhymeData) { /* ... */ return; }
     const baseWord = state.currentWord;
@@ -125,6 +144,7 @@ export function showRhymeFinder() {
 }
 
 // --- Display Rhyme List (Internal Helper) ---
+// Populates the rhyme list in the modal for the given base word
 function displayRhymeList(baseWordLower, wordPattern) {
     if (!ui.elements.rhymeResultsList || !baseWordLower) return;
     // Calls the EXPORTED function (which is fine)
@@ -140,6 +160,7 @@ function displayRhymeList(baseWordLower, wordPattern) {
 }
 
 // --- createRhymeListItem (Internal Helper) ---
+// Creates a list item for a rhyme word and attaches rejection handler
 function createRhymeListItem(rhymeWord, baseWordLower) {
     // ... (same as before) ...
     if (!ui.elements.rhymeResultsList) return;
@@ -156,6 +177,7 @@ function createRhymeListItem(rhymeWord, baseWordLower) {
 }
 
 // --- handleRhymeRejection (Internal Handler) ---
+// Handles user rejection of a rhyme in the modal and updates state
 function handleRhymeRejection(event) {
      // ... (same as before) ...
     const liElement = event.currentTarget;
@@ -174,6 +196,7 @@ function handleRhymeRejection(event) {
 }
 
 // --- addManualRhyme (EXPORTED) ---
+// Allows user to manually add a rhyme for the current base word
 export function addManualRhyme() {
      // ... (same as before) ...
     if (!ui.elements.manualRhymeInput) return;
