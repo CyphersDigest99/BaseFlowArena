@@ -1,3 +1,23 @@
+/**
+ * @fileoverview Main Application Entry Point and Event Coordinator
+ * 
+ * This module serves as the central orchestrator for the BaseFlowArena application.
+ * It handles application initialization, coordinates between all modules, manages
+ * event listeners, and controls the overall application flow. The module imports
+ * and coordinates all other modules to create a cohesive freestyle rap experience.
+ * 
+ * Key responsibilities:
+ * - Application initialization and startup sequence
+ * - Event listener management for all UI interactions
+ * - Coordination between word management, BPM detection, and voice recognition
+ * - Tooltip and word data prefetching system
+ * - Activation mode switching (manual, voice, timed)
+ * - Beat player and BPM system integration
+ * - Modal and settings management
+ * 
+ * Dependencies: All other modules in the js/ directory
+ */
+
 // js/main.js
 // Main application entry point, initialization, and event listeners.
 
@@ -17,15 +37,16 @@ import * as datamuse from './datamuse.js'; // Import the Datamuse API module
 import * as wordApi from './wordApi.js'; // Import the new word API module
 import * as beatManager from './beatManager.js'; // Import the beat player module
 
+// Cached word data for tooltip display and performance optimization
 let lastWordData = { synonyms: '', definition: '', word: '' };
-let tooltipCurrentWord = '';
+let tooltipCurrentWord = ''; // Tracks which word the tooltip is currently showing
 
 // Helper function to get the currently displayed word (moved to module scope)
 function getCurrentlyDisplayedWord() {
     return ui.elements.wordDisplay?.textContent || state.currentWord;
 }
 
-// Prefetch synonyms/definition for the current word
+// Prefetch synonyms/definition for the current word to improve tooltip responsiveness
 async function prefetchWordData(word) {
     if (!word || word === 'NO WORDS!') {
         lastWordData = { synonyms: '', definition: '', word: word };
@@ -171,7 +192,7 @@ function attachEventListeners() {
     ui.elements.findRhymesButton?.addEventListener('click', rhyme.showRhymeFinder);
 
     // Synonyms/Definition Hover Events
-    let infoTimeout;
+    let infoTimeout; // Timer for hiding tooltips when not hovered
     function hideAllIfNotHovered() {
         // Don't hide tooltip if it's pinned
         if (state.tooltip.isPinned) return;
@@ -324,7 +345,7 @@ function attachEventListeners() {
     // Word Order Setting
     ui.elements.wordOrderSelect?.addEventListener('change', (e) => wordManager.setWordOrder(e.target.value));
 
-    // Syllable Filter Settings
+    // Syllable Filter Settings - Controls word filtering by syllable count
     const handleSyllableFilterChange = () => {
         const minSyllables = parseInt(ui.elements.minSyllablesInput.value, 10) || 0;
         const maxSyllables = parseInt(ui.elements.maxSyllablesInput.value, 10) || 0;
@@ -373,7 +394,7 @@ function attachEventListeners() {
     ui.elements.voiceModeButton?.addEventListener('click', () => setActivationMode('voice'));
     ui.elements.timedModeButton?.addEventListener('click', () => setActivationMode('timed'));
 
-    // Timed Mode Speed Controls
+    // Timed Mode Speed Controls - Manages automatic word cycling speed
     const handleCycleSpeedChange = () => {
         const speed = Math.max(3, Math.min(parseInt(ui.elements.cycleSpeedInput.value, 10) || 10, 30));
         if (state.cycleSpeed !== speed) {
@@ -461,7 +482,7 @@ function attachEventListeners() {
     ui.elements.clearWordFrequenciesButton?.addEventListener('click', modal.clearWordFrequencies);
     ui.elements.resetAllSettingsButton?.addEventListener('click', modal.resetAllSettings);
 
-    // Save BPM button
+    // Save BPM button - Allows saving detected BPM to current beat track
     const saveBpmBtn = document.getElementById('save-bpm-button');
     const bpmDisplay = document.getElementById('bpm-display');
     function updateSaveBpmButtonState() {
@@ -492,12 +513,12 @@ function attachEventListeners() {
     console.log('Event listeners attached.');
 }
 
-// Prefetch on page load
+// Prefetch word data on page load for immediate tooltip display
 window.addEventListener('DOMContentLoaded', () => {
     prefetchWordData(state.currentWord);
 });
 
-// Prefetch on word change
+// Prefetch on word change - Updates tooltip data when word changes
 async function onWordChange(newWord) {
     await prefetchWordData(newWord);
     if (isAnyTooltipHovered()) {
@@ -517,7 +538,7 @@ async function onWordChange(newWord) {
     }
 }
 
-// Handle displayed word changes (for tooltip updates)
+// Handle displayed word changes (for tooltip updates) - Manages tooltip state during word navigation
 async function onDisplayedWordChange(newWord, previousWord) {
     console.log(`onDisplayedWordChange called: "${previousWord}" -> "${newWord}"`);
     
@@ -574,4 +595,5 @@ export async function updateTooltipForDisplayedWord() {
 }
 
 // --- Start Application ---
+// Initialize the application when DOM is fully loaded
 document.addEventListener('DOMContentLoaded', initializeApp);
