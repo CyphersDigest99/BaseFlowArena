@@ -1,3 +1,20 @@
+/**
+ * @fileoverview Persistent Settings and State Storage Manager
+ *
+ * This module manages saving, loading, exporting, and importing all user settings and
+ * application state to and from LocalStorage. It handles serialization of Sets and nested
+ * objects, provides reset-to-defaults logic, and supports backup/restore of user data.
+ *
+ * Key responsibilities:
+ * - Save/load all app settings and state (including word lists, favorites, blacklist, etc.)
+ * - Serialize/deserialize Sets and nested objects for storage
+ * - Export/import settings as JSON files for backup/restore
+ * - Reset all settings to defaults
+ * - Persist beat player settings (current track, volume)
+ *
+ * Dependencies: state.js, ui.js, bpm.js, browser LocalStorage API
+ */
+
 // js/storage.js
 // Handles saving and loading settings to/from LocalStorage.
 
@@ -8,6 +25,11 @@ import { updateGrid } from './bpm.js'; // For updating grid visuals after load/r
 const STORAGE_KEY = 'freestyleArenaSettings_v6'; // Increment version for word list persistence
 
 // --- Serialization Helpers for Sets within Objects ---
+/**
+ * Serializes all Set properties in an object to arrays for JSON storage.
+ * @param {object} objWithSets - Object with Set properties
+ * @returns {object} New object with Sets converted to arrays
+ */
 function serializeNestedSets(objWithSets) {
     const serialized = {};
     for (const key in objWithSets) {
@@ -21,6 +43,11 @@ function serializeNestedSets(objWithSets) {
     return serialized;
 }
 
+/**
+ * Deserializes all array properties in an object to Sets.
+ * @param {object} serializedObj - Object with array properties
+ * @returns {object} New object with arrays converted to Sets
+ */
 function deserializeNestedSets(serializedObj) {
     const deserialized = {};
     for (const key in serializedObj) {
@@ -35,6 +62,9 @@ function deserializeNestedSets(serializedObj) {
 }
 
 // --- Main Save Function ---
+/**
+ * Saves all relevant app settings and state to LocalStorage.
+ */
 export function saveSettings() {
     try {
         const settingsToSave = {
@@ -62,6 +92,9 @@ export function saveSettings() {
 }
 
 // --- Main Load Function ---
+/**
+ * Loads all app settings and state from LocalStorage, or resets to defaults if not found.
+ */
 export function loadSettings() {
     console.log(`Attempting to load settings from key: ${STORAGE_KEY}`);
     try {
@@ -105,6 +138,9 @@ export function loadSettings() {
 }
 
 // --- Helper to Update UI based on Loaded/Reset State ---
+/**
+ * Updates all relevant UI elements after loading or resetting settings.
+ */
 function applyLoadedSettingsToUI() {
     ui.updateActivationUI();
     ui.updateBpmIndicator(state.bpm);
@@ -120,6 +156,10 @@ function applyLoadedSettingsToUI() {
 }
 
 // --- Reset Function ---
+/**
+ * Resets all settings and state to defaults. Optionally saves after reset.
+ * @param {boolean} saveAfterReset - Whether to save after resetting
+ */
 export function resetToDefaults(saveAfterReset = true) {
     console.log("Resetting settings to defaults.");
     state.blacklist = new Set();
@@ -154,6 +194,9 @@ export function resetToDefaults(saveAfterReset = true) {
 }
 
 // --- NEW: Export/Import Functions ---
+/**
+ * Exports all settings and state as a JSON file for backup.
+ */
 export function exportSettings() {
     try {
         const exportData = {
@@ -194,6 +237,11 @@ export function exportSettings() {
     }
 }
 
+/**
+ * Imports settings and state from a JSON string, applies to state, and saves.
+ * @param {string} jsonData - The JSON string of settings to import
+ * @returns {boolean} True if import succeeded, false otherwise
+ */
 export function importSettings(jsonData) {
     try {
         const importData = JSON.parse(jsonData);
@@ -237,8 +285,11 @@ export function importSettings(jsonData) {
 }
 
 // --- Beat Player Storage Functions ---
-const BEAT_PLAYER_STORAGE_KEY = 'freestyleArenaBeatPlayer_v1';
-
+/**
+ * Saves beat player settings (current track index and volume) to LocalStorage.
+ * @param {number} currentBeatIndex - The current beat index
+ * @param {number} volume - The current volume (0.0 to 1.0)
+ */
 export function saveBeatPlayerSettings(currentBeatIndex = 0, volume = 0.7) {
     try {
         const beatPlayerSettings = {
@@ -251,6 +302,10 @@ export function saveBeatPlayerSettings(currentBeatIndex = 0, volume = 0.7) {
     }
 }
 
+/**
+ * Loads beat player settings (current track index and volume) from LocalStorage.
+ * @returns {object|null} The beat player settings object, or null if not found
+ */
 export function loadBeatPlayerSettings() {
     try {
         const savedSettings = localStorage.getItem(BEAT_PLAYER_STORAGE_KEY);
