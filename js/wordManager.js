@@ -1,3 +1,25 @@
+/**
+ * @fileoverview Word Management and Navigation System
+ * 
+ * This module handles all aspects of word management in the BaseFlowArena application.
+ * It provides functionality for loading word lists, filtering words by various criteria,
+ * navigating between words, managing rhymes, and handling user interactions with words.
+ * The module serves as the core word processing engine that coordinates with other
+ * modules to provide a seamless freestyle experience.
+ * 
+ * Key responsibilities:
+ * - Word list loading and management from files or defaults
+ * - Syllable counting and filtering
+ * - Word navigation (next, previous, random, alphabetical, sequential)
+ * - Rhyme navigation and management
+ * - Blacklist and favorites management
+ * - Word frequency tracking
+ * - Gamification elements (score, streaks)
+ * - Word list editing and persistence
+ * 
+ * Dependencies: state.js, ui.js, storage.js, rhyme.js, utils.js
+ */
+
 // js/wordManager.js
 // Handles loading, filtering, sorting, and changing words.
 
@@ -15,6 +37,7 @@ export function setWordChangeCallback(callback) {
 }
 
 // --- Syllable Counting Function ---
+// Calculates syllable count using JavaScript regex patterns
 function countSyllables(word) {
     if (!word) return 0;
     
@@ -40,6 +63,7 @@ function countSyllables(word) {
 }
 
 // --- Get Syllable Count from JSON Data (Preferred) ---
+// Attempts to get accurate syllable count from rhyme data, falls back to calculation
 function getSyllableCount(word) {
     if (!word) return 1;
     
@@ -58,6 +82,7 @@ function getSyllableCount(word) {
 }
 
 // --- Word Loading ---
+// Loads word list from file or uses defaults, applies initial filters
 export async function loadWords() {
     console.log('Loading words...');
     
@@ -107,6 +132,7 @@ export async function loadWords() {
 }
 
 // --- Filtering and Sorting ---
+// Applies blacklist and syllable filters, sorts words, and updates current word state
 export function applyFiltersAndSort() {
     // --- DEBUG LOGGING START ---
     console.log('[applyFiltersAndSort] Before Filter:', {
@@ -190,7 +216,7 @@ export function applyFiltersAndSort() {
 
 
 // --- Word Navigation (Left/Right/Timed/Voice) ---
-// This function sets the "base word"
+// This function sets the "base word" and manages word transitions
 export function changeWord(direction = 'next', isInitial = false, isVoiceMatch = false) {
     // --- DEBUG LOGGING START ---
     // console.log(`[changeWord] Called with direction: ${direction}, initial: ${isInitial}, voice: ${isVoiceMatch}`);
@@ -287,6 +313,7 @@ export function changeWord(direction = 'next', isInitial = false, isVoiceMatch =
 }
 
 // --- Rhyme Navigation (Up/Down) ---
+// Navigates through available rhymes for the current base word with animations
 export function selectRhyme(direction) {
     if (!state.currentRhymeList || state.currentRhymeList.length === 0) {
         ui.showFeedback("No rhymes available for current word.", true, 1500); return;
@@ -317,6 +344,7 @@ export function selectRhyme(direction) {
 }
 
 // --- Voice Rhyme Navigation ---
+// Handles automatic rhyme navigation for voice recognition mode
 export function navigateNextRhymeForVoice() {
     // If no rhymes available, return false to indicate we should get a random word
     if (!state.currentRhymeList || state.currentRhymeList.length === 0) {
@@ -351,7 +379,7 @@ export function navigateNextRhymeForVoice() {
     return true; // Successfully navigated to a rhyme
 }
 
-// Helper function export for listeners
+// Helper function export for listeners - Navigation with animations
 export function nextWord() { 
     // Trigger horizontal swipe animation for right navigation
     utils.triggerHorizontalSwipe('right');
@@ -368,6 +396,7 @@ export function stayWord() { changeWord('stay', false, false); }
 
 
 // --- Word Actions (Blacklist/Favorite) ---
+// Toggles blacklist status of displayed word (base word or rhyme)
 export function toggleBlacklist() {
     const wordToToggle = ui.elements.wordDisplay?.textContent; // Act on DISPLAYED word
     if (!wordToToggle || wordToToggle === "NO WORDS!" || wordToToggle === "LOADING..." || wordToToggle === "ERROR") {
@@ -396,6 +425,7 @@ export function toggleBlacklist() {
     }
 }
 
+// Toggles favorite status of displayed word (base word or rhyme)
 export function toggleFavorite() {
     const wordToToggle = ui.elements.wordDisplay?.textContent; // Act on DISPLAYED word
     if (!wordToToggle || wordToToggle === "NO WORDS!" || wordToToggle === "LOADING..." || wordToToggle === "ERROR") {
@@ -412,6 +442,7 @@ export function toggleFavorite() {
 }
 
 // --- Word Order ---
+// Changes the word ordering mode (random, alphabetical, sequential)
 export function setWordOrder(newOrder) {
     if (newOrder && newOrder !== state.wordOrderMode) {
         state.wordOrderMode = newOrder;
@@ -423,6 +454,7 @@ export function setWordOrder(newOrder) {
 }
 
 // --- Gamification Update ---
+// Updates user score with visual feedback
 export function updateScore(points) {
     const isAddingPoints = points > 0;
     state.score += points;
@@ -432,6 +464,7 @@ export function updateScore(points) {
     else if (ui.elements.scoreDisplay) ui.elements.scoreDisplay.textContent = state.score;
 }
 
+// Updates user streak with visual feedback
 export function updateStreak(increment) {
     const oldStreak = state.currentStreak;
     let grew = false;
@@ -441,6 +474,7 @@ export function updateStreak(increment) {
     ui.updateStreakDisplay(state.currentStreak, grew);
 }
 
+// Resets all gamification elements to zero
 export function resetGamification() {
     state.score = 0; state.currentStreak = 0;
     if (ui.elements.scoreDisplay) ui.elements.scoreDisplay.textContent = state.score;
@@ -449,6 +483,7 @@ export function resetGamification() {
 }
 
 // --- Frequency Update ---
+// Tracks word usage frequency from user input text
 export function updateFrequencies(text) {
     if (!text) return;
     const words = text.toLowerCase().match(/\b(\w{2,})\b/g);
@@ -467,6 +502,7 @@ export function updateFrequencies(text) {
 }
 
 // --- Word List Editor ---
+// Applies changes from the word list editor and updates the application state
 export function applyWordListChanges(newText) {
      const newWords = newText.split('\n').map(w => w.trim()).filter(w => w && w.length > 1);
      if (newWords.length > 0) {
