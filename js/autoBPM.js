@@ -1,3 +1,21 @@
+/**
+ * @fileoverview Automatic BPM Detection via Web Audio API
+ *
+ * This module provides advanced BPM (beats per minute) detection using the Web Audio API.
+ * It analyzes microphone input, detects rhythmic peaks, calculates BPM using multiple
+ * statistical methods, and provides a confidence score for the detected tempo.
+ *
+ * Key responsibilities:
+ * - Accessing microphone and analyzing audio in real time
+ * - Detecting rhythmic peaks and calculating energy in frequency bands
+ * - Calculating BPM using histogram, clustering, and autocorrelation methods
+ * - Correcting for double/half tempo errors and fine-tuning to common tempos
+ * - Providing a confidence score based on multiple factors
+ * - Cleaning up audio resources and UI feedback
+ *
+ * Dependencies: ui.js (for feedback), Web Audio API, browser microphone access
+ */
+
 // js/autoBpm.js
 // Handles automatic BPM detection using Web Audio API AnalyserNode.
 
@@ -20,24 +38,28 @@ const MIN_VALID_INTERVALS = 10; // Increased for better accuracy
 const CONFIDENCE_THRESHOLD = 0.75; // Minimum confidence to accept result
 
 // --- State Variables ---
-let audioContext = null;
-let analyser = null;
-let mediaStreamSource = null;
-let microphoneStream = null;
-let animationFrameId = null;
-let detectionTimeout = null;
-let isDetecting = false;
+let audioContext = null;           // Web Audio API context
+let analyser = null;               // AnalyserNode for frequency analysis
+let mediaStreamSource = null;      // MediaStreamAudioSourceNode
+let microphoneStream = null;       // MediaStream from getUserMedia
+let animationFrameId = null;       // requestAnimationFrame ID
+let detectionTimeout = null;       // Timeout for max detection time
+let isDetecting = false;           // Detection state flag
 
-let energyHistory = new Array(HISTORY_SIZE).fill(0);
-let historyIndex = 0;
-let detectedPeakTimes = [];
-let lastPeakTime = 0;
-let detectionStartTime = 0;
-let peakStrengths = []; // Track peak strength for confidence calculation
-let currentConfidence = 0;
-let lastAnalysisTime = 0;
+let energyHistory = new Array(HISTORY_SIZE).fill(0); // Rolling energy history
+let historyIndex = 0;              // Index for circular buffer
+let detectedPeakTimes = [];        // Array of detected peak timestamps
+let lastPeakTime = 0;              // Last detected peak time
+let detectionStartTime = 0;        // Start time of detection
+let peakStrengths = [];            // Array of peak strengths
+let currentConfidence = 0;         // Current confidence score
+let lastAnalysisTime = 0;          // Last time confidence was checked
 
 // --- Main Detection Function ---
+/**
+ * Starts automatic BPM detection from microphone input.
+ * @returns {Promise<object>} Resolves with { bpm, confidence, peaksDetected, intervalsUsed, originalBpm }
+ */
 export function startDetection() {
     return new Promise(async (resolve, reject) => {
         // Prevent multiple simultaneous detections
@@ -195,6 +217,10 @@ export function startDetection() {
 }
 
 // --- Stop Detection Function ---
+/**
+ * Stops BPM detection and cleans up audio resources.
+ * @returns {Promise<void>}
+ */
 export function stopDetection() {
     if (isDetecting) {
         console.log("Stopping BPM detection...");
@@ -204,6 +230,7 @@ export function stopDetection() {
 }
 
 // --- Analyze Results Function ---
+// Analyzes detected peaks and intervals to produce BPM and confidence
 async function analyzeResults() {
     console.log(`Analyzing ${detectedPeakTimes.length} detected peaks...`);
     
@@ -246,6 +273,7 @@ async function analyzeResults() {
 
 // --- Helper Functions ---
 
+// Resets all detection state variables
 function resetDetectionState() {
     energyHistory.fill(0);
     historyIndex = 0;
@@ -255,6 +283,7 @@ function resetDetectionState() {
     currentConfidence = 0;
 }
 
+// Calculates average energy in a frequency band
 function calculateBandEnergy(frequencyData, bandHz, sampleRate) {
     const binSize = sampleRate / (frequencyData.length * 2);
     const startBin = Math.floor(bandHz.min / binSize);
@@ -271,6 +300,7 @@ function calculateBandEnergy(frequencyData, bandHz, sampleRate) {
     return count > 0 ? totalEnergy / count : 0;
 }
 
+// Enhanced peak detection with dynamic threshold and strength
 function isEnhancedPeak(currentEnergy, currentTime) {
     // Calculate local average energy for better threshold
     const recentEnergy = energyHistory.slice(historyIndex - 50, historyIndex).filter(e => e > 0);
@@ -296,6 +326,7 @@ function isEnhancedPeak(currentEnergy, currentTime) {
     return { isPeak: false, strength: 0 };
 }
 
+// Calculates valid intervals between detected peaks
 function calculateValidIntervals() {
     const intervals = [];
     
@@ -310,6 +341,7 @@ function calculateValidIntervals() {
     return intervals;
 }
 
+// Advanced BPM calculation using multiple statistical methods
 function calculateBPMFromIntervals(intervals) {
     // Advanced BPM calculation using multiple statistical methods
     
@@ -338,6 +370,7 @@ function calculateBPMFromIntervals(intervals) {
     return { bpm: weightedBpm, medianInterval: dominantInterval };
 }
 
+// Creates a histogram of intervals for BPM analysis
 function createIntervalHistogram(intervals) {
     const histogram = {};
     const binSize = 10; // 10ms bins
@@ -350,6 +383,7 @@ function createIntervalHistogram(intervals) {
     return histogram;
 }
 
+// Finds the dominant interval in a histogram
 function findDominantInterval(histogram) {
     let maxCount = 0;
     let dominantBin = 0;
@@ -364,6 +398,7 @@ function findDominantInterval(histogram) {
     return dominantBin;
 }
 
+// Clusters intervals for BPM analysis
 function clusterIntervals(intervals) {
     // Simple clustering: group intervals within 20% of each other
     const clusters = [];
@@ -389,6 +424,7 @@ function clusterIntervals(intervals) {
     return clusters.filter(cluster => cluster.length >= 2); // Only keep clusters with multiple intervals
 }
 
+// Calculates BPM from the largest cluster
 function calculateClusterBPM(clusters) {
     if (clusters.length === 0) return 120; // Default
     
@@ -400,6 +436,7 @@ function calculateClusterBPM(clusters) {
     return 60000 / avgInterval;
 }
 
+// Autocorrelation-based BPM calculation
 function calculateAutocorrelationBPM(intervals) {
     // Simple autocorrelation to find repeating patterns
     const maxLag = Math.min(intervals.length, 20);
@@ -431,6 +468,7 @@ function calculateAutocorrelationBPM(intervals) {
     return 60000 / (avgInterval * bestLag);
 }
 
+// Enhanced tempo correction to avoid double/half tempo errors
 function correctTempoEnhanced(originalBpm, intervals) {
     // Enhanced tempo correction with better analysis for double-tempo issues
     
@@ -502,6 +540,7 @@ function correctTempoEnhanced(originalBpm, intervals) {
     return bestTempo;
 }
 
+// Analyzes rhythm pattern for double/quadruple tempo suggestions
 function analyzeRhythmPatternEnhanced(intervals, detectedBpm) {
     const expectedInterval = 60000 / detectedBpm;
     
@@ -545,6 +584,7 @@ function analyzeRhythmPatternEnhanced(intervals, detectedBpm) {
     return { suggestion: 'correct', confidence: 'high' };
 }
 
+// Calculates a score for how well a tempo fits the detected intervals
 function calculateAdvancedTempoScore(tempo, intervals) {
     const expectedInterval = 60000 / tempo;
     let score = 0;
@@ -595,6 +635,7 @@ function calculateAdvancedTempoScore(tempo, intervals) {
     return finalScore;
 }
 
+// Calculates a confidence score for the detected BPM
 function calculateAdvancedConfidence(intervals, bpm, peakStrengths) {
     // Multi-factor confidence calculation for much higher accuracy
     
@@ -637,6 +678,7 @@ function calculateAdvancedConfidence(intervals, bpm, peakStrengths) {
     return Math.min(1, confidence); // Cap at 100%
 }
 
+// Stops and cleans up all audio processing resources
 async function stopAudioProcessing() {
     console.log("Stopping audio stream and analysis...");
     isDetecting = false;
