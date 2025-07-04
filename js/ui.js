@@ -1,3 +1,26 @@
+/**
+ * @fileoverview User Interface Management and DOM Element Controller
+ * 
+ * This module handles all user interface interactions and DOM element management
+ * for the BaseFlowArena application. It provides a centralized interface for
+ * updating UI elements, managing visual feedback, handling animations, and
+ * coordinating between the application state and the user interface.
+ * 
+ * Key responsibilities:
+ * - DOM element selection and caching
+ * - Word display management with dynamic font sizing
+ * - Visual feedback and notification system
+ * - BPM and beat grid visualization
+ * - Tooltip and definition display management
+ * - Transcript and voice recognition UI
+ * - Animation and visual effects coordination
+ * - Modal and settings interface management
+ * - Gamification display updates (score, streaks)
+ * - RNG results visualization
+ * 
+ * Dependencies: state.js
+ */
+
 // js/ui.js
 // Handles DOM element selection and UI updates.
 
@@ -11,14 +34,15 @@ export function setDisplayedWordChangeCallback(callback) {
 }
 
 // --- Get DOM Elements ---
+// Centralized DOM element references for easy access and maintenance
 export const elements = {
-    // Header & Feedback
+    // Header & Feedback - Score, streak, and user feedback elements
     scoreDisplay: document.getElementById('score'),
     streakDisplay: document.getElementById('streak-counter'),
     feedbackMessage: document.getElementById('feedback-message'),
     bgCanvas: document.getElementById('bg-canvas'),
 
-    // Word Display Area
+    // Word Display Area - Main word display and associated controls
     wordDisplay: document.getElementById('word-display'),
     wordDisplayContainer: document.getElementById('word-display-container'),
     blacklistButton: document.getElementById('blacklist-word'),
@@ -30,13 +54,13 @@ export const elements = {
     tooltipDefinition: document.getElementById('tooltip-definition'),
     findRhymesButton: document.getElementById('find-rhymes-button'), // Button below word box
 
-    // Word Display Area Arrows
+    // Word Display Area Arrows - Navigation controls for words and rhymes
     upWordButton: document.getElementById('up-word'), // NEW
     downWordButton: document.getElementById('down-word'), // NEW
     prevWordButton: document.getElementById('prev-word'),
     nextWordButton: document.getElementById('next-word'),
 
-    // Left Panel Controls (Word Settings)
+    // Left Panel Controls (Word Settings) - Word filtering and management
     wordOrderSelect: document.getElementById('word-order'),
     minSyllablesInput: document.getElementById('min-syllables'),
     maxSyllablesInput: document.getElementById('max-syllables'),
@@ -44,14 +68,14 @@ export const elements = {
     favoritesButton: document.getElementById('favorites-button'),
     editWordListButton: document.getElementById('edit-word-list-button'),
 
-    // Left Panel Controls (RNG)
+    // Left Panel Controls (RNG) - Random number generation interface
     rngDigitsInput: document.getElementById('rng-digits'),
     rngSetsInput: document.getElementById('rng-sets'),
     rngSurpriseCheckbox: document.getElementById('rng-surprise-me'),
     generateNumbersButton: document.getElementById('generate-numbers-button'),
     rngDisplayArea: document.getElementById('rng-display-area'),
 
-    // Center Stage Controls (Activation)
+    // Center Stage Controls (Activation) - Voice and timed mode controls
     voiceModeButton: document.getElementById('voice-mode-button'),
     timedModeButton: document.getElementById('timed-mode-button'),
     timedCycleOptionsDiv: document.getElementById('timed-cycle-options'),
@@ -59,7 +83,7 @@ export const elements = {
     cycleSpeedSlider: document.getElementById('cycle-speed-slider'),
     transcriptContainer: document.getElementById('new-transcript'),
 
-    // Right Panel Controls (BPM)
+    // Right Panel Controls (BPM) - Beat per minute detection and management
     bpmButton: document.getElementById('bpm-button'),
 	detectBpmButton: document.getElementById('detect-bpm-button'), // NEW
     bpmDisplay: document.getElementById('bpm-display'),
@@ -76,17 +100,17 @@ export const elements = {
     // BPM Multiplier Buttons (Need selector)
     multiplierButtons: document.querySelectorAll('.multiplier-btn'), // Use querySelectorAll
 
-    // Beat Player Controls
+    // Beat Player Controls - Audio beat playback interface
     beatPlayPauseButton: document.getElementById('beat-play-pause'),
     beatStopButton: document.getElementById('beat-stop'),
     beatNextButton: document.getElementById('beat-next'),
     beatPreviousButton: document.getElementById('beat-previous'),
     beatVolumeSlider: document.getElementById('beat-volume'),
 
-    // Right Panel Controls (Frequencies)
+    // Right Panel Controls (Frequencies) - Word frequency display
     frequentWordsContainer: document.getElementById('frequent-words'),
 
-    // Modals
+    // Modals - Popup dialogs for various features
     favoritesModal: document.getElementById('favorites-modal'),
     closeFavoritesModal: document.getElementById('close-favorites-modal'),
     favoritesListUl: document.getElementById('favorites-list'),
@@ -127,6 +151,7 @@ export const elements = {
 // --- UI Update Functions ---
 
 // Add function to update detect button state
+// Manages BPM detection button appearance and functionality
 export function updateDetectBpmButtonState(isDetecting) {
     if (!elements.detectBpmButton) return;
     
@@ -142,6 +167,7 @@ export function updateDetectBpmButtonState(isDetecting) {
     }
 }
 
+// Shows user feedback messages with automatic timeout
 export function showFeedback(message, isError = false, duration = 2500) {
     if (!elements.feedbackMessage) return;
     elements.feedbackMessage.textContent = message;
@@ -156,6 +182,7 @@ export function showFeedback(message, isError = false, duration = 2500) {
     }, duration);
 }
 
+// Updates score display with pulse animation
 export function updateScoreDisplay(newScore) {
     if (!elements.scoreDisplay) return;
     elements.scoreDisplay.textContent = newScore;
@@ -165,6 +192,7 @@ export function updateScoreDisplay(newScore) {
     setTimeout(() => elements.scoreDisplay?.classList.remove('pulse'), 300);
 }
 
+// Updates streak display with growth animation
 export function updateStreakDisplay(newStreak, grew) {
     if (!elements.streakDisplay) return;
     elements.streakDisplay.textContent = newStreak;
@@ -181,6 +209,7 @@ export function updateStreakDisplay(newStreak, grew) {
     }
 }
 
+// Main word display function with dynamic font sizing and state management
 export function displayWord(word) { // word is the word to display (could be base or rhyme)
     console.log(`displayWord called with word: "${word}"`);
     console.log(`elements.wordDisplay exists:`, !!elements.wordDisplay);
@@ -272,6 +301,7 @@ export function displayWord(word) { // word is the word to display (could be bas
     }
 }
 
+// Manages word display animation for timed mode cycling
 export function updateWordDisplayAnimation() {
     if (!elements.wordDisplay || !elements.cycleSpeedInput) return;
     elements.wordDisplay.classList.remove('shrink-word');
@@ -285,6 +315,7 @@ export function updateWordDisplayAnimation() {
     }
 }
 
+// Updates activation mode UI elements and controls visibility
 export function updateActivationUI() {
     if (!elements.voiceModeButton || !elements.timedModeButton || !elements.timedCycleOptionsDiv) return;
     elements.voiceModeButton.classList.toggle('active', state.activationMode === 'voice' && state.isMicActive);
@@ -298,6 +329,7 @@ export function updateActivationUI() {
     updateSyllableFilterUI();
 }
 
+// Updates syllable filter input values to match current state
 export function updateSyllableFilterUI() {
     if (elements.minSyllablesInput) {
         const minValue = state.minSyllables;
@@ -312,6 +344,7 @@ export function updateSyllableFilterUI() {
     }
 }
 
+// Shows tooltip with synonyms and definition data
 export function showTooltip(data) {
     if (elements.wordDefinitionTooltip && elements.tooltipSynonyms && elements.tooltipDefinition) {
         elements.tooltipSynonyms.textContent = data.synonyms || 'No synonyms found.';
@@ -320,12 +353,14 @@ export function showTooltip(data) {
     }
 }
 
+// Hides the tooltip display
 export function hideTooltip() {
     if (elements.wordDefinitionTooltip) {
         elements.wordDefinitionTooltip.style.display = 'none';
     }
 }
 
+// Updates BPM display and sets CSS variables for beat timing
 export function updateBpmIndicator(bpmValue) {
     if(elements.bpmDisplay) elements.bpmDisplay.textContent = bpmValue;
     const beatIntervalSeconds = bpmValue > 0 ? 60 / bpmValue : 0.5;
@@ -335,6 +370,7 @@ export function updateBpmIndicator(bpmValue) {
     }
 }
 
+// Updates beat grid visual indicators for current beat position
 export function updateBeatGridVisuals(currentBeatIndex, totalBoxes) {
     if(!elements.fourCountContainer) return;
     const boxes = elements.fourCountContainer.querySelectorAll('.beat-box');
@@ -347,6 +383,7 @@ export function updateBeatGridVisuals(currentBeatIndex, totalBoxes) {
     });
 }
 
+// Rebuilds the beat grid with specified rows and columns
 export function rebuildBeatGrid(rows, cols) {
     if(!elements.fourCountContainer) return;
     elements.fourCountContainer.innerHTML = '';
@@ -362,12 +399,14 @@ export function rebuildBeatGrid(rows, cols) {
     if(elements.colCountDisplay) elements.colCountDisplay.textContent = cols;
 }
 
+// Triggers screen shake animation effect
 export function triggerScreenShake() {
     document.body.classList.remove('screen-shaking');
     void document.body.offsetWidth;
     document.body.classList.add('screen-shaking');
 }
 
+// Starts word display buzz animation synchronized with BPM
 export function startWordBuzz() {
     if (elements.wordDisplayContainer && state.bpm > 0) {
         const beatIntervalSeconds = 60 / state.bpm;
@@ -376,6 +415,7 @@ export function startWordBuzz() {
     }
 }
 
+// Stops word display buzz animation
 export function stopWordBuzz() {
      if (elements.wordDisplayContainer) {
          elements.wordDisplayContainer.classList.remove('buzz-with-bpm');
@@ -383,6 +423,7 @@ export function stopWordBuzz() {
      }
 }
 
+// Updates transcript display with interim or final speech recognition results
 export function updateTranscript(lineText, isFinal) {
      if (!lineText || !elements.transcriptContainer) return;
      lineText = lineText.trim();
@@ -411,10 +452,12 @@ export function updateTranscript(lineText, isFinal) {
      elements.transcriptContainer.scrollTop = 0;
 }
 
+// Clears all transcript content
 export function clearTranscript() {
     if (elements.transcriptContainer) elements.transcriptContainer.innerHTML = '';
 }
 
+// Displays word frequency statistics with color-coded frequency levels
 export function displayFrequencies(wordFreqMap) {
     if(!elements.frequentWordsContainer) return;
     const sortedFrequencies = Object.entries(wordFreqMap)
@@ -434,6 +477,7 @@ export function displayFrequencies(wordFreqMap) {
     });
 }
 
+// Displays RNG results with animated spinning slot machine effect
 export function displayRngResults(sets) {
     if (!elements.rngDisplayArea) return;
     elements.rngDisplayArea.innerHTML = '';
@@ -461,12 +505,14 @@ export function displayRngResults(sets) {
     });
 }
 
+// Updates RNG input field values
 export function updateRngInputs(digits, sets) {
     if(elements.rngDigitsInput) elements.rngDigitsInput.value = digits;
     if(elements.rngSetsInput) elements.rngSetsInput.value = sets;
 }
 
 // --- NEW: Update Rhyme Navigation Button States ---
+// Updates rhyme navigation button states based on available rhymes
 export function updateRhymeNavButtons() {
     // Check if there are *any* rhymes, ignoring the currentRhymeIndex
     const hasRhymes = state.currentRhymeList && state.currentRhymeList.length > 0;
@@ -485,6 +531,7 @@ export function updateRhymeNavButtons() {
     }
 }
 
+// Shows subtext below the main word display
 export function showSubtext(text) {
     if (elements.wordSubtext) {
         elements.wordSubtext.textContent = text;
@@ -492,6 +539,7 @@ export function showSubtext(text) {
     }
 }
 
+// Hides the subtext display
 export function hideSubtext() {
     if (elements.wordSubtext) {
         elements.wordSubtext.textContent = '';
@@ -499,6 +547,7 @@ export function hideSubtext() {
     }
 }
 
+// Shows synonyms in the tooltip area
 export function showSynonyms(synonyms) {
     const el = elements.synonymsContent;
     if (!el) return;
@@ -511,6 +560,7 @@ export function showSynonyms(synonyms) {
     }
 }
 
+// Hides the synonyms display
 export function hideSynonyms() {
     const el = elements.synonymsContent;
     if (el) {
@@ -519,6 +569,7 @@ export function hideSynonyms() {
     }
 }
 
+// Shows definition in the tooltip area with dynamic font sizing
 export function showDefinition(definition) {
     const el = elements.definitionContent;
     if (!el) return;
@@ -539,6 +590,7 @@ export function showDefinition(definition) {
     }
 }
 
+// Hides the definition display
 export function hideDefinition() {
     const el = elements.definitionContent;
     if (el) {
@@ -548,7 +600,7 @@ export function hideDefinition() {
     }
 }
 
-// Update tooltip view based on state
+// Update tooltip view based on state - Manages tooltip display modes and icons
 export function updateTooltipView(synonyms = null, definition = null) {
     if (!elements.meansLikeButton || !elements.synonymsBox || !elements.definitionBox) return;
     
