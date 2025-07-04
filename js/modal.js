@@ -1,3 +1,21 @@
+/**
+ * @fileoverview Modal Dialog and Data Management Controller
+ *
+ * This module manages all modal dialogs in the application, including opening, closing,
+ * and specific logic for favorites, word list editing, import/export, and settings modals.
+ * It also handles backup/restore of word lists and user data, and provides UI feedback.
+ *
+ * Key responsibilities:
+ * - Open/close modals and perform modal-specific cleanup
+ * - Manage favorites modal (display, remove, clear)
+ * - Manage word list editor modal (edit, save, add, reset)
+ * - Import/export word lists and settings (with File System API and fallback)
+ * - Show and update settings modal, including data summary and reset/clear actions
+ * - Provide user feedback for all modal-related actions
+ *
+ * Dependencies: state.js, ui.js, wordManager.js, storage.js, browser File System API
+ */
+
 // js/modal.js
 // Handles opening, closing, and specific modal logic.
 
@@ -7,10 +25,18 @@ import * as wordManager from './wordManager.js'; // Needed for word list editor 
 import * as storage from './storage.js'; // Needed for saving favorites changes
 
 // --- Generic Modal Controls ---
+/**
+ * Opens a modal dialog by setting its display to 'block'.
+ * @param {HTMLElement} modalElement - The modal DOM element to open
+ */
 export function openModal(modalElement) {
     if(modalElement) modalElement.style.display = 'block';
 }
 
+/**
+ * Closes a modal dialog and performs any necessary cleanup.
+ * @param {HTMLElement} modalElement - The modal DOM element to close
+ */
 export function closeModal(modalElement) {
     if(modalElement) {
         modalElement.style.display = 'none';
@@ -30,6 +56,9 @@ export function closeModal(modalElement) {
 }
 
 // --- Favorites Modal ---
+/**
+ * Shows the favorites modal, displaying all favorited words with remove buttons.
+ */
 export function showFavoritesModal() {
     if(!ui.elements.favoritesModal || !ui.elements.favoritesListUl) return;
 
@@ -68,6 +97,9 @@ function handleRemoveFavorite(word) {
     ui.showFeedback(`"${word}" un-favorited.`);
 }
 
+/**
+ * Clears all favorited words after user confirmation.
+ */
 export function clearAllFavorites() {
     if (state.favorites.size === 0) {
         ui.showFeedback("No favorites to clear.", true, 1500);
@@ -92,8 +124,10 @@ function clearFavoritesListDisplay() {
     }
 }
 
-
 // --- Word List Editor Modal ---
+/**
+ * Shows the word list editor modal, populating it with the current word list and scrolling to the current word.
+ */
 export function showWordListEditor() {
     if (!ui.elements.wordListEditorModal || !ui.elements.wordListTextarea) return;
 
@@ -127,7 +161,10 @@ export function showWordListEditor() {
     openModal(ui.elements.wordListEditorModal);
 }
 
-// Handles clicking the "Save" button in the word list editor
+/**
+ * Handles saving changes from the word list editor modal.
+ * Updates state, saves to storage, and provides feedback.
+ */
 export function saveWordListChanges() {
     if (!ui.elements.wordListTextarea) return;
     
@@ -154,7 +191,9 @@ export function saveWordListChanges() {
     // If success is false, feedback is already handled within applyWordListChanges
 }
 
-// NEW: Add a new word to the list
+/**
+ * Adds a new word to the word list editor textarea, with validation and feedback.
+ */
 export function addNewWord() {
     if (!ui.elements.wordListTextarea) return;
     
@@ -188,7 +227,9 @@ export function addNewWord() {
     ui.showFeedback(`"${trimmedWord}" added to the list.`, false, 2000);
 }
 
-// NEW: Reset word list to default
+/**
+ * Resets the word list to the default set, with confirmation and feedback.
+ */
 export function resetWordList() {
     if (confirm('Are you sure you want to reset the word list to defaults? This will remove all custom words.')) {
         // Reset to default word list
@@ -210,7 +251,10 @@ export function resetWordList() {
     }
 }
 
-// NEW: Export word list only
+/**
+ * Exports the word list, blacklist, and favorites as a JSON backup file.
+ * Uses File System API if available, otherwise falls back to download.
+ */
 export function exportWordList() {
     try {
         // Create comprehensive backup object with all word-related data
@@ -239,7 +283,10 @@ export function exportWordList() {
     }
 }
 
-// Helper function to export using File System Access API
+/**
+ * Helper function to export using File System Access API (modern browsers).
+ * @param {object} backupData - The backup data object to export
+ */
 async function exportWithFileSystemAPI(backupData) {
     try {
         // Create file picker options
@@ -270,7 +317,10 @@ async function exportWithFileSystemAPI(backupData) {
     }
 }
 
-// Fallback export method using download
+/**
+ * Fallback export method using download for browsers without File System API.
+ * @param {object} backupData - The backup data object to export
+ */
 function exportWithDownloadFallback(backupData) {
     const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -285,7 +335,9 @@ function exportWithDownloadFallback(backupData) {
     ui.showFeedback("Word list exported successfully!", false, 2000);
 }
 
-// NEW: Import word list only
+/**
+ * Imports a word list backup file, using File System API or file input fallback.
+ */
 export function importWordList() {
     // Use File System Access API for modern browsers
     if ('showOpenFilePicker' in window) {
@@ -296,7 +348,9 @@ export function importWordList() {
     }
 }
 
-// Helper function to import using File System Access API
+/**
+ * Helper function to import using File System Access API (modern browsers).
+ */
 async function importWithFileSystemAPI() {
     try {
         // Create file picker options
@@ -325,7 +379,9 @@ async function importWithFileSystemAPI() {
     }
 }
 
-// Fallback import method using file input
+/**
+ * Fallback import method using file input for browsers without File System API.
+ */
 function importWithFileInputFallback() {
     const input = document.createElement('input');
     input.type = 'file';
@@ -339,7 +395,10 @@ function importWithFileInputFallback() {
     input.click();
 }
 
-// Common function to process imported file data
+/**
+ * Processes the imported backup file, validates, normalizes, and applies it to state.
+ * @param {File} file - The imported file object
+ */
 async function processImportedFile(file) {
     try {
         // Read file content
@@ -416,7 +475,11 @@ async function processImportedFile(file) {
     }
 }
 
-// Helper function to validate backup data structure
+/**
+ * Validates the structure of a backup data object (supports legacy and new formats).
+ * @param {object} data - The backup data object
+ * @returns {boolean} True if valid, false otherwise
+ */
 function validateBackupData(data) {
     // Check if it's a valid backup file format
     if (data.version && data.timestamp && data.data) {
@@ -436,7 +499,11 @@ function validateBackupData(data) {
     return false;
 }
 
-// Helper function to convert legacy formats to new format
+/**
+ * Converts legacy backup formats to the new format for import.
+ * @param {object|array} data - The backup data (legacy or new)
+ * @returns {object} Normalized backup data in new format
+ */
 function convertLegacyFormat(data) {
     // If it's just an array of words
     if (Array.isArray(data)) {
@@ -482,6 +549,9 @@ function clearRhymeModal() {
 // addManualRhyme logic remains in rhyme.js
 
 // --- Settings Modal ---
+/**
+ * Shows the settings modal and updates the data summary.
+ */
 export function showSettingsModal() {
     if (!ui.elements.settingsModal) return;
     
@@ -489,6 +559,9 @@ export function showSettingsModal() {
     openModal(ui.elements.settingsModal);
 }
 
+/**
+ * Updates the data summary section in the settings modal.
+ */
 function updateDataSummary() {
     const summaryElement = document.getElementById('data-summary');
     if (!summaryElement) return;
@@ -526,6 +599,9 @@ function updateDataSummary() {
 }
 
 // Settings modal action handlers
+/**
+ * Clears all blacklisted words after user confirmation.
+ */
 export function clearBlacklist() {
     if (state.blacklist.size === 0) {
         ui.showFeedback("Blacklist is already empty.", true, 2000);
@@ -540,6 +616,9 @@ export function clearBlacklist() {
     }
 }
 
+/**
+ * Clears all word frequency records after user confirmation.
+ */
 export function clearWordFrequencies() {
     const frequencyCount = Object.keys(state.wordFrequencies).length;
     if (frequencyCount === 0) {
@@ -556,6 +635,9 @@ export function clearWordFrequencies() {
     }
 }
 
+/**
+ * Resets all settings and user data to defaults after confirmation.
+ */
 export function resetAllSettings() {
     if (confirm('Are you sure you want to reset ALL settings to defaults? This will clear all data including favorites, blacklist, word frequencies, and custom word lists.')) {
         storage.resetToDefaults(true);
@@ -564,10 +646,16 @@ export function resetAllSettings() {
     }
 }
 
+/**
+ * Exports all settings and user data using storage module.
+ */
 export function exportAllSettings() {
     storage.exportSettings();
 }
 
+/**
+ * Imports all settings and user data from a JSON file using storage module.
+ */
 export function importAllSettings() {
     const input = document.createElement('input');
     input.type = 'file';
