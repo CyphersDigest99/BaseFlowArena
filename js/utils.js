@@ -1,6 +1,29 @@
+/**
+ * @fileoverview General Utility and Animation Effects Module
+ *
+ * This module provides general-purpose utility functions and advanced UI animation effects
+ * for the BaseFlowArena application. It includes string similarity, particle bursts, swipe
+ * transitions, pixel dissolve/construct effects, and legacy compatibility helpers.
+ *
+ * Key responsibilities:
+ * - Calculate Levenshtein distance for string similarity
+ * - Trigger animated particle bursts and combo effects
+ * - Animate horizontal/vertical swipe transitions for word navigation
+ * - Animate pixel block dissolve/construct transitions for word changes
+ * - Provide legacy confetti effect compatibility
+ *
+ * Dependencies: DOM APIs, CSS transitions, (optionally) document structure
+ */
+
 // js/utils.js
 // General utility functions.
 
+/**
+ * Calculates the normalized Levenshtein similarity between two strings (0.0-1.0).
+ * @param {string} a - First string
+ * @param {string} b - Second string
+ * @returns {number} Similarity score (1.0 = identical, 0.0 = completely different)
+ */
 export function levenshteinDistance(a, b) {
     if (!a || !b) return 0.0;
     a = a.toLowerCase(); b = b.toLowerCase();
@@ -23,6 +46,10 @@ export function levenshteinDistance(a, b) {
 }
 
 // --- Sophisticated Particle Burst Effect ---
+/**
+ * Triggers a glowing particle burst and combo animation on the word display.
+ * @param {number} streak - Current streak count for enhanced effects
+ */
 export function triggerParticleBurst(streak = 0) {
     const wordDisplay = document.getElementById('word-display');
     if (!wordDisplay) return;
@@ -77,12 +104,10 @@ export function triggerParticleBurst(streak = 0) {
 }
 
 // --- Directional Swipe Animations for Manual Navigation ---
-// These effects create directional swipes when using arrow buttons for word navigation
-// The swipe overlay is appended as a child of the word display's parent container (not the body)
-// This ensures the overlay is always clipped to the word display area and appears behind all UI controls
-// The parent container is set to position: relative and overflow: hidden to enforce this relationship
-// The overlay itself uses position: absolute and a low z-index so it is always behind siblings (buttons, icons, etc.)
-
+/**
+ * Triggers a horizontal swipe animation for word navigation.
+ * @param {string} direction - 'right' or 'left'
+ */
 export function triggerHorizontalSwipe(direction = 'right') {
     const wordDisplay = document.getElementById('word-display');
     if (!wordDisplay) return;
@@ -158,6 +183,10 @@ export function triggerHorizontalSwipe(direction = 'right') {
     }, 450);
 }
 
+/**
+ * Triggers a vertical swipe animation for word navigation.
+ * @param {string} direction - 'down' or 'up'
+ */
 export function triggerVerticalSwipe(direction = 'down') {
     const wordDisplay = document.getElementById('word-display');
     if (!wordDisplay) return;
@@ -234,11 +263,10 @@ export function triggerVerticalSwipe(direction = 'down') {
 }
 
 // --- Text Dissolve/Construct Effect ---
-// This effect creates a sophisticated word transition animation that:
-// 1. Dissolves the current word character by character with rotation and scaling
-// 2. Waits for the actual word change to happen in the background
-// 3. Constructs the new word character by character with reverse rotation
-// 4. Uses an invisible overlay to prevent bleed-through of static words
+/**
+ * Triggers a pixel block dissolve/construct animation for word transitions.
+ * Dissolves the current word, waits for a new word, then constructs the new word.
+ */
 export function triggerPixelBlockEffect() {
     const wordDisplay = document.getElementById('word-display');
     if (!wordDisplay) return;
@@ -392,6 +420,9 @@ export function triggerPixelBlockEffect() {
 }
 
 // Legacy confetti function (kept for compatibility)
+/**
+ * Triggers the legacy confetti effect (redirects to pixel block effect).
+ */
 export function triggerConfetti() {
     triggerPixelBlockEffect(); // Redirect to new effect
 }
