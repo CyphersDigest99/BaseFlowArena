@@ -1,3 +1,21 @@
+/**
+ * @fileoverview BPM (Beats Per Minute) Detection, Control, and Beat Grid Animation
+ *
+ * This module manages all BPM-related logic for the BaseFlowArena application.
+ * It handles tap-based BPM detection, manual BPM adjustment, beat grid animation,
+ * BPM multipliers, and visual feedback for rhythm and timing.
+ *
+ * Key responsibilities:
+ * - BPM tap detection and calculation
+ * - Manual BPM adjustment and direct setting
+ * - Beat grid animation and visual feedback
+ * - BPM multiplier controls
+ * - Word display buzz/shake effects
+ * - Persistence of BPM and grid settings
+ *
+ * Dependencies: state.js, ui.js, storage.js
+ */
+
 // js/bpm.js
 // Handles BPM tapping, calculation, grid display, and related effects.
 
@@ -6,6 +24,7 @@ import * as ui from './ui.js';
 import * as storage from './storage.js'; // To save BPM settings
 
 // --- BPM Tapping and Calculation ---
+// Handles user tap input for BPM detection and triggers calculation
 export function handleTap() {
     const now = Date.now();
     state.bpmClickTimestamps.push(now);
@@ -23,6 +42,7 @@ export function handleTap() {
     }
 }
 
+// Calculates BPM from tap intervals and updates state/UI
 function calculateAndUpdateBpm() {
     if (state.bpmClickTimestamps.length < 2) return;
     const relevantTimestamps = state.bpmClickTimestamps.slice(-(state.BPM_AVERAGE_COUNT + 1));
@@ -47,6 +67,7 @@ function calculateAndUpdateBpm() {
 }
 
 // --- BPM Adjustment and Stop ---
+// Adjusts BPM by a given amount (manual increment/decrement)
 export function adjustBpm(amount) {
     const newBpm = Math.max(0, state.bpm + amount);
     if (newBpm !== state.bpm) {
@@ -64,6 +85,7 @@ export function adjustBpm(amount) {
     }
 }
 
+// Stops BPM and all related animations/effects
 export function stopBpm() {
     if (state.bpm === 0 && !state.beatIntervalId && !state.isBpmLockedShaking) return;
     console.log('Stopping BPM...');
@@ -77,6 +99,7 @@ export function stopBpm() {
 }
 
 // --- Set BPM Directly (Used by auto-detection result) ---
+// Sets BPM directly (e.g., from auto-detection) and updates state/UI
 export function setBpm(newBpmValue) {
     newBpmValue = Math.round(newBpmValue);
     if (isNaN(newBpmValue) || newBpmValue < 0) {
@@ -101,6 +124,7 @@ export function setBpm(newBpmValue) {
 }
 
 // --- Beat Grid Animation ---
+// Starts the beat grid animation based on current BPM and grid size
 function startBeatAnimation() {
     stopBeatAnimation();
     if (state.bpm <= 0) return;
@@ -150,6 +174,7 @@ function startBeatAnimation() {
     // console.log(`Beat animation started. Base Interval: ${baseIntervalMs}ms`);
 }
 
+// Stops the beat grid animation and resets visuals
 function stopBeatAnimation() {
     if (state.beatIntervalId) {
         clearInterval(state.beatIntervalId);
@@ -166,6 +191,7 @@ function stopBeatAnimation() {
 }
 
 // --- Beat Grid Structure ---
+// Updates the beat grid structure and restarts animation if needed
 export function updateGrid() {
     ui.rebuildBeatGrid(state.beatGridRows, state.beatGridCols);
     storage.saveSettings();
@@ -176,6 +202,7 @@ export function updateGrid() {
     }
 }
 
+// Updates the number of rows in the beat grid
 export function updateRowCount(delta) {
     const newRows = state.beatGridRows + delta;
     if (newRows >= 1 && newRows <= 8) {
@@ -183,6 +210,7 @@ export function updateRowCount(delta) {
         updateGrid();
     }
 }
+// Updates the number of columns in the beat grid
 export function updateColumnCount(delta) {
     const newCols = state.beatGridCols + delta;
     if (newCols >= 1 && newCols <= 16) { // Max 16 cols
@@ -192,6 +220,7 @@ export function updateColumnCount(delta) {
 }
 
 // --- Multiplier ---
+// Sets the BPM multiplier for beat grid animation (2x, 3x, 4x, or 1x)
 export function setMultiplier(newMultiplierValue) {
     const clickedMultiplier = parseInt(newMultiplierValue, 10);
 
@@ -235,6 +264,7 @@ export function setMultiplier(newMultiplierValue) {
 }
 
 // --- Word Display Buzz Effect ---
+// Starts the word display buzz effect when BPM is locked
 function startWordDisplayShake() {
     if (!state.isBpmLockedShaking && state.bpm > 0) {
         ui.startWordBuzz();
@@ -242,6 +272,7 @@ function startWordDisplayShake() {
     }
 }
 
+// Stops the word display buzz effect
 function stopWordDisplayShake() {
     if (state.isBpmLockedShaking) {
         ui.stopWordBuzz();
