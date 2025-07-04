@@ -1,3 +1,21 @@
+/**
+ * @fileoverview Speech Recognition and Voice Command Handler
+ *
+ * This module manages all speech recognition logic for the BaseFlowArena application.
+ * It sets up and controls the Web Speech API, processes user utterances for word matches,
+ * handles voice commands, and coordinates UI feedback and state updates.
+ *
+ * Key responsibilities:
+ * - Initializing and configuring the Speech Recognition API
+ * - Handling speech recognition events (start, result, error, end)
+ * - Starting and stopping recognition based on app state
+ * - Processing user utterances for word matches and gamification
+ * - Handling voice commands (next word, show/hide rhymes, show definition)
+ * - Updating UI and state in response to speech events
+ *
+ * Dependencies: state.js, ui.js, wordManager.js, utils.js, wordApi.js
+ */
+
 // js/speech.js
 // Handles Speech Recognition API interaction.
 
@@ -7,6 +25,8 @@ import * as wordManager from './wordManager.js';
 import * as utils from './utils.js';
 import * as wordApi from './wordApi.js';
 
+// --- Setup Speech Recognition ---
+// Initializes the Speech Recognition API and configures event handlers
 export function setupSpeechRecognition() {
     window.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!window.SpeechRecognition) {
@@ -33,6 +53,8 @@ export function setupSpeechRecognition() {
     return true; // Indicate success
 }
 
+// --- Speech Recognition Event Handlers ---
+// Handles the start of speech recognition hardware
 function onRecognitionStart() {
     state.isMicActive = true;
     console.log('Mic hardware ON.');
@@ -42,6 +64,7 @@ function onRecognitionStart() {
     }
 }
 
+// Handles speech recognition results (final and interim)
 function onRecognitionResult(event) {
     let currentInterim = '';
     let currentFinal = '';
@@ -80,6 +103,7 @@ function onRecognitionResult(event) {
     checkForWordMatch(currentFinal || currentInterim);
 }
 
+// Handles errors from the speech recognition API
 function onRecognitionError(event) {
     console.error('Speech recognition error:', event.error, event.message);
     let errorMsg = `Speech Error: ${event.error}`;
@@ -99,6 +123,7 @@ function onRecognitionError(event) {
     }
 }
 
+// Handles the end of speech recognition hardware (intentional or not)
 function onRecognitionEnd() {
     const wasMicActive = state.isMicActive; // Capture state before update
     state.isMicActive = false;
@@ -130,6 +155,7 @@ function onRecognitionEnd() {
 }
 
 // --- Control Functions ---
+// Starts speech recognition hardware and clears transcript
 export function startRecognition() {
     if (!state.recognition) {
         console.warn("Speech recognition not setup. Cannot start.");
@@ -156,6 +182,7 @@ export function startRecognition() {
     }
 }
 
+// Stops speech recognition hardware
 export function stopRecognition(isModeChange = false) { // `isModeChange` suppresses feedback msg
     if (!state.recognition || !state.isMicActive) {
         return; // Only stop if initialized and active
@@ -176,8 +203,8 @@ export function stopRecognition(isModeChange = false) { // `isModeChange` suppre
     }
 }
 
-
 // --- Word Matching Logic ---
+// Checks if the user's utterance matches the displayed word and handles scoring
 function checkForWordMatch(utterance) {
      if (!utterance || state.activationMode !== 'voice' || !state.isMicActive) {
          return; // Exit if no utterance or not in active voice mode
@@ -244,6 +271,7 @@ function checkForWordMatch(utterance) {
 }
 
 // --- Voice Command Processing ---
+// Processes voice commands and triggers corresponding actions
 function processVoiceCommands(utterance) {
     if (!utterance || state.activationMode !== 'voice') {
         return false;
@@ -286,6 +314,7 @@ function processVoiceCommands(utterance) {
 }
 
 // --- Helper function for showing definition ---
+// Fetches and displays the definition for the currently displayed word
 async function showDefinitionForCurrentWord() {
     const currentDisplayedWord = ui.elements.wordDisplay?.textContent;
     if (!currentDisplayedWord || currentDisplayedWord === "NO WORDS!" || currentDisplayedWord === "LOADING..." || currentDisplayedWord === "ERROR") {
@@ -313,6 +342,7 @@ async function showDefinitionForCurrentWord() {
 }
 
 // --- Check if utterance contains command keywords ---
+// Returns true if the utterance contains any recognized command phrase
 function containsCommandKeywords(utterance) {
     if (!utterance) return false;
     const lowerUtterance = utterance.toLowerCase();
