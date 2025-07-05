@@ -1,3 +1,8 @@
+/*
+ * @file styles.css
+ * @description Main stylesheet for the BaseFlowArena application. Defines the visual appearance, layout, and responsive behavior for all UI components, including the background, panels, word display, tooltips, modals, beat player, and more. Utilizes CSS variables for theme consistency and supports advanced features such as animations, flexbox/grid layouts, and responsive design. Dependencies include Google Fonts (Orbitron, Roboto) and FontAwesome for icons. This file is critical for the application's modern, interactive, and accessible look and feel.
+ */
+
 /* Import a Google Font (optional, e.g., Orbitron for a techy feel) */
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto:wght@400;700&display=swap');
 
