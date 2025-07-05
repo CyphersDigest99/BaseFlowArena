@@ -1,21 +1,35 @@
+<!--
+ * @file index.html
+ * @description Main HTML entry point for the BaseFlowArena application. Defines the complete UI structure including the game header, control panels, word display area, activation controls, transcript area, BPM controls, and all modal dialogs. This file establishes the foundation for the interactive freestyle rap training application with features for word management, rhythm detection, voice recognition, and beat playback. Dependencies include external libraries (FontAwesome, Howler.js, Three.js, Canvas Confetti) and local CSS/JS modules.
+ * @dependencies styles.css, js/main.js (module), external CDN libraries
+ * @structure Organized into header, main game arena (3-panel layout), modals, and beat player bar
+ -->
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <!-- --- META TAGS & BASIC SETUP --- -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Freestyle Flow Arena</title>
+    
+    <!-- --- STYLESHEETS --- -->
     <link rel="stylesheet" href="styles.css">
-    <!-- Font Awesome for icons -->
+    <!-- Font Awesome for icons - provides comprehensive icon library for UI elements -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <!-- Canvas Confetti -->
+    
+    <!-- --- EXTERNAL LIBRARIES --- -->
+    <!-- Canvas Confetti - for celebration animations when user achieves goals -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
-    <!-- Howler.js (must be before beatManager.js/main.js) -->
+    <!-- Howler.js - audio library for beat playback (must load before beatManager.js) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"></script>
-    <!-- Wavesurfer.js - Commented out for Howler-only player -->
+    <!-- Wavesurfer.js - Commented out for Howler-only player approach -->
     <!-- <script src="https://unpkg.com/wavesurfer.js@7.6.0/dist/wavesurfer.min.js"></script> -->
-    <!-- jsmediatags -->
+    <!-- jsmediatags - for reading audio file metadata (BPM, artist, etc.) -->
     <script src="https://cdn.jsdelivr.net/npm/jsmediatags@3.9.7/dist/jsmediatags.min.js"></script>
-    <!-- THREE.JS LIBRARY Import Map -->
+    
+    <!-- --- THREE.JS IMPORT MAP --- -->
+    <!-- ES6 module import map for Three.js and its addons -->
     <script type="importmap">
         {
             "imports": {
@@ -26,28 +40,36 @@
     </script>
 </head>
 <body>
-    <!-- CANVAS FOR THREE.JS BACKGROUND -->
+    <!-- --- THREE.JS BACKGROUND CANVAS --- -->
+    <!-- Fixed position canvas that serves as animated background layer -->
     <canvas id="bg-canvas"></canvas>
 
+    <!-- --- GAME HEADER & STATS --- -->
     <header class="game-header">
         <h1>Freestyle Flow Arena</h1>
+        <!-- Stats display showing real-time score and streak information -->
         <div class="stats-display">
             <div class="stat-item">
                 <span class="stat-label">SCORE</span>
+                <!-- Score value updated by JavaScript based on user performance -->
                 <span id="score" class="stat-value">0</span>
             </div>
             <div class="stat-item">
                 <span class="stat-label">STREAK</span>
+                <!-- Streak counter for consecutive successful voice matches -->
                 <span id="streak-counter" class="stat-value">0</span>
             </div>
         </div>
     </header>
 
+    <!-- --- MAIN GAME ARENA (3-PANEL LAYOUT) --- -->
     <main class="game-arena">
 
-        <!-- Left Panel: Word Source & RNG -->
+        <!-- --- LEFT PANEL: WORD SOURCE & RNG CONTROLS --- -->
         <aside class="control-panel panel-left">
+            <!-- Word Settings Section -->
             <h2><i class="fas fa-cog"></i> Word Settings</h2>
+            <!-- Word order selection - controls how words are presented to user -->
             <div class="control-group">
                 <label for="word-order"><i class="fas fa-random"></i> Order:</label>
                 <select id="word-order">
@@ -57,18 +79,21 @@
                 </select>
             </div>
             
+            <!-- Syllable Filter Section -->
             <div class="syllable-filter-section">
                 <div class="syllable-header">
                     <h3><i class="fas fa-sort-numeric-up"></i> Syllables</h3>
+                    <!-- Reset button to clear syllable restrictions -->
                     <button id="reset-syllables-button" class="syllable-reset-button" title="Reset to No Limits">
                         <i class="fas fa-undo"></i>
                     </button>
                 </div>
                 <div class="syllable-controls">
+                    <!-- Minimum syllable count filter -->
                     <div class="control-group">
                         <label for="min-syllables"><i class="fas fa-sort-numeric-down"></i> Min:</label>
                         <select id="min-syllables" class="syllable-select">
-                            <option value="0">∞</option>
+                            <option value="0">∞</option> <!-- No minimum -->
                             <option value="1">1</option>
                             <option value="2">2</option>
                             <option value="3">3</option>
@@ -77,10 +102,11 @@
                             <option value="6">6+</option>
                         </select>
                     </div>
+                    <!-- Maximum syllable count filter -->
                     <div class="control-group">
                         <label for="max-syllables"><i class="fas fa-sort-numeric-up"></i> Max:</label>
                         <select id="max-syllables" class="syllable-select">
-                            <option value="0">∞</option>
+                            <option value="0">∞</option> <!-- No maximum -->
                             <option value="1">1</option>
                             <option value="2">2</option>
                             <option value="3">3</option>
@@ -92,27 +118,35 @@
                 </div>
             </div>
             
-             <div class="control-group">
-                 <label><i class="fas fa-list-ul"></i> List:</label>
-                 <button id="edit-word-list-button" class="icon-button" title="Edit Word List">
-                     <i class="fas fa-edit"></i><span class="btn-text">Edit</span>
-                 </button>
-                  <button id="favorites-button" class="icon-button" title="View Favorites">
-                     <i class="fas fa-star"></i><span class="btn-text">Favs</span>
-                  </button>
-                 <button id="settings-button" class="icon-button" title="Settings & Data Management">
-                     <i class="fas fa-cog"></i><span class="btn-text">Settings</span>
-                 </button>
-             </div>
+            <!-- Word List Management Controls -->
+            <div class="control-group">
+                <label><i class="fas fa-list-ul"></i> List:</label>
+                <!-- Edit word list button - opens modal for customizing word database -->
+                <button id="edit-word-list-button" class="icon-button" title="Edit Word List">
+                    <i class="fas fa-edit"></i><span class="btn-text">Edit</span>
+                </button>
+                <!-- Favorites button - shows user's favorited words -->
+                <button id="favorites-button" class="icon-button" title="View Favorites">
+                    <i class="fas fa-star"></i><span class="btn-text">Favs</span>
+                </button>
+                <!-- Settings button - comprehensive data management -->
+                <button id="settings-button" class="icon-button" title="Settings & Data Management">
+                    <i class="fas fa-cog"></i><span class="btn-text">Settings</span>
+                </button>
+            </div>
 
-             <div class="control-group voice-setting"> <!-- Kept your voice setting toggle here -->
+            <!-- Voice Navigation Setting -->
+            <div class="control-group voice-setting">
+                <!-- Toggle for voice navigation behavior - rhymes vs base words -->
                 <label for="voice-rhyme-nav" class="checkbox-label" title="If checked, voice matches will cycle through rhymes instead of changing the base word.">
-                     <input type="checkbox" id="voice-rhyme-nav"> Voice Nav Rhymes?
+                    <input type="checkbox" id="voice-rhyme-nav"> Voice Nav Rhymes?
                 </label>
-             </div>
+            </div>
 
+            <!-- Random Number Generator Section -->
             <h2><i class="fas fa-dice"></i> Number Gen</h2>
             <div id="rng-controls" class="panel">
+                <!-- RNG configuration controls -->
                 <div class="control-group">
                     <label for="rng-digits"><i class="fas fa-hashtag"></i> Digits:</label>
                     <input type="number" id="rng-digits" min="1" max="7" value="3">
@@ -121,165 +155,192 @@
                     <label for="rng-sets"><i class="fas fa-list-ol"></i> Sets:</label>
                     <input type="number" id="rng-sets" min="1" max="5" value="1">
                 </div>
+                <!-- Surprise mode - randomizes RNG parameters -->
                 <div class="control-group rng-options">
                     <label for="rng-surprise-me" class="checkbox-label">
                         <input type="checkbox" id="rng-surprise-me"> Surprise Me?
-                   </label>
+                    </label>
                 </div>
                 <button id="generate-numbers-button" class="icon-button"><i class="fas fa-dice-d6"></i> Generate</button>
             </div>
+            <!-- RNG display area - populated dynamically by JavaScript -->
             <div id="rng-display-area">
-                <!-- Slots generated by JS -->
+                <!-- Number slots generated by JS -->
             </div>
         </aside>
 
-        <!-- Center Stage: Word Display & Activation -->
+        <!-- --- CENTER STAGE: WORD DISPLAY & ACTIVATION CONTROLS --- -->
         <section class="center-stage">
-            <div id="feedback-message"></div> <!-- For Hit/Miss/Info messages -->
+            <!-- Feedback message area for user notifications -->
+            <div id="feedback-message"></div>
 
-            <!-- Word Display Area -->
+            <!-- --- WORD DISPLAY AREA --- -->
             <div id="word-display-area">
-                 <button id="prev-word" class="word-nav-arrow side-arrow left-arrow" title="Previous Word">
-                     <i class="fas fa-chevron-left"></i>
-                 </button>
-                 <button id="up-word" class="word-nav-arrow top-bottom-arrow up-arrow" title="Previous Rhyme">
-                     <i class="fas fa-chevron-up"></i>
-                 </button>
-                 <div id="word-display-container">
+                <!-- Navigation arrows for word cycling -->
+                <button id="prev-word" class="word-nav-arrow side-arrow left-arrow" title="Previous Word">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <button id="up-word" class="word-nav-arrow top-bottom-arrow up-arrow" title="Previous Rhyme">
+                    <i class="fas fa-chevron-up"></i>
+                </button>
+                
+                <!-- Main word display container with action buttons -->
+                <div id="word-display-container">
+                    <!-- Current word display - large, prominent text -->
                     <div id="word-display">LOADING...</div>
-                     <button id="blacklist-word" class="word-action-icon blacklist-icon" title="Blacklist Word">
-                         <i class="fas fa-ban"></i>
-                     </button>
-                     <button id="favorite-word" class="word-action-icon favorite-icon" title="Favorite Word">
-                         <i class="far fa-star"></i> <i class="fas fa-star solid-star"></i>
-                     </button>
-                     <button id="means-like-button" class="word-action-icon means-like-icon" title="Show Synonyms & Definition">
-                         <i class="fas fa-book"></i>
-                     </button>
-                     <div id="word-subtext" class="word-subtext"></div>
-                 </div>
-                  <button id="down-word" class="word-nav-arrow top-bottom-arrow down-arrow" title="Next Rhyme">
-                     <i class="fas fa-chevron-down"></i>
-                 </button>
+                    
+                    <!-- Word action buttons positioned absolutely around the word -->
+                    <!-- Blacklist button - removes word from rotation -->
+                    <button id="blacklist-word" class="word-action-icon blacklist-icon" title="Blacklist Word">
+                        <i class="fas fa-ban"></i>
+                    </button>
+                    <!-- Favorite button - toggles between outline and solid star -->
+                    <button id="favorite-word" class="word-action-icon favorite-icon" title="Favorite Word">
+                        <i class="far fa-star"></i> <i class="fas fa-star solid-star"></i>
+                    </button>
+                    <!-- Synonyms/definition button - shows word information -->
+                    <button id="means-like-button" class="word-action-icon means-like-icon" title="Show Synonyms & Definition">
+                        <i class="fas fa-book"></i>
+                    </button>
+                    
+                    <!-- Word subtext area for additional information -->
+                    <div id="word-subtext" class="word-subtext"></div>
+                </div>
+                
+                <!-- Bottom navigation arrow for rhymes -->
+                <button id="down-word" class="word-nav-arrow top-bottom-arrow down-arrow" title="Next Rhyme">
+                    <i class="fas fa-chevron-down"></i>
+                </button>
                 <button id="next-word" class="word-nav-arrow side-arrow right-arrow" title="Next Word">
                     <i class="fas fa-chevron-right"></i>
                 </button>
             </div>
             <!-- END Word Display Area -->
 
-            <!-- Synonyms Box (above word, below up arrow) -->
+            <!-- --- WORD INFORMATION BOXES --- -->
+            <!-- Synonyms box positioned above word display -->
             <div id="synonyms-box" class="word-info-box synonyms-box">
                 <div id="synonyms-content" class="word-info-content"></div>
             </div>
-            <!-- Definition Box (below word, above down arrow) -->
+            <!-- Definition box positioned below word display -->
             <div id="definition-box" class="word-info-box definition-box">
                 <div id="definition-content" class="word-info-content"></div>
             </div>
 
+            <!-- Rhyme finder trigger button -->
             <button id="find-rhymes-button" class="icon-button rhyme-find-trigger" title="Find Rhymes">
                 <i class="fas fa-music"></i> Find Rhymes
             </button>
 
-            <!-- Activation Controls -->
+            <!-- --- ACTIVATION CONTROLS --- -->
             <div class="activation-controls panel">
                 <h2><i class="fas fa-power-off"></i> Activation Mode</h2>
+                <!-- Main activation buttons for different modes -->
                 <div class="control-group activation-buttons">
-                     <button id="voice-mode-button" class="icon-button large-button activation-button" title="Activate Voice Matching">
-                        <span class="light"></span>
+                    <!-- Voice mode button with status light indicator -->
+                    <button id="voice-mode-button" class="icon-button large-button activation-button" title="Activate Voice Matching">
+                        <span class="light"></span> <!-- Status light for voice activity -->
                         <i class="fas fa-microphone"></i> Voice Match
-                     </button>
-                     <button id="timed-mode-button" class="icon-button large-button activation-button" title="Activate Timed Cycle">
+                    </button>
+                    <!-- Timed mode button for automatic word cycling -->
+                    <button id="timed-mode-button" class="icon-button large-button activation-button" title="Activate Timed Cycle">
                         <i class="fas fa-stopwatch"></i> Timed Cycle
-                     </button>
+                    </button>
                 </div>
+                <!-- Timed cycle speed controls (hidden by default) -->
                 <div id="timed-cycle-options" class="control-group" style="display: none;">
                     <label for="cycle-speed"><i class="fas fa-clock"></i> Speed:</label>
+                    <!-- Range slider for visual speed adjustment -->
                     <input type="range" id="cycle-speed-slider" min="3" max="30" value="10" step="1" style="flex-grow: 1; margin: 0 10px;">
+                    <!-- Numeric input for precise speed control -->
                     <input type="number" id="cycle-speed" min="3" max="30" value="10" style="width: 55px;">s
                 </div>
             </div>
             <!-- END Activation Controls -->
 
-            <!-- Transcript Area -->
+            <!-- --- TRANSCRIPT AREA --- -->
             <div class="transcript-area panel">
-                 <h2><i class="fas fa-stream"></i> Live Feed</h2>
-                 <div id="new-transcript">
-                     <!-- Transcript lines generated by JS -->
-                 </div>
+                <h2><i class="fas fa-stream"></i> Live Feed</h2>
+                <!-- Real-time transcript display for voice recognition -->
+                <div id="new-transcript">
+                    <!-- Transcript lines generated by speech recognition JS -->
+                </div>
             </div>
             <!-- END Transcript Area -->
         </section>
 
-        <!-- Right Panel: BPM & Frequencies -->
+        <!-- --- RIGHT PANEL: BPM & FREQUENCY CONTROLS --- -->
         <aside class="control-panel panel-right">
             <h2><i class="fas fa-headphones-alt"></i> Rhythm Engine</h2>
 
-            <!-- CORRECTED #bpm-panel Structure -->
-                        <!-- CORRECTED #bpm-panel Structure -->
-                        <!-- START REPLACEMENT for #bpm-panel section -->
+            <!-- --- BPM CONTROL PANEL --- -->
             <div id="bpm-panel" class="panel">
-                 <h3><i class="fas fa-tachometer-alt"></i> BPM Control</h3>
+                <h3><i class="fas fa-tachometer-alt"></i> BPM Control</h3>
 
-                 <!-- Main Controls: TAP, DETECT, and Display Group -->
-                 <div class="bpm-main-controls">
-                     <button id="bpm-button" class="icon-button large-button" title="Tap for BPM">
-                         <i class="fas fa-drum"></i> TAP BPM
-                     </button>
-                     <button id="detect-bpm-button" class="icon-button large-button" title="Detect BPM from Mic/Audio Input (Approx. 8s)">
+                <!-- Main BPM controls row -->
+                <div class="bpm-main-controls">
+                    <!-- Manual BPM tapping button -->
+                    <button id="bpm-button" class="icon-button large-button" title="Tap for BPM">
+                        <i class="fas fa-drum"></i> TAP BPM
+                    </button>
+                    <!-- Automatic BPM detection button -->
+                    <button id="detect-bpm-button" class="icon-button large-button" title="Detect BPM from Mic/Audio Input (Approx. 8s)">
                         <i class="fas fa-robot"></i> DETECT
-                     </button>
-                     <div class="bpm-display-group">
-                         <span id="bpm-display">0</span> <span class="bpm-unit">BPM</span>
-                     </div>
-                 </div>
+                    </button>
+                    <!-- BPM display with unit -->
+                    <div class="bpm-display-group">
+                        <span id="bpm-display">0</span> <span class="bpm-unit">BPM</span>
+                    </div>
+                </div>
 
-                 <!-- Adjustment Controls: +/-/Stop -->
-                 <div class="bpm-adjust-controls">
-                     <button id="bpm-adjust-minus" class="icon-button small-button" title="Decrease BPM"><i class="fas fa-minus"></i></button>
-                     <button id="bpm-adjust-plus" class="icon-button small-button" title="Increase BPM"><i class="fas fa-plus"></i></button>
-                     <button id="stop-bpm-button" class="icon-button small-button red-button" title="Stop BPM">
-                         <i class="fas fa-stop"></i>
-                     </button>
-                     <button id="save-bpm-button" class="icon-button small-button" title="Save BPM for this track">
-                         <i class="fas fa-floppy-disk"></i>
-                     </button>
-                 </div>
+                <!-- BPM adjustment controls -->
+                <div class="bpm-adjust-controls">
+                    <button id="bpm-adjust-minus" class="icon-button small-button" title="Decrease BPM"><i class="fas fa-minus"></i></button>
+                    <button id="bpm-adjust-plus" class="icon-button small-button" title="Increase BPM"><i class="fas fa-plus"></i></button>
+                    <button id="stop-bpm-button" class="icon-button small-button red-button" title="Stop BPM">
+                        <i class="fas fa-stop"></i>
+                    </button>
+                    <button id="save-bpm-button" class="icon-button small-button" title="Save BPM for this track">
+                        <i class="fas fa-floppy-disk"></i>
+                    </button>
+                </div>
 
-                 <!-- The Grid Container ITSELF -->
-                 <div id="four-count-container">
-                     <!-- Beat grid generated by JS -->
-                 </div>
+                <!-- Beat grid container - dynamically generated by JavaScript -->
+                <div id="four-count-container">
+                    <!-- Beat grid generated by JS -->
+                </div>
 
-                 <!-- Grid Size Controls -->
-                 <div class="bpm-grid-controls">
-                     <label><i class="fas fa-th"></i> Grid:</label>
-                     <button id="remove-row-button" class="icon-button tiny-button" title="Remove Row">-</button>
-                     <span id="row-count-display">1</span>R
-                     <button id="add-row-button" class="icon-button tiny-button" title="Add Row">+</button>
-                     <span class="separator">|</span>
-                     <button id="remove-col-button" class="icon-button tiny-button" title="Remove Column">-</button>
-                     <span id="col-count-display">4</span>C
-                     <button id="add-col-button" class="icon-button tiny-button" title="Add Column">+</button>
-                 </div>
+                <!-- Grid size adjustment controls -->
+                <div class="bpm-grid-controls">
+                    <label><i class="fas fa-th"></i> Grid:</label>
+                    <!-- Row controls -->
+                    <button id="remove-row-button" class="icon-button tiny-button" title="Remove Row">-</button>
+                    <span id="row-count-display">1</span>R
+                    <button id="add-row-button" class="icon-button tiny-button" title="Add Row">+</button>
+                    <span class="separator">|</span>
+                    <!-- Column controls -->
+                    <button id="remove-col-button" class="icon-button tiny-button" title="Remove Column">-</button>
+                    <span id="col-count-display">4</span>C
+                    <button id="add-col-button" class="icon-button tiny-button" title="Add Column">+</button>
+                </div>
             </div> <!-- End of #bpm-panel -->
-            <!-- END REPLACEMENT for #bpm-panel section -->
 
-
-            <!-- BPM Multiplier Controls -->
-                        <!-- BPM Multiplier Controls -->
+            <!-- --- BPM MULTIPLIER CONTROLS --- -->
             <div class="bpm-multiplier-controls panel">
                 <h3><i class="fas fa-forward"></i> Multiplier</h3>
-                 <div class="control-group multiplier-buttons">
-                     <button class="multiplier-btn" data-multiplier="2">2x</button> <!-- No 'selected' class here initially -->
-                     <button class="multiplier-btn" data-multiplier="3">3x</button>
-                     <button class="multiplier-btn" data-multiplier="4">4x</button>
-                 </div>
+                <!-- BPM multiplier buttons for different rhythmic divisions -->
+                <div class="control-group multiplier-buttons">
+                    <button class="multiplier-btn" data-multiplier="2">2x</button> <!-- Half-time feel -->
+                    <button class="multiplier-btn" data-multiplier="3">3x</button> <!-- Triple-time feel -->
+                    <button class="multiplier-btn" data-multiplier="4">4x</button> <!-- Double-time feel -->
+                </div>
             </div>
             <!-- END: BPM Multiplier Controls -->
 
-            <!-- Frequency Panel (Only one needed) -->
+            <!-- --- FREQUENCY PANEL (WORD RADAR) --- -->
             <div id="frequency-panel" class="panel">
                 <h2><i class="fas fa-chart-bar"></i> Word Radar</h2>
+                <!-- Display of most frequently used words with color coding -->
                 <div id="frequent-words">
                     <!-- Frequent words list generated by JS -->
                 </div>
@@ -288,20 +349,25 @@
 
     </main>
 
-    <!-- Modals -->
+    <!-- --- MODAL DIALOGS --- -->
+    
+    <!-- Favorites Modal -->
     <div id="favorites-modal" class="modal">
         <div class="modal-content">
             <span class="close-button" id="close-favorites-modal">×</span>
             <h2><i class="fas fa-star"></i> Favorited Words</h2>
+            <!-- List of user's favorited words -->
             <ul id="favorites-list"></ul>
             <button id="clear-favorites-button" class="icon-button red-button"><i class="fas fa-trash"></i> Clear All Favorites</button>
         </div>
     </div>
 
+    <!-- Word List Editor Modal -->
     <div id="word-list-editor-modal" class="modal">
         <div class="modal-content">
             <span class="close-button" id="close-word-list-editor">×</span>
             <h2><i class="fas fa-edit"></i> Edit Word List</h2>
+            <!-- Word list management controls -->
             <div class="word-list-controls">
                 <button id="add-word-button" class="icon-button tiny-button" title="Add New Word">
                     <i class="fas fa-plus"></i> Add Word
@@ -316,6 +382,7 @@
                     <i class="fas fa-upload"></i> Import
                 </button>
             </div>
+            <!-- Textarea for editing word list -->
             <textarea id="word-list-textarea" rows="15" cols="50" placeholder="Enter words, one per line..."></textarea>
             <div class="word-list-actions">
                 <button id="save-word-list-button" class="icon-button"><i class="fas fa-save"></i> Save Changes</button>
@@ -324,14 +391,16 @@
         </div>
     </div>
 
-    <!-- Rhyme Finder Modal (Using updated header structure) -->
+    <!-- Rhyme Finder Modal -->
     <div id="rhyme-finder-modal" class="modal">
         <div class="modal-content">
             <span class="close-button" id="close-rhyme-modal">×</span>
             <h2><i class="fas fa-music"></i> Rhyme Finder</h2>
+            <!-- Rhyme modal header with base word and pattern display -->
             <div class="rhyme-modal-header">
                 <div id="rhyme-modal-base-word" class="rhyme-modal-word-display"></div>
                 <div id="rhyme-modal-pattern-container" class="rhyme-modal-pattern-display"></div>
+                <!-- Legend explaining frequency color coding -->
                 <div class="rhyme-legend">
                     <span class="rhyme-freq-high">High Usage</span> |
                     <span class="rhyme-freq-med">Medium Usage</span> |
@@ -339,8 +408,10 @@
                     <span class="rhyme-freq-none">Not Used</span>
                 </div>
             </div>
+            <!-- List of rhyming words -->
             <ul id="rhyme-results-list"></ul>
             <p id="rhyme-no-results" style="display: none;">No other words found with this pattern (or they were rejected).</p>
+            <!-- Manual rhyme addition section -->
             <div class="add-rhyme-section">
                 <input type="text" id="manual-rhyme-input" placeholder="Add your own rhyme...">
                 <button id="add-manual-rhyme-button" class="icon-button tiny-button"><i class="fas fa-plus"></i> Add</button>
@@ -354,6 +425,7 @@
             <span class="close-button" id="close-settings-modal">×</span>
             <h2><i class="fas fa-cog"></i> Settings & Data Management</h2>
             
+            <!-- Export/Import Section -->
             <div class="settings-section">
                 <h3><i class="fas fa-download"></i> Export & Import</h3>
                 <div class="settings-controls">
@@ -367,6 +439,7 @@
                 <p><small>Export/import all your data including word lists, favorites, blacklist, and settings.</small></p>
             </div>
             
+            <!-- Data Management Section -->
             <div class="settings-section">
                 <h3><i class="fas fa-trash"></i> Data Management</h3>
                 <div class="settings-controls">
@@ -386,6 +459,7 @@
                 <p><small>Clear specific data or reset everything to defaults.</small></p>
             </div>
             
+            <!-- Data Summary Section -->
             <div class="settings-section">
                 <h3><i class="fas fa-info-circle"></i> Data Summary</h3>
                 <div id="data-summary">
@@ -395,29 +469,33 @@
         </div>
     </div>
 
-    <!-- Load Web Audio API version (no specific aubio.js needed for this approach) -->
-    <!-- Script tag for aubio.js is NOT needed with the pure Web Audio API detection method -->
-
-    <!-- Main Game Script (MODULE) -->
+    <!-- --- JAVASCRIPT MODULES --- -->
+    <!-- Main game script loaded as ES6 module with defer attribute -->
     <script type="module" src="js/main.js" defer></script>
 
-    <!-- Add compact Beat Player bar at the bottom -->
+    <!-- --- BEAT PLAYER BAR (FIXED BOTTOM) --- -->
     <div id="beat-player-bar">
+        <!-- Album art display -->
         <img id="album-art" width="50" height="50" style="object-fit:cover;border-radius:6px;margin:0 10px;" alt="Album Art" />
+        <!-- Beat player controls -->
         <div class="beat-player-controls">
             <button id="beat-play-pause" class="icon-button"><i class="fas fa-play"></i></button>
             <button id="beat-prev" class="icon-button"><i class="fas fa-backward"></i></button>
             <button id="beat-next" class="icon-button"><i class="fas fa-forward"></i></button>
         </div>
+        <!-- Current beat display -->
         <div id="current-beat-display" style="margin:0 10px;min-width:180px;"></div>
+        <!-- BPM display -->
         <div id="beat-bpm" style="margin:0 10px;min-width:60px;"></div>
-                        <!-- Waveform container hidden for Howler-only player -->
-                <div id="waveform" style="display:none;flex:1 1 0%;height:40px;min-width:120px;margin:0 10px;"></div>
+        <!-- Waveform container (hidden for Howler-only player) -->
+        <div id="waveform" style="display:none;flex:1 1 0%;height:40px;min-width:120px;margin:0 10px;"></div>
+        <!-- Volume control slider -->
         <input id="beat-volume" type="range" min="0" max="100" value="70" style="width:120px;margin:0 10px;" />
     </div>
 
-    <!-- Add CSS for fixed bottom bar -->
+    <!-- --- INLINE STYLES FOR BEAT PLAYER BAR --- -->
     <style>
+    /* Fixed bottom bar styling for beat player */
     #beat-player-bar {
         position: fixed;
         left: 0; right: 0; bottom: 0;
@@ -426,7 +504,7 @@
         background: #181c2b;
         display: flex;
         align-items: center;
-        z-index: 1000;
+        z-index: 1000; /* High z-index to stay above other content */
         box-shadow: 0 -2px 12px #000a;
         border-top: 1px solid #222;
         padding: 0 10px;
