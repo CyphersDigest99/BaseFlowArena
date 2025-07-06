@@ -275,16 +275,28 @@ input[type="range"] {
 .control-group label { font-weight: bold; color: var(--secondary-accent); display: inline-flex; align-items: center; gap: 5px; min-width: 50px;} /* Ensure label takes some width */
 
 /* --- Center Stage Styling --- */
+.word-display-wrapper {
+    position: relative;
+    width: 100%;
+    max-width: 700px;
+    margin-bottom: 15px;
+}
+
 #feedback-message {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
     min-height: 25px;
     font-size: 1.1em;
     font-weight: bold;
     text-align: center;
-    margin-bottom: 5px;
     transition: color 0.3s ease, text-shadow 0.3s ease;
-    width: 100%;
-    padding: 5px;
+    width: auto;
+    padding: 5px 15px;
     border-radius: 4px;
+    z-index: 1000;
+    pointer-events: none;
 }
 #feedback-message.success {
     color: var(--green-color);
@@ -313,7 +325,7 @@ input[type="range"] {
     border: 2px solid var(--primary-accent);
     border-radius: 10px;
     padding: 20px 80px;
-    margin-bottom: 15px;
+    margin-bottom: 0;
     box-shadow: 0 0 20px rgba(0, 255, 255, 0.3), inset 0 0 15px rgba(0, 0, 0, 0.5);
     width: 100%;
     max-width: 700px;
@@ -885,6 +897,15 @@ input[type="range"] {
         font-size: 2em; 
     }
     
+    .word-display-wrapper {
+        max-width: 600px;
+    }
+    
+    #feedback-message {
+        font-size: 1em;
+        padding: 4px 12px;
+    }
+    
     #word-display-unit { 
         height: 280px; 
     }
@@ -918,6 +939,15 @@ input[type="range"] {
     
     h1 { 
         font-size: 1.5em; 
+    }
+    
+    .word-display-wrapper {
+        max-width: 500px;
+    }
+    
+    #feedback-message {
+        font-size: 0.9em;
+        padding: 3px 10px;
     }
     
     #word-display-unit { 
@@ -980,6 +1010,15 @@ input[type="range"] {
     
     .stat-value { 
         font-size: 1.2em; 
+    }
+    
+    .word-display-wrapper {
+        max-width: 400px;
+    }
+    
+    #feedback-message {
+        font-size: 0.8em;
+        padding: 2px 8px;
     }
     
     #word-display-unit { 

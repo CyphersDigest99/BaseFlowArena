@@ -171,11 +171,13 @@
 
         <!-- --- CENTER STAGE: WORD DISPLAY & ACTIVATION CONTROLS --- -->
         <section class="center-stage">
-            <!-- Feedback message area for user notifications -->
-            <div id="feedback-message"></div>
+            <!-- Wrapper for feedback message and word display unit -->
+            <div class="word-display-wrapper">
+                <!-- Feedback message area for user notifications -->
+                <div id="feedback-message"></div>
 
-            <!-- --- NEW WORD DISPLAY UNIT (Three-Cell Layout) --- -->
-            <div id="word-display-unit">
+                <!-- --- NEW WORD DISPLAY UNIT (Three-Cell Layout) --- -->
+                <div id="word-display-unit">
                 <!-- Navigation arrows for word cycling (grid layout) -->
                 <button id="prev-word" class="word-nav-arrow side-arrow left-arrow" title="Previous Word">
                     <i class="fas fa-chevron-left"></i>
@@ -214,6 +216,8 @@
                 </div>
             </div>
             <!-- END Word Display Unit -->
+            </div>
+            <!-- END Word Display Wrapper -->
 
             <!-- Rhyme finder trigger button -->
             <button id="find-rhymes-button" class="icon-button rhyme-find-trigger" title="Find Rhymes">
