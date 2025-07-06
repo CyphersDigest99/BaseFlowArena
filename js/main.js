@@ -102,6 +102,7 @@ async function initializeApp() {
     // 4. Display Initial Word & Sync Final UI
     ui.updateActivationUI(); // Sync activation/mode controls
     wordManager.changeWord('next', true, false); // Display first word & update rhymes
+    window.requestAnimationFrame(() => ui.displayWord(state.currentWord));
 
     // 5. Attach Event Listeners
     attachEventListeners();
@@ -317,22 +318,22 @@ function attachEventListeners() {
         event.preventDefault();
     });
     
-    ui.elements.synonymsBox?.addEventListener('mouseenter', () => {
+    ui.elements.synonymsCell?.addEventListener('mouseenter', () => {
         // Don't interfere with timeout if tooltip is pinned
         if (state.tooltip.isPinned) return;
         if (infoTimeout) clearTimeout(infoTimeout);
     });
-    ui.elements.synonymsBox?.addEventListener('mouseleave', () => {
+    ui.elements.synonymsCell?.addEventListener('mouseleave', () => {
         // Don't set timeout if tooltip is pinned
         if (state.tooltip.isPinned) return;
         infoTimeout = setTimeout(hideAllIfNotHovered, 100);
     });
-    ui.elements.definitionBox?.addEventListener('mouseenter', () => {
+    ui.elements.definitionCell?.addEventListener('mouseenter', () => {
         // Don't interfere with timeout if tooltip is pinned
         if (state.tooltip.isPinned) return;
         if (infoTimeout) clearTimeout(infoTimeout);
     });
-    ui.elements.definitionBox?.addEventListener('mouseleave', () => {
+    ui.elements.definitionCell?.addEventListener('mouseleave', () => {
         // Don't set timeout if tooltip is pinned
         if (state.tooltip.isPinned) return;
         infoTimeout = setTimeout(hideAllIfNotHovered, 100);

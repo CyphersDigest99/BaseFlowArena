@@ -174,65 +174,63 @@
             <!-- Feedback message area for user notifications -->
             <div id="feedback-message"></div>
 
-            <!-- --- WORD DISPLAY AREA --- -->
-            <div id="word-display-area">
-                <!-- Navigation arrows for word cycling -->
+            <!-- --- NEW WORD DISPLAY UNIT (Three-Cell Layout) --- -->
+            <div id="word-display-unit">
+                <!-- Navigation arrows for word cycling (grid layout) -->
                 <button id="prev-word" class="word-nav-arrow side-arrow left-arrow" title="Previous Word">
                     <i class="fas fa-chevron-left"></i>
                 </button>
                 <button id="up-word" class="word-nav-arrow top-bottom-arrow up-arrow" title="Previous Rhyme">
                     <i class="fas fa-chevron-up"></i>
                 </button>
-                
-                <!-- Main word display container with action buttons -->
-                <div id="word-display-container">
-                    <!-- Current word display - large, prominent text -->
-                    <div id="word-display">LOADING...</div>
-                    
-                    <!-- Word action buttons positioned absolutely around the word -->
-                    <!-- Blacklist button - removes word from rotation -->
-                    <button id="blacklist-word" class="word-action-icon blacklist-icon" title="Blacklist Word">
-                        <i class="fas fa-ban"></i>
-                    </button>
-                    <!-- Favorite button - toggles between outline and solid star -->
-                    <button id="favorite-word" class="word-action-icon favorite-icon" title="Favorite Word">
-                        <i class="far fa-star"></i> <i class="fas fa-star solid-star"></i>
-                    </button>
-                    <!-- Synonyms/definition button - shows word information -->
-                    <button id="means-like-button" class="word-action-icon means-like-icon" title="Show Synonyms & Definition">
-                        <i class="fas fa-book"></i>
-                    </button>
-                    
-                    <!-- Word subtext area for additional information -->
-                    <div id="word-subtext" class="word-subtext"></div>
-                </div>
-                
-                <!-- Bottom navigation arrow for rhymes -->
                 <button id="down-word" class="word-nav-arrow top-bottom-arrow down-arrow" title="Next Rhyme">
                     <i class="fas fa-chevron-down"></i>
                 </button>
                 <button id="next-word" class="word-nav-arrow side-arrow right-arrow" title="Next Word">
                     <i class="fas fa-chevron-right"></i>
                 </button>
+                <!-- Top Cell: Synonyms -->
+                <div id="synonyms-cell" class="word-display-cell top-cell">
+                    <div id="synonyms-content" class="word-info-content"></div>
+                </div>
+                <!-- Middle Cell: Main Word Display -->
+                <div id="word-cell" class="word-display-cell middle-cell">
+                    <div id="word-display">LOADING...</div>
+                    <!-- Word action buttons positioned absolutely around the word -->
+                    <button id="blacklist-word" class="word-action-icon blacklist-icon" title="Blacklist Word">
+                        <i class="fas fa-ban"></i>
+                    </button>
+                    <button id="favorite-word" class="word-action-icon favorite-icon" title="Favorite Word">
+                        <i class="far fa-star"></i> <i class="fas fa-star solid-star"></i>
+                    </button>
+                    <button id="means-like-button" class="word-action-icon means-like-icon" title="Show Synonyms & Definition">
+                        <i class="fas fa-book"></i>
+                    </button>
+                    <div id="word-subtext" class="word-subtext"></div>
+                </div>
+                <!-- Bottom Cell: Definition -->
+                <div id="definition-cell" class="word-display-cell bottom-cell">
+                    <div id="definition-content" class="word-info-content"></div>
+                </div>
             </div>
-            <!-- END Word Display Area -->
-
-            <!-- --- WORD INFORMATION BOXES --- -->
-            <!-- Synonyms box positioned above word display -->
-            <div id="synonyms-box" class="word-info-box synonyms-box">
-                <div id="synonyms-content" class="word-info-content"></div>
-            </div>
-            <!-- Definition box positioned below word display -->
-            <div id="definition-box" class="word-info-box definition-box">
-                <div id="definition-content" class="word-info-content"></div>
-            </div>
+            <!-- END Word Display Unit -->
 
             <!-- Rhyme finder trigger button -->
             <button id="find-rhymes-button" class="icon-button rhyme-find-trigger" title="Find Rhymes">
                 <i class="fas fa-music"></i> Find Rhymes
             </button>
 
-            <!-- --- ACTIVATION CONTROLS --- -->
+            <!-- --- TRANSCRIPT AREA (Moved here) --- -->
+            <div class="transcript-area panel">
+                <h2><i class="fas fa-stream"></i> Live Feed</h2>
+                <!-- Real-time transcript display for voice recognition -->
+                <div id="new-transcript">
+                    <!-- Transcript lines generated by speech recognition JS -->
+                </div>
+            </div>
+            <!-- END Transcript Area -->
+
+            <!-- --- ACTIVATION CONTROLS (Moved here) --- -->
             <div class="activation-controls panel">
                 <h2><i class="fas fa-power-off"></i> Activation Mode</h2>
                 <!-- Main activation buttons for different modes -->
@@ -257,16 +255,6 @@
                 </div>
             </div>
             <!-- END Activation Controls -->
-
-            <!-- --- TRANSCRIPT AREA --- -->
-            <div class="transcript-area panel">
-                <h2><i class="fas fa-stream"></i> Live Feed</h2>
-                <!-- Real-time transcript display for voice recognition -->
-                <div id="new-transcript">
-                    <!-- Transcript lines generated by speech recognition JS -->
-                </div>
-            </div>
-            <!-- END Transcript Area -->
         </section>
 
         <!-- --- RIGHT PANEL: BPM & FREQUENCY CONTROLS --- -->

@@ -297,67 +297,146 @@ input[type="range"] {
      background-color: rgba(255, 69, 0, 0.1);
 }
 
-#word-display-area {
+/* --- NEW WORD DISPLAY UNIT (Three-Cell Layout) --- */
+#word-display-unit {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    grid-template-rows: auto 1fr 2fr 1fr auto;
+    grid-template-areas:
+        ". up ."
+        ". synonyms ."
+        "left word right"
+        ". definition ."
+        ". down .";
     position: relative;
-    background: linear-gradient(145deg, var(--panel-bg), rgba(42, 42, 74, 0.9)); /* Use RGBA */
+    background: linear-gradient(145deg, var(--panel-bg), rgba(42, 42, 74, 0.9));
     border: 2px solid var(--primary-accent);
     border-radius: 10px;
-    padding: 30px 80px; /* Consistent padding */
-    margin-bottom: 10px; /* Reduced margin */
+    padding: 20px 80px;
+    margin-bottom: 15px;
     box-shadow: 0 0 20px rgba(0, 255, 255, 0.3), inset 0 0 15px rgba(0, 0, 0, 0.5);
     width: 100%;
     max-width: 700px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    /* Increased height to accommodate subtext */
-    height: 220px;
-    /* Prevent any size changes */
-    min-height: 220px;
-    max-height: 220px;
+    height: 320px;
     box-sizing: border-box;
 }
 
-#word-display-container {
-    position: relative;
-    text-align: center;
-    /* Adjusted padding to potentially accommodate 3 icons */
-    padding: 10px 60px;
-    flex-grow: 1;
-    /* Increased height to accommodate subtext */
-    height: 160px;
+/* Grid placement for navigation arrows */
+.word-nav-arrow {
+    background: transparent;
+    border: none;
+    color: var(--primary-accent);
+    padding: 10px;
+    cursor: pointer;
+    font-size: 2em;
     display: flex;
     align-items: center;
     justify-content: center;
-    /* Ensure perfect centering and prevent text shifting */
-    flex-direction: column;
-    align-content: center;
+    transition: color 0.2s, transform 0.2s;
 }
 
+.word-nav-arrow:disabled {
+    color: var(--disabled-color);
+    cursor: not-allowed;
+    opacity: 0.4;
+    transform: none;
+}
+
+.word-nav-arrow:disabled:hover {
+    color: var(--disabled-color);
+    transform: none;
+}
+
+.word-nav-arrow.side-arrow.left-arrow {
+    grid-area: left;
+    font-size: 2.5em;
+    justify-self: center;
+    align-self: center;
+}
+.word-nav-arrow.side-arrow.right-arrow {
+    grid-area: right;
+    font-size: 2.5em;
+    justify-self: center;
+    align-self: center;
+}
+.word-nav-arrow.top-bottom-arrow.up-arrow {
+    grid-area: up;
+    font-size: 2em;
+    justify-self: center;
+    align-self: center;
+}
+.word-nav-arrow.top-bottom-arrow.down-arrow {
+    grid-area: down;
+    font-size: 2em;
+    justify-self: center;
+    align-self: center;
+}
+
+/* Grid placement for content cells */
+.word-display-cell.top-cell {
+    grid-area: synonyms;
+    min-height: 44px;
+    padding: 0.5em 1em;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    white-space: normal;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.word-display-cell.middle-cell {
+    position: relative;
+    grid-area: word;
+    min-height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(0, 255, 255, 0.5);
+    border-radius: 12px;
+}
+.word-display-cell.bottom-cell {
+    grid-area: definition;
+    min-height: 44px;
+    padding: 0.5em 1em;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    white-space: normal;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Remove obsolete 3D, absolute, and z-index styles from arrows/content */
+.word-content-container,
+#word-display-unit {
+    transform: none !important;
+    perspective: none !important;
+    transform-style: flat !important;
+    z-index: auto !important;
+}
+
+/* Updated word display styles for the middle cell */
 #word-display {
     font-family: var(--font-display);
-    font-size: 4em;
+    font-size: clamp(2em, 8vw, 4em); /* Dynamic font sizing */
     font-weight: bold;
     color: var(--text-bright);
     text-shadow: 0 0 10px #fff, 0 0 15px var(--primary-accent);
-    /* Remove min-height since we now have fixed container height */
     transition: color 0.4s ease-out, opacity 0.4s ease-out, transform 0.4s ease-out;
     display: flex;
     align-items: center;
     justify-content: center;
-    min-width: 150px; /* Prevent collapse on short words */
-    /* Ensure perfect vertical centering regardless of font size */
+    min-width: 150px;
     line-height: 1;
     margin: 0;
     padding: 0;
-    /* Use absolute positioning for bulletproof centering */
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    /* Add these properties to ensure stable rendering during font size changes */
-    will-change: font-size;
-    backface-visibility: hidden;
+    text-align: center;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    /* Ensure text fits within cell bounds */
+    max-width: 100%;
+    max-height: 100%;
 }
 
 #word-display.shrink-word { animation: shrink-pulse var(--cycle-duration, 10s) linear forwards; }
@@ -367,1166 +446,7 @@ input[type="range"] {
     100% { opacity: 0; transform: scale(0.7); color: var(--green-color); }
 }
 
-
-/* ... existing styles ... */
-
-/* Base styles for Nav Arrows (ensure this covers new class) */
-.word-nav-arrow {
-    position: absolute;
-    background: transparent;
-    border: none;
-    color: var(--primary-accent);
-    padding: 10px;
-    cursor: pointer;
-    transition: color 0.2s, transform 0.2s;
-    z-index: 10; /* Ensure they are above word display */
-}
-.word-nav-arrow:disabled {
-    color: var(--disabled-color);
-    cursor: not-allowed;
-    opacity: 0.4;
-    transform: none; /* Remove hover/active effects */
-}
-.word-nav-arrow:disabled:hover {
-    color: var(--disabled-color);
-    transform: none;
-}
-
-
-/* Side Arrows (Existing) */
-.word-nav-arrow.side-arrow {
-    top: 50%;
-    transform: translateY(-50%);
-    font-size: 2.5em;
-}
-.word-nav-arrow.side-arrow:hover { transform: translateY(-50%) scale(1.1); }
-.word-nav-arrow.left-arrow { left: 15px; }
-.word-nav-arrow.right-arrow { right: 15px; }
-
-/* NEW Styles for Top/Bottom Arrows */
-.word-nav-arrow.top-bottom-arrow {
-    left: 50%; /* Center horizontally */
-    transform: translateX(-50%);
-    font-size: 2em; /* Slightly smaller */
-}
-.word-nav-arrow.top-bottom-arrow:hover { transform: translateX(-50%) scale(1.1); }
-.word-nav-arrow.up-arrow {
-    top: 5px; /* Position near top */
-}
-.word-nav-arrow.down-arrow {
-    bottom: 5px; /* Position near bottom */
-}
-
-/* Adjust word display area padding if arrows overlap content */
-/* REMOVED: This was causing conflicting padding overrides */
-
-/* ... rest of styles ... */
-
-/* Responsive adjustments might be needed for smaller screens */
-@media (max-width: 480px) {
-    /* ... existing responsive ... */
-     /* REMOVED: This was causing conflicting padding overrides */
-    .word-nav-arrow.top-bottom-arrow { font-size: 1.6em; }
-    .word-nav-arrow.up-arrow { top: 2px; }
-    .word-nav-arrow.down-arrow { bottom: 2px; }
-}
-
-
-.word-action-icon {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    background: none;
-    border: none;
-    font-size: 1.6em;
-    cursor: pointer;
-    color: #666; /* Dim default */
-    padding: 5px;
-    transition: color 0.2s ease, transform 0.2s ease, opacity 0.2s ease;
-    opacity: 0.6;
-    z-index: 5; /* Above word display */
-}
-.word-action-icon:hover { 
-    opacity: 1; 
-    transform: translateY(-50%) scale(1.1); 
-}
-
-/* Override general hover rule for means-like icon to respect pinned state */
-.word-action-icon.means-like-icon.pinned {
-    color: var(--highlight-color) !important;
-    opacity: 1 !important; /* Always full opacity when pinned */
-    animation: none; /* Remove hover animation when pinned */
-    box-shadow: 0 0 8px var(--highlight-color);
-    border-radius: 50%;
-    background-color: rgba(249, 168, 38, 0.1);
-}
-
-.word-action-icon.means-like-icon.pinned:hover {
-    color: var(--highlight-color) !important;
-    opacity: 1 !important; /* Keep full opacity when pinned and hovering */
-    transform: scale(1.1);
-    box-shadow: 0 0 12px var(--highlight-color);
-    animation: shimmer 1.5s ease-in-out infinite;
-}
-
-/* Adjust positioning for 3 icons */
-.word-action-icon.blacklist-icon { left: 5px; }
-.word-action-icon.favorite-icon { right: 5px; }
-/* New Rhyme Icon - place it in the center */
-.word-action-icon.rhyme-icon {
-    left: 50%;
-    transform: translate(-50%, -50%); /* Center horizontally & vertically */
-    color: var(--secondary-accent); /* Optional distinct color */
-}
-.word-action-icon.rhyme-icon:hover {
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1.1); /* Keep centering transform */
- }
-
-/* Means Like Icon - book with pulse effect */
-.word-action-icon.means-like-icon {
-    bottom: 5px;
-    right: 5px;
-    top: auto;
-    left: auto;
-    transform: none;
-    color: var(--text-color);
-    font-size: 1.5em;
-    background: none;
-    border: none;
-    z-index: 20;
-    transition: color 0.2s, transform 0.2s;
-    padding: 0 2px;
-    cursor: pointer; /* Make it clear it's clickable */
-}
-
-/* Unpinned tooltip state - starts dim */
-.word-action-icon.means-like-icon:not(.pinned) {
-    color: var(--secondary-accent);
-    opacity: 0.7;
-}
-
-.word-action-icon.means-like-icon:not(.pinned):hover {
-    color: var(--primary-accent);
-    opacity: 1;
-    animation: pulse-grow-book 0.35s cubic-bezier(.4,2,.6,1), shimmer 1.5s ease-in-out infinite;
-}
-
-/* Shimmer animation for hover effects */
-@keyframes shimmer {
-    0% { 
-        background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
-        background-size: 200% 200%;
-        background-position: -200% 0;
-    }
-    50% {
-        background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.15) 50%, transparent 70%);
-        background-size: 200% 200%;
-        background-position: 200% 0;
-    }
-    100% { 
-        background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
-        background-size: 200% 200%;
-        background-position: -200% 0;
-    }
-}
-
-/* Different icons for different modes */
-.word-action-icon.means-like-icon:not(.pinned) i.fa-book {
-    color: var(--secondary-accent);
-}
-
-.word-action-icon.means-like-icon.pinned i.fa-book-open {
-    color: var(--highlight-color);
-}
-
-.word-action-icon.means-like-icon.pinned i.fa-random {
-    color: var(--green-color);
-}
-
-.word-action-icon.means-like-icon.pinned i.fa-paragraph {
-    color: var(--primary-accent);
-}
-
-@keyframes pulse-grow-book {
-    0% { transform: scale(1); }
-    40% { transform: scale(1.18); }
-    100% { transform: scale(1); }
-}
-
-/* Word Subtext Styling */
-.word-subtext {
-    position: absolute;
-    bottom: 25px; /* Position above the means-like icon */
-    left: 50%;
-    transform: translateX(-50%);
-    color: var(--secondary-accent);
-    font-size: 0.9em;
-    font-style: italic;
-    text-align: center;
-    max-width: 80%;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    pointer-events: none;
-    z-index: 5;
-}
-
-.word-subtext.visible {
-    opacity: 1;
-}
-
-.word-action-icon.blacklist-icon.active { color: var(--red-color); opacity: 1; }
-
-.word-action-icon.favorite-icon .far { display: inline; } /* Outline visible */
-.word-action-icon.favorite-icon .solid-star { display: none; } /* Solid hidden */
-.word-action-icon.favorite-icon.active { color: var(--highlight-color); opacity: 1; }
-.word-action-icon.favorite-icon.active .far { display: none; } /* Hide outline */
-.word-action-icon.favorite-icon.active .solid-star { display: inline; } /* Show solid */
-
-
-/* Activation Controls */
-.activation-controls {
-    margin-top: 10px; /* Add some space above */
-    padding: 15px;
-    background-color: rgba(0, 0, 0, 0.3);
-    border-radius: 6px;
-    border: 1px solid var(--border-color);
-    width: 100%;
-    max-width: 700px; /* Match transcript area width */
-}
-.activation-controls h2 {
-    margin-bottom: 15px;
-    font-size: 1.2em;
-}
-
-.activation-buttons {
-    justify-content: space-around; /* Space out the main buttons */
-    margin-bottom: 15px; /* Space below buttons */
-}
-
-.activation-button { /* Style for Voice/Timed buttons */
-    flex-basis: 45%; /* Roughly half width each */
-    justify-content: center;
-    border-width: 2px;
-    background-color: #333; /* Default inactive bg */
-    color: #999; /* Default inactive text */
-    border-color: #555;
-    position: relative; /* For the light */
-    transition: all 0.3s ease;
-    display: inline-flex; /* Ensure flex properties apply */
-    align-items: center; /* Vertically align content */
-}
-
-.activation-button .light { /* For voice button */
-    display: inline-block;
-    width: 12px;
-    height: 12px;
-    background-color: #555;
-    border-radius: 50%;
-    margin-right: 8px;
-    transition: all 0.3s ease;
-    box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.5);
-    vertical-align: middle;
-}
- .activation-button i {
-     margin-right: 8px;
- }
-
-.activation-button.active {
-    background-color: var(--primary-accent);
-    color: var(--panel-bg-opaque);
-    border-color: var(--primary-accent);
-    box-shadow: 0 0 12px var(--primary-accent);
-    font-weight: bold;
-}
-
-.activation-button#voice-mode-button.active { /* Specific active style for voice */
-    background-color: var(--red-color);
-    border-color: var(--red-color);
-    color: #fff;
-    box-shadow: 0 0 15px var(--red-color);
-    animation: pulse-on-air-glow 1.5s infinite ease-in-out; /* Reuse animation */
-}
-
-.activation-button#voice-mode-button.active .light {
-    background-color: #fff;
-    box-shadow: 0 0 8px #fff, 0 0 12px var(--red-color);
-}
-
-@keyframes pulse-on-air-glow { 0% { box-shadow: 0 0 10px var(--red-color); } 50% { box-shadow: 0 0 20px var(--red-color); } 100% { box-shadow: 0 0 10px var(--red-color); } }
-
-
-#timed-cycle-options {
-    align-items: center;
-    background-color: rgba(0,0,0,0.2);
-    padding: 10px;
-    border-radius: 4px;
-}
-#timed-cycle-options label {
-    color: var(--secondary-accent);
-    min-width: auto; /* Allow label to shrink */
-    margin-right: 5px;
-    font-weight: normal; /* Non-bold label */
-}
-
-
-/* --- Transcript Area --- */
-.transcript-area { width: 100%; max-width: 700px; height: 200px; display: flex; flex-direction: column; }
-#new-transcript {
-    flex-grow: 1;
-    background-color: rgba(0, 0, 0, 0.5); /* Darker, more transparent */
-    padding: 10px;
-    border-radius: 5px;
-    color: var(--green-color);
-    font-family: 'Courier New', Courier, monospace;
-    font-size: 0.95em;
-    display: flex;
-    flex-direction: column-reverse; /* Newest at bottom */
-    overflow-y: auto; /* Scrollable */
-    border: 1px solid rgba(0, 80, 0, 0.7); /* Dark green border */
-    box-shadow: inset 0 0 10px rgba(0, 255, 0, 0.2);
-}
-#new-transcript div {
-    margin-bottom: 3px;
-    padding: 2px 4px;
-    border-radius: 3px;
-    opacity: 1;
-    color: var(--green-color);
-    transition: opacity 0.3s ease, color 0.3s ease;
-    word-wrap: break-word; /* Wrap long lines */
-}
-#new-transcript div.interim {
-    color: rgba(0, 255, 0, 0.6);
-    opacity: 0.8;
-}
-
-
-/* --- BPM Panel --- */
-/* Adjust main controls layout */
-/* --- BPM Panel --- */
-/* Styles for #bpm-panel itself should be fine if it's display:flex; flex-direction:column */
-
-/* --- Styles for the MAIN BPM controls row (TAP, DETECT, Display) --- */
-/* --- Styles for the MAIN BPM controls row (TAP, DETECT, Display) --- */
-.bpm-main-controls {
-    display: flex;              /* Use flexbox to arrange children horizontally */
-    align-items: center;        /* Vertically align items in the center */
-    justify-content: space-around; /* Distribute space around items */
-    flex-wrap: wrap;            /* Allow items to wrap to next line if not enough space */
-    gap: 15px;                  /* Space between the TAP button, DETECT button, and Display Group */
-    width: 100%;                /* Make this container take the full width of its parent column in #bpm-panel */
-    padding: 15px 0;            /* Add some vertical padding to give it space */
-    min-height: 70px;           /* Ensure it has some minimum height to show its content, adjust if needed */
-}
-
-/* --- Styles for the direct children of .bpm-main-controls --- */
-.bpm-main-controls > #bpm-button,
-.bpm-main-controls > #detect-bpm-button {
-    /* These buttons already have .icon-button and .large-button classes from HTML */
-    /* We just ensure they are visible and participate in flex layout */
-    opacity: 1;
-    /* .large-button class should provide padding and font-size. */
-    /* If #bpm-button needs specific styling that .large-button doesn't cover, add it to the rule below */
-}
-
-.bpm-main-controls > .bpm-display-group {
-    display: flex; /* If display group itself needs internal flex alignment (e.g., for number and "BPM" text) */
-    align-items: center;
-    text-align: center; /* Fallback if not using flex internally */
-    opacity: 1;
-    /* min-width: 80px; */ /* Optional: Give it some space if it's getting squeezed */
-}
-
-/* Ensure the Tap BPM button maintains its large size and styles from .large-button */
-/* #bpm-button.large-button { } */ /* This selector is fine, but styles should come from .large-button generally */
-
-/* Specifics for detect button */
-#detect-bpm-button { /* This already has .icon-button and .large-button from HTML */
-    border-color: var(--secondary-accent); /* Magenta border */
-    color: var(--secondary-accent); /* Magenta text/icon */
-    /* Other .large-button styles (padding, font-size) will apply */
-}
-#detect-bpm-button:hover {
-    background-color: rgba(255, 0, 255, 0.1); /* Magenta hover */
-    box-shadow: 0 0 8px var(--secondary-accent);
-}
-#detect-bpm-button.detecting {
-    border-color: var(--red-color);
-    color: var(--red-color);
-    background-color: rgba(255, 69, 0, 0.1);
-    box-shadow: 0 0 12px var(--red-color);
-    cursor: pointer;
-    opacity: 1;
-}
-
-#detect-bpm-button.detecting:hover {
-    background-color: rgba(255, 69, 0, 0.2);
-    box-shadow: 0 0 16px var(--red-color);
-}
-@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-#detect-bpm-button.detecting .fa-stop {
-    animation: pulse 1s ease-in-out infinite;
-}
-
-/* Your existing styles for #bpm-display and .bpm-unit */
-#bpm-display {
-    font-family: var(--font-display);
-    font-size: 2.5em;
-    color: var(--primary-accent);
-    line-height: 1;
-}
-.bpm-unit {
-    display: block; /* Or inline, depending on desired layout with number */
-    font-size: 0.8em;
-    opacity: 0.7;
-    margin-left: 5px; /* If inline with number for example */
-}
-
-/* --- Styles for BPM Adjustment Controls (+, -, Stop) --- */
-/* (Keep your existing .bpm-adjust-controls styles here) */
-/* For example: */
-.bpm-adjust-controls {
-    display: flex;
-    justify-content: center;
-    gap: 10px;
-    margin-top: 10px;
-}
-
-/* --- Styles for #four-count-container (The Grid Container) --- */
-/* (Keep your existing #four-count-container styles here) */
-/* For example: */
-#four-count-container {
-    display: grid !important;
-    gap: 6px;
-    padding: 8px;
-    background-color: rgba(0, 0, 0, 0.4);
-    border-radius: 5px;
-    border: 1px solid var(--border-color);
-    min-height: 50px;
-    width: 100%;
-    max-width: 320px;
-    margin: 15px auto;
-}
-
-/* ... and so on for .beat-box, etc. ... */
-
-/* --- Styles for BPM Adjustment Controls (+, -, Stop) --- */
-.bpm-adjust-controls {
-    display: flex;
-    justify-content: center;
-    gap: 10px;
-    margin-top: 10px; /* Add some space below main controls */
-}
-/* (Keep your existing styles for .small-button, .red-button) */
-
-
-/* --- Styles for #four-count-container (The Grid Container) --- */
-#four-count-container {
-    display: grid !important; /* Force grid display */
-    /* grid-template-columns is set by JS, e.g., repeat(4, 1fr) */
-    gap: 6px;
-    padding: 8px;
-    background-color: rgba(0, 0, 0, 0.4);
-    border-radius: 5px;
-    border: 1px solid var(--border-color);
-    min-height: 50px; /* Ensure it has some height even when empty */
-    width: 100%;        /* Make container take available width within its parent */
-    max-width: 320px;   /* Example: Constrain overall grid width. Adjust as needed. */
-    margin: 15px auto;  /* Center the grid block & add vertical margin */
-}
-
-/* --- Styles for Individual .beat-box elements --- */
-.beat-box {
-    background-color: #333;
-    width: 100%;             /* Fill grid cell width */
-    padding-bottom: 100%;    /* Creates 1:1 aspect ratio */
-    height: 0;               /* Crucial for padding-bottom to set height */
-    border-radius: 4px;
-    transition: background-color 0.15s ease-out, transform 0.15s ease-out, opacity 0.15s ease-out;
-    opacity: 0.6;
-    /* Remove base box-shadow if it conflicts or is not desired */
-}
-
-/* Active state for beat box (background fill) */
-.beat-box.active {
-    background-color: var(--primary-accent); /* Cyan fill */
-    opacity: 1;
-    transform: scale(1.05);
-    box-shadow: inset 0 0 5px rgba(255,255,255,0.2); /* Optional subtle inner glow */
-    transition-duration: calc(var(--beat-interval, 0.5s) * 0.4);
-    /* NO border properties here */
-}
-
-/* Border Flash Animation & Class */
-@keyframes borderFlash {
-  0%, 100% {
-      border-color: var(--highlight-color); /* Orange flash */
-      box-shadow: 0 0 8px var(--highlight-color), inset 0 0 5px rgba(255,255,255,0.15);
-  }
-  50% {
-      border-color: rgba(249, 168, 38, 0.4); /* Dimmed orange */
-      box-shadow: inset 0 0 5px rgba(0,0,0,0.4);
-  }
-}
-
-.beat-box.flashing-border {
-    border-width: 2px; /* Make border visible for flashing */
-    border-style: solid;
-    /* border-color is handled by the animation */
-    animation-name: borderFlash;
-    animation-timing-function: ease-in-out;
-    animation-iteration-count: infinite;
-    /* animation-duration is set dynamically by JS */
-}
-
-/* --- Styles for BPM Grid Size Controls --- */
-.bpm-grid-controls {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    font-size: 0.85em;
-    margin-top: 10px; /* Space above grid controls */
-}
-/* (Keep your existing styles for label, .separator, span inside .bpm-grid-controls) */
-
-
-/* --- Styles for Multiplier Controls (Ensure these are correct) --- */
-.bpm-multiplier-controls {
-    margin-top: 15px;
-    padding-top: 10px;
-    /* width: 100%; */ /* Usually inherits from .panel */
-}
-.bpm-multiplier-controls h3 {
-    margin-bottom: 12px;
-    font-size: 1.1em;
-    /* justify-content: center; */ /* h3 is block, text-align:center on parent if needed */
-    text-align: center; /* Center the text of h3 */
-    color: var(--secondary-accent);
-    border-bottom: none;
-}
-.multiplier-buttons { /* This is a .control-group, so display:flex from .control-group applies */
-    justify-content: space-around; /* This will spread the buttons */
-}
-.multiplier-btn {
-    padding: 6px 14px;
-    font-weight: bold;
-    border-width: 1px;
-    border-color: var(--border-color);
-    color: var(--text-color);
-    min-width: 50px; /* Give buttons some minimum width */
-    opacity: 0.7;
-}
-.multiplier-btn.selected {
-    border-color: var(--primary-accent);
-    color: var(--primary-accent);
-    background-color: rgba(0, 255, 255, 0.1);
-    box-shadow: 0 0 6px var(--primary-accent);
-    opacity: 1.0;
-}
-
-
-/* --- Frequency Panel --- */
-#frequency-panel { flex-grow: 1; } /* Takes less space now */
-#frequent-words {
-    background-color: rgba(0, 0, 0, 0.4);
-    padding: 10px;
-    border-radius: 5px;
-    min-height: 60px; /* Reduced min-height */
-    border: 1px solid var(--border-color);
-    line-height: 1.6;
-}
-.freq-word { display: inline-block; padding: 3px 8px; margin: 3px 4px; border-radius: 15px; color: #fff; font-size: 0.9em; border: 1px solid transparent; transition: transform 0.2s ease; }
-.freq-word:hover { transform: translateY(-2px); }
-
-.freq-5 { background-color: #c82333; border-color: #bd2130; } /* Darker Red */
-.freq-4 { background-color: #e0a800; border-color: #d39e00; } /* Darker Yellow/Orange */
-.freq-3 { background-color: #007bff; border-color: #007bff; } /* Blue */
-.freq-2 { background-color: #218838; border-color: #1e7e34; } /* Darker Green */
-
-
-/* --- RNG Styles --- */
-#rng-controls {
-    margin-top: 15px; /* Space from previous section */
-    padding-top: 10px;
-}
-.rng-options {
-    justify-content: center; /* Center the checkbox */
-    margin-bottom: 10px;
-}
- label.checkbox-label { /* Style checkbox label */
-     display: flex;
-     align-items: center;
-     gap: 6px;
-     color: var(--text-color); /* Use standard text color */
-     font-weight: normal; /* Remove bold */
-     min-width: auto;
-     cursor: pointer;
- }
- input[type="checkbox"] {
-     cursor: pointer;
-     accent-color: var(--primary-accent);
- }
-
-
-#rng-display-area {
-    margin-top: 15px;
-    display: flex;
-    flex-direction: column; /* Stack sets vertically */
-    gap: 10px; /* Space between sets */
-    align-items: center;
-    padding: 10px;
-    background-color: rgba(0, 0, 0, 0.2);
-    border-radius: 5px;
-    min-height: 50px; /* Ensure it has some height */
-    border: 1px dashed var(--border-color);
-    overflow: hidden; /* Hide overflowing spinning numbers */
-}
-
-.rng-set {
-    display: flex;
-    gap: 5px; /* Space between slots in a set */
-}
-
-.rng-slot {
-    background-color: #111;
-    border: 1px solid var(--secondary-accent);
-    color: var(--text-bright);
-    font-family: var(--font-display);
-    font-size: 1.8em;
-    width: 2.2em; /* Fixed width */
-    height: 1.8em; /* Fixed height (adjust line-height too) */
-    line-height: 1.7em; /* Vertically center */
-    text-align: center;
-    border-radius: 4px;
-    overflow: hidden; /* Hide spinning animation overflow */
-    position: relative; /* For positioning the spinning numbers */
-    box-shadow: inset 0 0 8px rgba(0,0,0,0.6);
-}
-
-.rng-slot span { /* The actual number displayed */
-    display: block;
-    position: relative;
-    z-index: 2;
-}
-
-/* Spinning Animation */
-@keyframes rng-spin {
-    0% { transform: translateY(-100%); opacity: 0; }
-    20% { transform: translateY(0); opacity: 1; } /* Land */
-    80% { transform: translateY(0); opacity: 1; } /* Hold */
-    100% { transform: translateY(100%); opacity: 0; } /* Spin out */
-}
-
-/* Simple visual trick for spinning */
-.rng-slot.spinning span {
-    opacity: 0;
-    transition: opacity 0.1s ease-out;
-}
-
-
-/* --- Modal Styles --- */
-.modal {
-    display: none;
-    position: fixed;
-    z-index: 1000; /* High z-index */
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    overflow: auto;
-    background-color: rgba(15, 15, 30, 0.85); /* Darker overlay */
-    backdrop-filter: blur(5px);
-}
-
-.modal-content {
-    background-color: var(--panel-bg-opaque); /* Use opaque background */
-    color: var(--text-color);
-    margin: 10% auto;
-    padding: 25px;
-    border: 1px solid var(--primary-accent);
-    width: 80%;
-    max-width: 650px;
-    border-radius: 10px;
-    position: relative;
-    box-shadow: 0 5px 25px rgba(0, 255, 255, 0.2);
-}
-.modal-content h2 { border-bottom: none; }
-
-.close-button { color: #aaa; position: absolute; top: 15px; right: 20px; font-size: 32px; font-weight: bold; cursor: pointer; transition: color 0.2s ease; }
-.close-button:hover, .close-button:focus { color: var(--primary-accent); }
-
-#favorites-list { list-style: none; padding: 0; margin-bottom: 20px; max-height: 300px; overflow-y: auto; }
-#favorites-list li { padding: 8px 5px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
-#favorites-list li:last-child { border-bottom: none; }
-#favorites-list button { font-size: 0.8em; padding: 3px 6px; border-color: var(--red-color); color: var(--red-color); background: transparent; }
-#favorites-list button:hover { background-color: rgba(255, 69, 0, 0.1); }
-
-#word-list-textarea { width: 100%; margin-top: 10px; margin-bottom: 15px; font-family: monospace; background-color: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-color); padding: 10px; border-radius: 5px; min-height: 200px; }
-
-.modal-content button { margin-top: 10px; }
-.modal-content button i { margin-right: 5px; }
-
-/* --- ADDED Rhyme Finder Modal Styles --- */
-
-/* --- Styles for Redesigned Rhyme Modal Header --- */
-
-.rhyme-modal-header {
-    text-align: center;
-    margin-bottom: 20px; /* Space below header */
-    padding-bottom: 15px;
-    border-bottom: 1px dashed var(--border-color);
-}
-
-#rhyme-modal-base-word {
-    font-size: 2.2em; /* Larger font for base word */
-    font-weight: bold;
-    color: var(--primary-accent); /* Use accent color */
-    margin-bottom: 10px;
-    text-shadow: 0 0 5px var(--primary-accent);
-}
-
-#rhyme-modal-pattern-container {
-    display: flex; /* Arrange vowel blocks horizontally */
-    justify-content: center; /* Center the blocks */
-    flex-wrap: wrap; /* Allow wrapping if many vowels */
-    gap: 8px; /* Space between vowel blocks */
-    margin-bottom: 15px; /* Space below pattern */
-}
-
-.vowel-pattern-block { /* Styling for individual vowel sound */
-    background-color: rgba(0, 0, 0, 0.3);
-    color: var(--secondary-accent); /* Magenta for vowels */
-    border: 1px solid var(--secondary-accent);
-    padding: 5px 10px;
-    border-radius: 5px;
-    font-family: monospace; /* Good for phonetic symbols */
-    font-size: 1.1em;
-    font-weight: bold;
-    min-width: 2.5em; /* Ensure blocks have some width */
-    text-align: center;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-    transition: transform 0.2s ease;
-}
-.vowel-pattern-block:hover {
-    transform: scale(1.05); /* Slight grow on hover */
-}
-
-/* Legend styles (Keep existing or use these) */
-.rhyme-legend {
-    margin-top: 10px;
-    font-size: 0.8em;
-    opacity: 0.8;
-    text-align: center;
-}
-.rhyme-legend span {
-    padding: 2px 5px;
-    border-radius: 3px;
-    margin: 0 3px;
-    display: inline-block; /* Ensure background color applies correctly */
-}
-/* Add or keep these legend color classes */
-.rhyme-legend .rhyme-freq-high { color: var(--red-color); background-color: rgba(255, 69, 0, 0.2);}
-.rhyme-legend .rhyme-freq-med { color: var(--highlight-color); background-color: rgba(249, 168, 38, 0.2);}
-.rhyme-legend .rhyme-freq-low { color: var(--green-color); background-color: rgba(0, 255, 0, 0.15);}
-.rhyme-legend .rhyme-freq-none { color: var(--text-color); opacity: 0.8; background-color: rgba(128,128,128, 0.1);}
-
-/* Keep existing rhyme results list styles (#rhyme-results-list, li color classes, li.rejected) */
-/* Keep existing add-rhyme-section styles */
-
-#rhyme-results-list {
-    list-style: none;
-    padding: 0;
-    margin-top: 15px;
-    max-height: 350px; /* Adjust height */
-    overflow-y: auto;
-    display: flex; /* Use flexbox for columns */
-    flex-wrap: wrap; /* Allow wrapping */
-    gap: 8px 15px; /* Row and column gap */
-    border: 1px solid var(--border-color); /* Add border around list */
-    background-color: rgba(0,0,0, 0.2); /* Slight background */
-    padding: 10px;
-    border-radius: 4px;
-}
-
-#rhyme-results-list li {
-    padding: 5px 10px; /* Increase padding */
-    background-color: rgba(255, 255, 255, 0.08); /* Slightly brighter background */
-    border-radius: 4px;
-    border: 1px solid rgba(255, 255, 255, 0.15); /* Lighter border */
-    flex-basis: calc(33.33% - 12px); /* Aim for 3 columns, adjust calc for gap */
-    text-align: center;
-    font-size: 0.95em;
-    color: var(--text-bright); /* Brighter text */
-    cursor: default; /* Indicate not clickable (unless you add functionality) */
-    transition: background-color 0.2s ease;
-}
-#rhyme-results-list li:hover {
-    background-color: rgba(0, 255, 255, 0.1); /* Highlight on hover */
-}
-#rhyme-no-results {
-    margin-top: 15px;
-    opacity: 0.7;
-    text-align: center;
-}
-/* --- Styles for Redesigned Rhyme Modal Header --- */
-
-.rhyme-modal-header {
-    text-align: center;
-    margin-bottom: 20px; /* Space below header */
-    padding-bottom: 15px;
-    border-bottom: 1px dashed var(--border-color);
-}
-
-#rhyme-modal-base-word {
-    font-size: 2.2em; /* Larger font for base word */
-    font-weight: bold;
-    color: var(--primary-accent); /* Use accent color */
-    margin-bottom: 10px;
-    text-shadow: 0 0 5px var(--primary-accent);
-}
-
-#rhyme-modal-pattern-container {
-    display: flex; /* Arrange vowel blocks horizontally */
-    justify-content: center; /* Center the blocks */
-    flex-wrap: wrap; /* Allow wrapping if many vowels */
-    gap: 8px; /* Space between vowel blocks */
-    margin-bottom: 15px; /* Space below pattern */
-}
-
-.vowel-pattern-block { /* Styling for individual vowel sound */
-    background-color: rgba(0, 0, 0, 0.3);
-    color: var(--secondary-accent); /* Magenta for vowels */
-    border: 1px solid var(--secondary-accent);
-    padding: 5px 10px;
-    border-radius: 5px;
-    font-family: monospace; /* Good for phonetic symbols */
-    font-size: 1.1em;
-    font-weight: bold;
-    min-width: 2.5em; /* Ensure blocks have some width */
-    text-align: center;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-    transition: transform 0.2s ease;
-}
-.vowel-pattern-block:hover {
-    transform: scale(1.05); /* Slight grow on hover */
-}
-
-/* Legend styles (Keep existing or use these) */
-.rhyme-legend {
-    margin-top: 10px;
-    font-size: 0.8em;
-    opacity: 0.8;
-    text-align: center;
-}
-.rhyme-legend span {
-    padding: 2px 5px;
-    border-radius: 3px;
-    margin: 0 3px;
-    display: inline-block; /* Ensure background color applies correctly */
-}
-/* Add or keep these legend color classes */
-.rhyme-legend .rhyme-freq-high { color: var(--red-color); background-color: rgba(255, 69, 0, 0.2);}
-.rhyme-legend .rhyme-freq-med { color: var(--highlight-color); background-color: rgba(249, 168, 38, 0.2);}
-.rhyme-legend .rhyme-freq-low { color: var(--green-color); background-color: rgba(0, 255, 0, 0.15);}
-.rhyme-legend .rhyme-freq-none { color: var(--text-color); opacity: 0.8; background-color: rgba(128,128,128, 0.1);}
-
-/* Keep existing rhyme results list styles (#rhyme-results-list, li color classes, li.rejected) */
-/* Keep existing add-rhyme-section styles */
-/* --- START OF CODE TO PASTE --- */
-
-/* Color Coding for Rhyme List Items */
-/* --- ADDED Rhyme Finder Modal Styles --- */
-/* ... (all existing rhyme modal styles) ... */
-
-/* Style rejected list items */
-#rhyme-results-list li.rejected {
-    text-decoration: line-through;
-    opacity: 0.5;
-    font-style: italic;
-    cursor: not-allowed; /* Indicate it's no longer interactive */
-    border-left-color: #555; /* Grey out the color border */
-    color: #888;
-}
-#rhyme-results-list li.rejected:hover {
-    background-color: inherit; /* Don't highlight rejected items on hover */
-}
-
-/* NEW Styles for Manual Add Section */
-.add-rhyme-section {
-    margin-top: 20px;
-    padding-top: 15px;
-    border-top: 1px dashed var(--border-color);
-    display: flex;
-    gap: 10px;
-    align-items: center;
-}
-
-#manual-rhyme-input {
-    flex-grow: 1; /* Take remaining space */
-    padding: 8px 10px;
-    border: 1px solid var(--border-color);
-    background-color: rgba(0,0,0, 0.2);
-    color: var(--text-bright);
-    border-radius: 4px;
-    font-size: 0.95em;
-}
-
-#add-manual-rhyme-button {
-    /* Use existing icon-button styles */
-    border-color: var(--green-color); /* Green button */
-    color: var(--green-color);
-    white-space: nowrap; /* Prevent text wrapping */
-}
-#add-manual-rhyme-button:hover {
-    background-color: rgba(0, 255, 0, 0.1);
-    box-shadow: 0 0 8px var(--green-color);
-}
-
-/* --- Shaking Animations --- */
-/* Modified shake for brief tap effect */
-@keyframes shake {
-  0%, 100% { transform: translate(0, 0); }
-  25% { transform: translate(2px, -1px); }
-  50% { transform: translate(-2px, 1px); }
-  75% { transform: translate(1px, 2px); }
-}
-
-/* Apply brief shake on tap */
-body.screen-shaking {
-    animation: shake 0.15s linear 1; /* Play once */
-}
-
-/* New Gentle Buzz Animation for word display */
-@keyframes buzz-on-beat {
-  0%, 100% { transform: translateY(0) scale(1); }
-  10%, 30% { transform: translateY(-1px) scale(1.01); }
-}
-
-/* Apply buzz effect to word display container when active */
-#word-display-container.buzz-with-bpm {
-    animation-name: buzz-on-beat;
-    animation-timing-function: ease-in-out;
-    animation-iteration-count: infinite;
-    /* Duration set by JS via var(--beat-interval) or direct style */
-}
-
-
-/* --- Responsive Considerations --- */
-@media (max-width: 1200px) {
-    .game-arena { flex-direction: column; }
-    .control-panel { flex: 0 0 auto; width: 100%; flex-direction: row; flex-wrap: wrap; justify-content: space-around; }
-    .panel-left { order: 2; } /* Settings/RNG below */
-    .panel-right { order: 3; } /* Rhythm/Radar last */
-    .center-stage { order: 1; width: 100%; } /* Center first */
-    /* Removed font-size change to prevent jittering */
-    .word-nav-arrow.side-arrow { font-size: 2em; }
-    /* Maintain fixed height for word display container and area */
-    #word-display-container { height: 100px; }
-    #word-display-area { height: 160px; }
-}
-
-@media (max-width: 768px) {
-    body { padding: 10px; }
-    .game-header { flex-direction: column; gap: 10px; text-align: center; padding: 10px;}
-    .stats-display { justify-content: center; gap: 20px; }
-    .stat-value { font-size: 1.4em; }
-    h1 { font-size: 1.5em; }
-    /* Removed font-size change to prevent jittering */
-    /* Maintain fixed height for word display container */
-    #word-display-container { height: 90px; }
-    .icon-button .btn-text { display: none; } /* Hide text on most small buttons */
-    .icon-button { padding: 8px; }
-    /* Keep text for specific important buttons */
-    .activation-button .btn-text,
-    #edit-word-list-button .btn-text,
-    #favorites-button .btn-text { display: inline; }
-    .large-button { padding: 12px; font-size: 1em;} /* Adjust large button padding/size */
-    .large-button .btn-text { display: inline; } /* Ensure text shows on large */
-    .control-panel { padding: 10px; }
-    .control-group { justify-content: center; }
-     #rng-display-area { margin-top: 10px; }
-     .rng-slot { font-size: 1.5em; width: 2em; height: 1.7em; line-height: 1.6em; }
-     /* Rhyme list 2 columns */
-     #rhyme-results-list li {
-         flex-basis: calc(50% - 10px); /* 2 columns */
-     }
-}
-
-@media (max-width: 480px) {
-    h1 { font-size: 1.3em;}
-    .stat-value { font-size: 1.2em; }
-    /* Removed font-size change to prevent jittering */
-    /* Maintain fixed height for word display container */
-    #word-display-container { 
-        padding: 10px 50px; 
-        height: 80px;
-    }
-    .word-nav-arrow.side-arrow { font-size: 1.5em; left: 5px; right: 5px; }
-    .word-action-icon { font-size: 1.2em; }
-    .word-action-icon.blacklist-icon { left: 2px; }
-    .word-action-icon.favorite-icon { right: 2px; }
-    .bpm-display-group { flex-direction: column; gap: 5px; }
-    #bpm-display { font-size: 2em; }
-    .bpm-main-controls .large-button { font-size: 1em; padding: 10px 15px;}
-    #new-transcript { font-size: 0.85em; }
-    .control-group label { min-width: auto; } /* Allow labels to wrap better */
-    .activation-button { font-size: 1em; padding: 10px; flex-basis: 48%; } /* Adjust activation button size */
-    #timed-cycle-options { flex-wrap: wrap; justify-content: center; }
-    #rng-display-area { margin-top: 10px; }
-    .rng-slot { font-size: 1.3em; width: 1.8em; height: 1.6em; line-height: 1.5em; }
-    /* Rhyme list 1 column */
-    #rhyme-results-list li {
-        flex-basis: 100%; /* 1 column */
-    }
-}
-
-/* Syllable Filter Section Styling */
-.syllable-filter-section {
-    margin: 15px 0;
-    padding: 10px;
-    background-color: rgba(0, 0, 0, 0.2);
-    border-radius: 6px;
-    border: 1px solid var(--border-color);
-}
-
-.syllable-header {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    position: relative;
-    margin-bottom: 10px;
-    padding-bottom: 5px;
-    border-bottom: 1px dashed var(--border-color);
-}
-
-.syllable-header h3 {
-    font-size: 1em;
-    color: var(--secondary-accent);
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin: 0;
-    text-align: center;
-}
-
-.syllable-reset-button {
-    position: absolute;
-    right: 0;
-    top: 50%;
-    transform: translateY(-50%);
-    background: none;
-    border: none;
-    color: var(--text-color);
-    cursor: pointer;
-    padding: 4px;
-    border-radius: 3px;
-    transition: color 0.2s ease, background-color 0.2s ease;
-    font-size: 0.8em;
-    opacity: 0.7;
-}
-
-.syllable-reset-button:hover {
-    color: var(--primary-accent);
-    background-color: rgba(0, 255, 255, 0.1);
-    opacity: 1;
-}
-
-.syllable-controls {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-/* Unified Syllable Select Styling */
-.syllable-select {
-    width: 60px;
-    min-width: 60px;
-    max-width: 60px;
-    text-align: center;
-    font-size: 0.9em;
-    padding: 6px 8px;
-    background-color: var(--panel-bg);
-    border: 1px solid var(--primary-accent);
-    color: var(--primary-accent);
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
-    appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='5'%3E%3Cpath fill='%2300ffff' d='M0 0l5 5 5-5z'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 8px center;
-    padding-right: 25px;
-}
-
-.syllable-select:hover {
-    background-color: rgba(0, 255, 255, 0.1);
-    box-shadow: 0 0 8px var(--primary-accent);
-    color: var(--text-bright);
-}
-
-.syllable-select:focus {
-    outline: none;
-    box-shadow: 0 0 8px var(--primary-accent);
-    background-color: rgba(0, 255, 255, 0.1);
-    color: var(--text-bright);
-}
-
-.syllable-select option {
-    background-color: var(--panel-bg);
-    color: var(--text-color);
-    padding: 4px;
-}
-
-/* Responsive adjustments for syllable filter */
-@media (max-width: 768px) {
-    .syllable-select {
-        width: 55px;
-        min-width: 55px;
-        max-width: 55px;
-        font-size: 0.85em;
-        padding: 5px 6px;
-        padding-right: 22px;
-    }
-}
-
-@media (max-width: 480px) {
-    .syllable-select {
-        width: 50px;
-        min-width: 50px;
-        max-width: 50px;
-        font-size: 0.8em;
-        padding: 4px 5px;
-        padding-right: 20px;
-    }
-}
-
-/* Word Info Boxes (Synonyms & Definition) */
-.word-info-box {
-    width: 90%;
-    max-width: 600px;
-    min-height: 36px;
-    margin: 0 auto;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-    z-index: 10;
-    pointer-events: none;
-}
-
-.synonyms-box {
-    margin-bottom: 10px;
-    margin-top: 0;
-    min-height: 38px;
-}
-
-.definition-box {
-    margin-top: 10px;
-    margin-bottom: 0;
-    min-height: 38px;
-}
-
+/* Updated word info content styles for top and bottom cells */
 .word-info-content {
     width: 100%;
     text-align: center;
@@ -1537,47 +457,60 @@ body.screen-shaking {
     font-family: var(--font-main);
     font-weight: 500;
     letter-spacing: 0.01em;
-    min-height: 32px;
-    min-width: 120px;
-    margin: 0 auto;
+    margin: 0;
     opacity: 0;
     filter: blur(6px);
     transition: opacity 0.7s cubic-bezier(.4,2,.6,1), filter 0.7s cubic-bezier(.4,2,.6,1);
-    padding: 7px 18px 7px 18px;
+    padding: 7px 18px;
     box-shadow: 0 0 12px 0 rgba(0,255,255,0.13);
     pointer-events: auto;
     user-select: text;
     overflow-wrap: break-word;
     white-space: pre-line;
+    /* Dynamic font sizing to prevent overflow */
+    font-size: clamp(0.8em, 2vw, 1.2em);
+    line-height: 1.3;
+    max-height: 100%;
+    overflow: hidden;
+    z-index: 2; /* Above cells but below navigation arrows */
 }
 
 .word-info-content.visible {
     opacity: 1;
     filter: blur(0);
+    z-index: 2;
 }
 
-/* Synonyms: allow up to 2 lines, spaced out */
+/* Specific styles for synonyms content */
 #synonyms-content {
-    font-size: 1.08em;
-    line-height: 1.5;
-    max-height: 3.2em;
+    font-size: clamp(0.9em, 2.5vw, 1.1em);
+    line-height: 1.4;
+    max-height: 100%;
     overflow: hidden;
     display: block;
     word-break: break-word;
 }
 
-/* Definition: dynamic font size to fit one line */
+/* Specific styles for definition content */
 #definition-content {
     display: block;
-    white-space: nowrap;
+    /* Remove nowrap to allow text wrapping */
+    white-space: normal;
     overflow: hidden;
-    text-overflow: ellipsis;
-    font-size: clamp(1.1em, 2.2vw, 1.5em);
+    /* Remove text-overflow ellipsis since we're allowing wrapping */
+    font-size: clamp(0.9em, 2.5vw, 1.1em);
     transition: font-size 0.3s cubic-bezier(.4,2,.6,1);
+    max-height: 100%;
+    /* Allow text to wrap to second line */
+    line-height: 1.3;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    /* Ensure text doesn't overflow the cell */
+    max-width: 100%;
 }
 
 #definition-content.shrink {
-    font-size: 1em;
+    font-size: 0.8em;
 }
 
 /* Beat Player Panel Styles */
@@ -1752,4 +685,1160 @@ body.screen-shaking {
         width: 14px;
         height: 14px;
     }
+}
+
+/* Word Action Icons - Repositioned for new three-cell layout */
+.word-action-icon {
+    position: absolute;
+    background: none;
+    border: none;
+    font-size: 1.4em;
+    cursor: pointer;
+    color: #666;
+    padding: 5px;
+    transition: color 0.2s ease, transform 0.2s ease, opacity 0.2s ease;
+    opacity: 0.6;
+    z-index: 5;
+}
+
+.word-action-icon:hover { 
+    opacity: 1; 
+    transform: scale(1.1); 
+}
+
+/* Override general hover rule for means-like icon to respect pinned state */
+.word-action-icon.means-like-icon.pinned {
+    color: var(--highlight-color) !important;
+    opacity: 1 !important;
+    animation: none;
+    box-shadow: 0 0 8px var(--highlight-color);
+    border-radius: 50%;
+    background-color: rgba(249, 168, 38, 0.1);
+}
+
+.word-action-icon.means-like-icon.pinned:hover {
+    color: var(--highlight-color) !important;
+    opacity: 1 !important;
+    transform: scale(1.1);
+    box-shadow: 0 0 12px var(--highlight-color);
+    animation: shimmer 1.5s ease-in-out infinite;
+}
+
+/* Blacklist icon - upper-left corner of middle cell */
+.word-action-icon.blacklist-icon { 
+    top: 8px;
+    left: 8px;
+    transform: none;
+}
+
+.word-action-icon.blacklist-icon:hover {
+    transform: scale(1.1);
+ }
+
+/* Favorite icon - upper-right corner of middle cell */
+.word-action-icon.favorite-icon { 
+    top: 8px;
+    right: 8px;
+    transform: none;
+}
+
+.word-action-icon.favorite-icon:hover {
+    transform: scale(1.1);
+}
+
+/* Definition/Synonym icon - bottom-center of middle cell */
+.word-action-icon.means-like-icon {
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    left: auto;
+    transform: none;
+    z-index: 20;
+    transition: color 0.2s, transform 0.2s;
+}
+
+.word-action-icon.means-like-icon:hover {
+    transform: none;
+}
+
+/* Unpinned tooltip state - starts dim */
+.word-action-icon.means-like-icon:not(.pinned) {
+    color: var(--secondary-accent);
+    opacity: 0.7;
+}
+
+.word-action-icon.means-like-icon:not(.pinned):hover {
+    color: var(--primary-accent);
+    opacity: 1;
+    animation: pulse-grow-book 0.35s cubic-bezier(.4,2,.6,1), shimmer 1.5s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+    0%, 100% { 
+        opacity: 0.6; 
+        color: var(--text-color); 
+    }
+    50% {
+        opacity: 0.8; 
+        color: var(--highlight-color); 
+    }
+}
+
+.word-action-icon.means-like-icon:not(.pinned) i.fa-book {
+    animation: pulse-grow-book 2s ease-in-out infinite;
+}
+
+.word-action-icon.means-like-icon.pinned i.fa-book-open {
+    animation: none;
+}
+
+.word-action-icon.means-like-icon.pinned i.fa-random {
+    animation: none;
+}
+
+.word-action-icon.means-like-icon.pinned i.fa-paragraph {
+    animation: none;
+}
+
+@keyframes pulse-grow-book {
+    0% { transform: scale(1); }
+    40% { transform: scale(1.18); }
+    100% { transform: scale(1); }
+}
+
+/* Word Subtext */
+.word-subtext {
+    position: absolute;
+    bottom: 25px; /* Position above the means-like icon */
+    left: 50%;
+    transform: translateX(-50%);
+    color: var(--secondary-accent);
+    font-size: 0.9em;
+    font-style: italic;
+    text-align: center;
+    max-width: 80%;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+    z-index: 5;
+}
+
+.word-subtext.visible {
+    opacity: 1;
+}
+
+/* Active states for action icons */
+.word-action-icon.blacklist-icon.active { 
+    color: var(--red-color); 
+    opacity: 1; 
+}
+
+.word-action-icon.favorite-icon .far { 
+    display: inline; 
+}
+
+.word-action-icon.favorite-icon .solid-star { 
+    display: none; 
+}
+
+.word-action-icon.favorite-icon.active { 
+    color: var(--highlight-color); 
+    opacity: 1; 
+}
+
+.word-action-icon.favorite-icon.active .far { 
+    display: none; 
+}
+
+.word-action-icon.favorite-icon.active .solid-star { 
+    display: inline; 
+}
+
+/* Responsive adjustments for the new word display unit */
+@media (max-width: 1200px) {
+    .game-arena { 
+        flex-direction: column; 
+    }
+    
+    .control-panel { 
+        flex: 0 0 auto; 
+        width: 100%; 
+        flex-direction: row; 
+        flex-wrap: wrap; 
+        justify-content: space-around; 
+    }
+    
+    .panel-left { 
+        order: 2; 
+    }
+    
+    .panel-right { 
+        order: 3; 
+    }
+    
+    .center-stage { 
+        order: 1; 
+        width: 100%; 
+    }
+    
+    .word-nav-arrow.side-arrow { 
+        font-size: 2em; 
+    }
+    
+    #word-display-unit { 
+        height: 280px; 
+    }
+    
+    .word-display-cell.middle-cell {
+        min-height: 100px;
+        max-height: 140px;
+    }
+}
+
+@media (max-width: 768px) {
+    body { 
+        padding: 10px; 
+    }
+    
+    .game-header { 
+        flex-direction: column; 
+        gap: 10px; 
+        text-align: center; 
+        padding: 10px;
+    }
+    
+    .stats-display { 
+        justify-content: center; 
+        gap: 20px; 
+    }
+    
+    .stat-value { 
+        font-size: 1.4em; 
+    }
+    
+    h1 { 
+        font-size: 1.5em; 
+    }
+    
+    #word-display-unit { 
+        height: 240px; 
+        padding: 15px 60px; 
+    }
+    
+    .word-display-cell.middle-cell {
+        min-height: 80px;
+        max-height: 120px;
+    }
+    
+    .icon-button .btn-text { 
+        display: none; 
+    }
+    
+    .icon-button { 
+        padding: 8px; 
+    }
+    
+    .activation-button .btn-text,
+    .large-button .btn-text { 
+        display: inline; 
+    }
+    
+    .large-button { 
+        padding: 12px; 
+        font-size: 1em;
+    }
+    
+    .control-panel { 
+        padding: 10px; 
+    }
+    
+    .control-group { 
+        justify-content: center; 
+    }
+    
+    #rng-display-area { 
+        margin-top: 10px; 
+    }
+    
+    .rng-slot { 
+        font-size: 1.5em; 
+        width: 2em; 
+        height: 1.7em; 
+        line-height: 1.6em; 
+    }
+    
+    #rhyme-results-list li {
+        font-size: 0.9em;
+        padding: 8px 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    h1 { 
+        font-size: 1.3em;
+    }
+    
+    .stat-value { 
+        font-size: 1.2em; 
+    }
+    
+    #word-display-unit { 
+        height: 200px; 
+        padding: 10px 40px; 
+    }
+    
+    .word-display-cell.middle-cell {
+        min-height: 60px;
+        max-height: 100px;
+    }
+    
+    .word-nav-arrow.side-arrow { 
+        font-size: 1.5em; 
+        left: 5px; 
+        right: 5px; 
+    }
+    
+    .word-action-icon { 
+        font-size: 1.2em; 
+    }
+    
+    .word-action-icon.blacklist-icon { 
+        left: 2px; 
+    }
+    
+    .word-action-icon.favorite-icon { 
+        right: 2px; 
+    }
+    
+    .bpm-display-group { 
+        flex-direction: column; 
+        gap: 5px; 
+    }
+    
+    #bpm-display { 
+        font-size: 2em; 
+    }
+    
+    .bpm-main-controls .large-button { 
+        font-size: 1em; 
+        padding: 10px 15px;
+    }
+    
+    #new-transcript { 
+        font-size: 0.85em; 
+    }
+    
+    .control-group label { 
+        min-width: auto; 
+    }
+    
+    .activation-button { 
+        font-size: 1em; 
+        padding: 10px; 
+        flex-basis: 48%; 
+    }
+    
+    #timed-cycle-options { 
+        flex-wrap: wrap; 
+        justify-content: center; 
+    }
+    
+    #rng-display-area { 
+        margin-top: 10px; 
+    }
+    
+    .rng-slot { 
+        font-size: 1.3em; 
+        width: 1.8em; 
+        height: 1.6em; 
+        line-height: 1.5em; 
+    }
+    
+    #rhyme-results-list li {
+        font-size: 0.85em;
+        padding: 6px 8px;
+    }
+}
+
+/* Activation Controls */
+.activation-controls {
+    margin-top: 10px;
+    padding: 15px;
+    background-color: rgba(0, 0, 0, 0.3);
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    width: 100%;
+    max-width: 700px;
+}
+
+.activation-controls h2 {
+    margin-bottom: 15px;
+    font-size: 1.2em;
+}
+
+.activation-buttons {
+    justify-content: space-around;
+    margin-bottom: 15px;
+}
+
+.activation-button {
+    flex-basis: 45%;
+    justify-content: center;
+    border-width: 2px;
+    background-color: #333;
+    color: #999;
+    border-color: #555;
+    position: relative;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+}
+
+.activation-button .light {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    background-color: #555;
+    border-radius: 50%;
+    margin-right: 8px;
+    transition: all 0.3s ease;
+    box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.5);
+    vertical-align: middle;
+}
+
+ .activation-button i {
+     margin-right: 8px;
+ }
+
+.activation-button.active {
+    background-color: var(--primary-accent);
+    color: var(--panel-bg-opaque);
+    border-color: var(--primary-accent);
+    box-shadow: 0 0 12px var(--primary-accent);
+    font-weight: bold;
+}
+
+.activation-button#voice-mode-button.active {
+    background-color: var(--red-color);
+    border-color: var(--red-color);
+    color: #fff;
+    box-shadow: 0 0 15px var(--red-color);
+    animation: pulse-on-air-glow 1.5s infinite ease-in-out;
+}
+
+.activation-button#voice-mode-button.active .light {
+    background-color: #fff;
+    box-shadow: 0 0 8px #fff, 0 0 12px var(--red-color);
+}
+
+@keyframes pulse-on-air-glow { 
+    0% { box-shadow: 0 0 10px var(--red-color); } 
+    50% { box-shadow: 0 0 20px var(--red-color); } 
+    100% { box-shadow: 0 0 10px var(--red-color); } 
+}
+
+#timed-cycle-options {
+    align-items: center;
+    background-color: rgba(0,0,0,0.2);
+    padding: 10px;
+    border-radius: 4px;
+}
+
+#timed-cycle-options label {
+    color: var(--secondary-accent);
+    min-width: auto;
+    margin-right: 5px;
+    font-weight: normal;
+}
+
+/* Transcript Area */
+.transcript-area { 
+    width: 100%; 
+    max-width: 700px; 
+    height: 200px; 
+    display: flex; 
+    flex-direction: column; 
+}
+
+#new-transcript {
+    flex-grow: 1;
+    background-color: rgba(0, 0, 0, 0.5);
+    padding: 10px;
+    border-radius: 5px;
+    color: var(--green-color);
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.95em;
+    display: flex;
+    flex-direction: column-reverse;
+    overflow-y: auto;
+    border: 1px solid rgba(0, 80, 0, 0.7);
+    box-shadow: inset 0 0 10px rgba(0, 255, 0, 0.2);
+}
+
+#new-transcript div {
+    margin-bottom: 3px;
+    padding: 2px 4px;
+    border-radius: 3px;
+    opacity: 1;
+    color: var(--green-color);
+    transition: opacity 0.3s ease, color 0.3s ease;
+    word-wrap: break-word;
+}
+
+#new-transcript div.interim {
+    color: rgba(0, 255, 0, 0.6);
+    opacity: 0.8;
+}
+
+/* BPM Panel */
+.bpm-main-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    flex-wrap: wrap;
+    gap: 15px;
+    width: 100%;
+    padding: 15px 0;
+    min-height: 70px;
+}
+
+.bpm-main-controls > #bpm-button,
+.bpm-main-controls > #detect-bpm-button {
+    opacity: 1;
+}
+
+.bpm-main-controls > .bpm-display-group {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    opacity: 1;
+}
+
+#detect-bpm-button {
+    border-color: var(--secondary-accent);
+    color: var(--secondary-accent);
+}
+
+#detect-bpm-button:hover {
+    background-color: rgba(255, 0, 255, 0.1);
+    box-shadow: 0 0 8px var(--secondary-accent);
+}
+
+#detect-bpm-button.detecting {
+    border-color: var(--red-color);
+    color: var(--red-color);
+    background-color: rgba(255, 69, 0, 0.1);
+    box-shadow: 0 0 12px var(--red-color);
+    cursor: pointer;
+    opacity: 1;
+}
+
+#detect-bpm-button.detecting:hover {
+    background-color: rgba(255, 69, 0, 0.2);
+    box-shadow: 0 0 16px var(--red-color);
+}
+
+@keyframes spin { 
+    0% { transform: rotate(0deg); } 
+    100% { transform: rotate(360deg); } 
+}
+
+#detect-bpm-button.detecting .fa-stop {
+    animation: pulse 1s ease-in-out infinite;
+}
+
+#bpm-display {
+    font-family: var(--font-display);
+    font-size: 2.5em;
+    color: var(--primary-accent);
+    line-height: 1;
+}
+
+.bpm-unit {
+    display: block;
+    font-size: 0.8em;
+    opacity: 0.7;
+    margin-left: 5px;
+}
+
+.bpm-adjust-controls {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+#four-count-container {
+    display: grid !important;
+    gap: 6px;
+    padding: 8px;
+    background-color: rgba(0, 0, 0, 0.4);
+    border-radius: 5px;
+    border: 1px solid var(--border-color);
+    min-height: 50px;
+    width: 100%;
+    max-width: 320px;
+    margin: 15px auto;
+}
+
+.beat-box {
+    background-color: #333;
+    width: 100%;
+    padding-bottom: 100%;
+    height: 0;
+    border-radius: 4px;
+    transition: background-color 0.15s ease-out, transform 0.15s ease-out, opacity 0.15s ease-out;
+    opacity: 0.6;
+}
+
+.beat-box.active {
+    background-color: var(--primary-accent);
+    opacity: 1;
+    transform: scale(1.05);
+    box-shadow: inset 0 0 5px rgba(255,255,255,0.2);
+    transition-duration: calc(var(--beat-interval, 0.5s) * 0.4);
+}
+
+@keyframes borderFlash {
+  0%, 100% {
+        border-color: var(--highlight-color);
+      box-shadow: 0 0 8px var(--highlight-color), inset 0 0 5px rgba(255,255,255,0.15);
+  }
+  50% {
+        border-color: rgba(249, 168, 38, 0.4);
+      box-shadow: inset 0 0 5px rgba(0,0,0,0.4);
+  }
+}
+
+.beat-box.flashing-border {
+    border-width: 2px;
+    border-style: solid;
+    animation-name: borderFlash;
+    animation-timing-function: ease-in-out;
+    animation-iteration-count: infinite;
+}
+
+.bpm-grid-controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 0.85em;
+    margin-top: 10px;
+}
+
+.bpm-multiplier-controls {
+    margin-top: 15px;
+    padding-top: 10px;
+}
+
+.bpm-multiplier-controls h3 {
+    margin-bottom: 12px;
+    font-size: 1.1em;
+    text-align: center;
+    color: var(--secondary-accent);
+    border-bottom: none;
+}
+
+.multiplier-buttons {
+    justify-content: space-around;
+}
+
+.multiplier-btn {
+    padding: 6px 14px;
+    font-weight: bold;
+    border-width: 1px;
+    border-color: var(--border-color);
+    color: var(--text-color);
+    min-width: 50px;
+    opacity: 0.7;
+}
+
+.multiplier-btn.selected {
+    border-color: var(--primary-accent);
+    color: var(--primary-accent);
+    background-color: rgba(0, 255, 255, 0.1);
+    box-shadow: 0 0 6px var(--primary-accent);
+    opacity: 1.0;
+}
+
+/* Frequency Panel */
+#frequency-panel { 
+    flex-grow: 1; 
+}
+
+#frequent-words {
+    background-color: rgba(0, 0, 0, 0.4);
+    padding: 10px;
+    border-radius: 5px;
+    min-height: 60px;
+    border: 1px solid var(--border-color);
+    line-height: 1.6;
+}
+
+.freq-word { 
+    display: inline-block; 
+    padding: 3px 8px; 
+    margin: 3px 4px; 
+    border-radius: 15px; 
+    color: #fff; 
+    font-size: 0.9em; 
+    border: 1px solid transparent; 
+    transition: transform 0.2s ease; 
+}
+
+.freq-word:hover { 
+    transform: translateY(-2px); 
+}
+
+.freq-5 { background-color: #c82333; border-color: #bd2130; }
+.freq-4 { background-color: #e0a800; border-color: #d39e00; }
+.freq-3 { background-color: #007bff; border-color: #007bff; }
+.freq-2 { background-color: #218838; border-color: #1e7e34; }
+
+/* RNG Styles */
+#rng-controls {
+    margin-top: 15px;
+    padding-top: 10px;
+}
+
+.rng-options {
+    justify-content: center;
+    margin-bottom: 10px;
+}
+
+label.checkbox-label {
+     display: flex;
+     align-items: center;
+     gap: 6px;
+    color: var(--text-color);
+    font-weight: normal;
+     min-width: auto;
+     cursor: pointer;
+ }
+
+ input[type="checkbox"] {
+     cursor: pointer;
+     accent-color: var(--primary-accent);
+ }
+
+#rng-display-area {
+    margin-top: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: center;
+    padding: 10px;
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 5px;
+    min-height: 50px;
+    border: 1px dashed var(--border-color);
+    overflow: hidden;
+}
+
+.rng-set {
+    display: flex;
+    gap: 5px;
+}
+
+.rng-slot {
+    background-color: #111;
+    border: 1px solid var(--secondary-accent);
+    color: var(--text-bright);
+    font-family: var(--font-display);
+    font-size: 1.8em;
+    width: 2.2em;
+    height: 1.8em;
+    line-height: 1.7em;
+    text-align: center;
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: inset 0 0 8px rgba(0,0,0,0.6);
+}
+
+.rng-slot span {
+    display: block;
+    position: relative;
+    z-index: 2;
+}
+
+.rng-slot.spinning span {
+    opacity: 0;
+    transition: opacity 0.1s ease-out;
+}
+
+/* Modal Styles */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(15, 15, 30, 0.85);
+    backdrop-filter: blur(5px);
+}
+
+.modal-content {
+    background-color: var(--panel-bg-opaque);
+    color: var(--text-color);
+    margin: 10% auto;
+    padding: 25px;
+    border: 1px solid var(--primary-accent);
+    width: 80%;
+    max-width: 650px;
+    border-radius: 10px;
+    position: relative;
+    box-shadow: 0 5px 25px rgba(0, 255, 255, 0.2);
+}
+
+.modal-content h2 { 
+    border-bottom: none; 
+}
+
+.close-button { 
+    color: #aaa; 
+    position: absolute; 
+    top: 15px; 
+    right: 20px; 
+    font-size: 32px; 
+    font-weight: bold; 
+    cursor: pointer; 
+    transition: color 0.2s ease; 
+}
+
+.close-button:hover, .close-button:focus { 
+    color: var(--primary-accent); 
+}
+
+#favorites-list { 
+    list-style: none; 
+    padding: 0; 
+    margin-bottom: 20px; 
+    max-height: 300px; 
+    overflow-y: auto; 
+}
+
+#favorites-list li { 
+    padding: 8px 5px; 
+    border-bottom: 1px solid var(--border-color); 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+}
+
+#favorites-list li:last-child { 
+    border-bottom: none; 
+}
+
+#favorites-list button { 
+    font-size: 0.8em; 
+    padding: 3px 6px; 
+    border-color: var(--red-color); 
+    color: var(--red-color); 
+    background: transparent; 
+}
+
+#favorites-list button:hover { 
+    background-color: rgba(255, 69, 0, 0.1); 
+}
+
+#word-list-textarea { 
+    width: 100%; 
+    margin-top: 10px; 
+    margin-bottom: 15px; 
+    font-family: monospace; 
+    background-color: rgba(0,0,0,0.3); 
+    border: 1px solid var(--border-color); 
+    color: var(--text-color); 
+    padding: 10px; 
+    border-radius: 5px; 
+    min-height: 200px; 
+}
+
+.modal-content button { 
+    margin-top: 10px; 
+}
+
+.modal-content button i { 
+    margin-right: 5px; 
+}
+
+/* Rhyme Finder Modal Styles */
+.rhyme-modal-header {
+    text-align: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px dashed var(--border-color);
+}
+
+#rhyme-modal-base-word {
+    font-size: 2.2em;
+    font-weight: bold;
+    color: var(--primary-accent);
+    margin-bottom: 10px;
+    text-shadow: 0 0 5px var(--primary-accent);
+}
+
+#rhyme-modal-pattern-container {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 15px;
+}
+
+.vowel-pattern-block {
+    background-color: rgba(0, 0, 0, 0.3);
+    color: var(--secondary-accent);
+    border: 1px solid var(--secondary-accent);
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-family: monospace;
+    font-size: 1.1em;
+    font-weight: bold;
+    min-width: 2.5em;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    transition: transform 0.2s ease;
+}
+
+.vowel-pattern-block:hover {
+    transform: scale(1.05);
+}
+
+.rhyme-legend {
+    margin-top: 10px;
+    font-size: 0.8em;
+    opacity: 0.8;
+    text-align: center;
+}
+
+.rhyme-legend span {
+    padding: 2px 5px;
+    border-radius: 3px;
+    margin: 0 3px;
+    display: inline-block;
+}
+
+.rhyme-legend .rhyme-freq-high { color: var(--red-color); background-color: rgba(255, 69, 0, 0.2);}
+.rhyme-legend .rhyme-freq-med { color: var(--highlight-color); background-color: rgba(249, 168, 38, 0.2);}
+.rhyme-legend .rhyme-freq-low { color: var(--green-color); background-color: rgba(0, 255, 0, 0.15);}
+.rhyme-legend .rhyme-freq-none { color: var(--text-color); opacity: 0.8; background-color: rgba(128,128,128, 0.1);}
+
+#rhyme-results-list {
+    list-style: none;
+    padding: 0;
+    margin-top: 15px;
+    max-height: 350px;
+    overflow-y: auto;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 15px;
+    border: 1px solid var(--border-color);
+    background-color: rgba(0,0,0, 0.2);
+    padding: 10px;
+    border-radius: 4px;
+}
+
+#rhyme-results-list li {
+    padding: 5px 10px;
+    background-color: rgba(255, 255, 255, 0.08);
+    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    flex-basis: calc(33.33% - 12px);
+    text-align: center;
+    font-size: 0.95em;
+    color: var(--text-bright);
+    cursor: default;
+    transition: background-color 0.2s ease;
+}
+
+#rhyme-results-list li:hover {
+    background-color: rgba(0, 255, 255, 0.1);
+}
+
+#rhyme-results-list li.rejected {
+    text-decoration: line-through;
+    opacity: 0.5;
+    font-style: italic;
+    cursor: not-allowed;
+    border-left-color: #555;
+    color: #888;
+}
+
+#rhyme-results-list li.rejected:hover {
+    background-color: inherit;
+}
+
+#rhyme-no-results {
+    margin-top: 15px;
+    opacity: 0.7;
+    text-align: center;
+}
+
+.add-rhyme-section {
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px dashed var(--border-color);
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+#manual-rhyme-input {
+    flex-grow: 1;
+    padding: 8px 10px;
+    border: 1px solid var(--border-color);
+    background-color: rgba(0,0,0, 0.2);
+    color: var(--text-bright);
+    border-radius: 4px;
+    font-size: 0.95em;
+}
+
+#add-manual-rhyme-button {
+    border-color: var(--green-color);
+    color: var(--green-color);
+    white-space: nowrap;
+}
+
+#add-manual-rhyme-button:hover {
+    background-color: rgba(0, 255, 0, 0.1);
+    box-shadow: 0 0 8px var(--green-color);
+}
+
+/* Shaking Animations */
+@keyframes shake {
+  0%, 100% { transform: translate(0, 0); }
+  25% { transform: translate(2px, -1px); }
+  50% { transform: translate(-2px, 1px); }
+  75% { transform: translate(1px, 2px); }
+}
+
+body.screen-shaking {
+    animation: shake 0.15s linear 1;
+}
+
+/* New Gentle Buzz Animation for word display */
+@keyframes buzz-on-beat {
+  0%, 100% { transform: translateY(0) scale(1); }
+  10%, 30% { transform: translateY(-1px) scale(1.01); }
+}
+
+/* Syllable Filter Section Styling */
+.syllable-filter-section {
+    margin: 15px 0;
+    padding: 10px;
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+}
+
+.syllable-header {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    margin-bottom: 10px;
+    padding-bottom: 5px;
+    border-bottom: 1px dashed var(--border-color);
+}
+
+.syllable-header h3 {
+    font-size: 1em;
+    color: var(--secondary-accent);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    text-align: center;
+}
+
+.syllable-reset-button {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--text-color);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 3px;
+    transition: color 0.2s ease, background-color 0.2s ease;
+    font-size: 0.8em;
+    opacity: 0.7;
+}
+
+.syllable-reset-button:hover {
+    color: var(--primary-accent);
+    background-color: rgba(0, 255, 255, 0.1);
+    opacity: 1;
+}
+
+.syllable-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.syllable-select {
+    width: 60px;
+    min-width: 60px;
+    max-width: 60px;
+    text-align: center;
+    font-size: 0.9em;
+    padding: 6px 8px;
+    background-color: var(--panel-bg);
+    border: 1px solid var(--primary-accent);
+    color: var(--primary-accent);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='5'%3E%3Cpath fill='%2300ffff' d='M0 0l5 5 5-5z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    padding-right: 25px;
+}
+
+.syllable-select:hover {
+    background-color: rgba(0, 255, 255, 0.1);
+    box-shadow: 0 0 8px var(--primary-accent);
+    color: var(--text-bright);
+}
+
+.syllable-select:focus {
+    outline: none;
+    box-shadow: 0 0 8px var(--primary-accent);
+    background-color: rgba(0, 255, 255, 0.1);
+    color: var(--text-bright);
+}
+
+.syllable-select option {
+    background-color: var(--panel-bg);
+    color: var(--text-color);
+    padding: 4px;
+}
+
+.word-nav-arrow.top-bottom-arrow.up-arrow,
+.word-nav-arrow.top-bottom-arrow.down-arrow,
+.word-nav-arrow.side-arrow.left-arrow,
+.word-nav-arrow.side-arrow.right-arrow {
+    /* Remove translateX(-50%) and translateY(-50%) for perfect centering */
+    /* transform: translateZ(10px); */
+}
+
+/* Pulse effect for chevrons on hover */
+.word-nav-arrow:hover {
+    animation: chevron-pulse 0.4s cubic-bezier(.4,2,.6,1);
+}
+
+@keyframes chevron-pulse {
+    0% { transform: scale(1); color: var(--primary-accent); }
+    50% { transform: scale(1.25); color: var(--highlight-color); }
+    100% { transform: scale(1); color: var(--primary-accent); }
 }

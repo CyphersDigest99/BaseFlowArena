@@ -44,7 +44,8 @@ export const elements = {
 
     // Word Display Area - Main word display and associated controls
     wordDisplay: document.getElementById('word-display'),
-    wordDisplayContainer: document.getElementById('word-display-container'),
+    wordDisplayUnit: document.getElementById('word-display-unit'),
+    wordCell: document.getElementById('word-cell'),
     blacklistButton: document.getElementById('blacklist-word'),
     favoriteButton: document.getElementById('favorite-word'),
     meansLikeButton: document.getElementById('means-like-button'),
@@ -133,9 +134,9 @@ export const elements = {
     rhymeNoResults: document.getElementById('rhyme-no-results'),
     manualRhymeInput: document.getElementById('manual-rhyme-input'),
     addManualRhymeButton: document.getElementById('add-manual-rhyme-button'),
-    synonymsBox: document.getElementById('synonyms-box'),
+    synonymsCell: document.getElementById('synonyms-cell'),
     synonymsContent: document.getElementById('synonyms-content'),
-    definitionBox: document.getElementById('definition-box'),
+    definitionCell: document.getElementById('definition-cell'),
     definitionContent: document.getElementById('definition-content'),
 
     settingsModal: document.getElementById('settings-modal'),
@@ -232,9 +233,9 @@ export function displayWord(word) { // word is the word to display (could be bas
     console.log(`After setting textContent, wordDisplay.textContent: "${elements.wordDisplay.textContent}"`);
 
     // --- DYNAMIC FONT SIZE LOGIC RESTORED ---
-    // Calculate appropriate font size to fit word between arrows and buttons
-    const container = elements.wordDisplayContainer;
-    const maxWidth = container ? container.offsetWidth - 120 : 400; // Account for arrows and buttons
+    // Calculate appropriate font size to fit word within the middle cell
+    const container = elements.wordCell;
+    const maxWidth = container ? container.offsetWidth - 40 : 400; // Account for padding and action buttons
     const currentFontSize = parseFloat(window.getComputedStyle(elements.wordDisplay).fontSize);
     
     console.log(`Container width: ${container?.offsetWidth}, maxWidth: ${maxWidth}`);
@@ -365,8 +366,8 @@ export function updateBpmIndicator(bpmValue) {
     if(elements.bpmDisplay) elements.bpmDisplay.textContent = bpmValue;
     const beatIntervalSeconds = bpmValue > 0 ? 60 / bpmValue : 0.5;
     document.documentElement.style.setProperty('--beat-interval', `${beatIntervalSeconds}s`);
-    if (elements.wordDisplayContainer?.classList.contains('buzz-with-bpm')) {
-        elements.wordDisplayContainer.style.animationDuration = `${beatIntervalSeconds}s`;
+    if (elements.wordDisplayUnit?.classList.contains('buzz-with-bpm')) {
+        elements.wordDisplayUnit.style.animationDuration = `${beatIntervalSeconds}s`;
     }
 }
 
@@ -408,18 +409,18 @@ export function triggerScreenShake() {
 
 // Starts word display buzz animation synchronized with BPM
 export function startWordBuzz() {
-    if (elements.wordDisplayContainer && state.bpm > 0) {
+    if (elements.wordDisplayUnit && state.bpm > 0) {
         const beatIntervalSeconds = 60 / state.bpm;
-        elements.wordDisplayContainer.style.animationDuration = `${beatIntervalSeconds}s`;
-        elements.wordDisplayContainer.classList.add('buzz-with-bpm');
+        elements.wordDisplayUnit.style.animationDuration = `${beatIntervalSeconds}s`;
+        elements.wordDisplayUnit.classList.add('buzz-with-bpm');
     }
 }
 
 // Stops word display buzz animation
 export function stopWordBuzz() {
-     if (elements.wordDisplayContainer) {
-         elements.wordDisplayContainer.classList.remove('buzz-with-bpm');
-         elements.wordDisplayContainer.style.animationDuration = '';
+     if (elements.wordDisplayUnit) {
+         elements.wordDisplayUnit.classList.remove('buzz-with-bpm');
+         elements.wordDisplayUnit.style.animationDuration = '';
      }
 }
 
@@ -551,8 +552,16 @@ export function hideSubtext() {
 export function showSynonyms(synonyms) {
     const el = elements.synonymsContent;
     if (!el) return;
-    if (synonyms && synonyms.trim()) {
-        el.textContent = synonyms;
+    
+    // Handle "no results" messages gracefully
+    const trimmedSynonyms = synonyms ? synonyms.trim() : '';
+    const isEmptyOrNoResults = !trimmedSynonyms || 
+                               trimmedSynonyms.toLowerCase().includes('no synonyms found') ||
+                               trimmedSynonyms.toLowerCase().includes('no results') ||
+                               trimmedSynonyms.toLowerCase().includes('not found');
+    
+    if (!isEmptyOrNoResults) {
+        el.textContent = trimmedSynonyms;
         el.classList.add('visible');
     } else {
         el.textContent = '';
@@ -573,8 +582,16 @@ export function hideSynonyms() {
 export function showDefinition(definition) {
     const el = elements.definitionContent;
     if (!el) return;
-    if (definition && definition.trim()) {
-        el.textContent = definition;
+    
+    // Handle "no results" messages gracefully
+    const trimmedDefinition = definition ? definition.trim() : '';
+    const isEmptyOrNoResults = !trimmedDefinition || 
+                               trimmedDefinition.toLowerCase().includes('no definition found') ||
+                               trimmedDefinition.toLowerCase().includes('no results') ||
+                               trimmedDefinition.toLowerCase().includes('not found');
+    
+    if (!isEmptyOrNoResults) {
+        el.textContent = trimmedDefinition;
         el.classList.add('visible');
         // Dynamic font size: shrink if doesn't fit
         el.classList.remove('shrink');
@@ -602,7 +619,7 @@ export function hideDefinition() {
 
 // Update tooltip view based on state - Manages tooltip display modes and icons
 export function updateTooltipView(synonyms = null, definition = null) {
-    if (!elements.meansLikeButton || !elements.synonymsBox || !elements.definitionBox) return;
+    if (!elements.meansLikeButton || !elements.synonymsCell || !elements.definitionCell) return;
     
     if (!state.tooltip.isPinned) {
         // Not pinned - hide tooltip and show default closed book icon
