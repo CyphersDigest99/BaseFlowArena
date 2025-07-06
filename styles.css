@@ -1617,35 +1617,39 @@ label.checkbox-label {
     border-bottom: 1px dashed var(--border-color);
 }
 
-#rhyme-modal-base-word {
-    font-size: 2.2em;
+#rhyme-modal-dynamic-heading {
+    font-size: 1.2em;
     font-weight: bold;
-    color: var(--primary-accent);
-    margin-bottom: 10px;
-    text-shadow: 0 0 5px var(--primary-accent);
-}
-
-#rhyme-modal-pattern-container {
-    display: flex;
-    justify-content: center;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 15px;
+    color: var(--text-bright);
+    margin-bottom: 8px;
+    line-height: 1.15;
+    text-align: center;
+    padding: 4px 6px;
+    background-color: rgba(0, 255, 255, 0.08);
+    border: 1px solid var(--primary-accent);
+    border-radius: 6px;
+    text-shadow: 0 0 2px var(--primary-accent);
+    max-width: 95%;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 .vowel-pattern-block {
+    display: inline-block;
     background-color: rgba(0, 0, 0, 0.3);
     color: var(--secondary-accent);
     border: 1px solid var(--secondary-accent);
-    padding: 5px 10px;
-    border-radius: 5px;
+    padding: 2px 7px;
+    border-radius: 4px;
     font-family: monospace;
-    font-size: 1.1em;
+    font-size: 1em;
     font-weight: bold;
-    min-width: 2.5em;
+    min-width: 2em;
     text-align: center;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.13);
     transition: transform 0.2s ease;
+    margin: 0 2px;
+    vertical-align: middle;
 }
 
 .vowel-pattern-block:hover {

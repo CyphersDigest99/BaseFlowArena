@@ -539,8 +539,7 @@ function convertLegacyFormat(data) {
 // Internal helper, called by closeModal
 function clearRhymeModal() {
      if(ui.elements.rhymeResultsList) ui.elements.rhymeResultsList.innerHTML = '';
-     if(ui.elements.rhymeModalBaseWord) ui.elements.rhymeModalBaseWord.textContent = '';
-     if(ui.elements.rhymeModalPatternContainer) ui.elements.rhymeModalPatternContainer.innerHTML = '';
+     if(ui.elements.rhymeModalDynamicHeading) ui.elements.rhymeModalDynamicHeading.textContent = '';
      if(ui.elements.manualRhymeInput) ui.elements.manualRhymeInput.value = '';
      if(ui.elements.rhymeNoResults) ui.elements.rhymeNoResults.style.display = 'none';
 }

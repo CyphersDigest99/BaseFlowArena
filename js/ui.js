@@ -128,8 +128,7 @@ export const elements = {
 
     rhymeFinderModal: document.getElementById('rhyme-finder-modal'),
     closeRhymeModalButton: document.getElementById('close-rhyme-modal'),
-    rhymeModalBaseWord: document.getElementById('rhyme-modal-base-word'), // Updated ID
-    rhymeModalPatternContainer: document.getElementById('rhyme-modal-pattern-container'), // Updated ID
+    rhymeModalDynamicHeading: document.getElementById('rhyme-modal-dynamic-heading'), // New dynamic heading element
     rhymeResultsList: document.getElementById('rhyme-results-list'),
     rhymeNoResults: document.getElementById('rhyme-no-results'),
     manualRhymeInput: document.getElementById('manual-rhyme-input'),

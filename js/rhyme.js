@@ -113,25 +113,44 @@ export function getValidRhymesForWord(baseWord) {
 // --- Show Rhyme Finder Modal ---
 // Opens the rhyme finder modal and populates it with rhymes for the current word
 export function showRhymeFinder() {
-    if (!state.rhymeData) { /* ... */ return; }
+    if (!state.rhymeData) { 
+        ui.showFeedback("Rhyme data not loaded. Please wait or refresh the page.", true);
+        return; 
+    }
     const baseWord = state.currentWord;
-    if (!baseWord || baseWord === "NO WORDS!") { /* ... */ return; }
+    if (!baseWord || baseWord === "NO WORDS!") { 
+        ui.showFeedback("No word selected for rhyme finding.", true);
+        return; 
+    }
     const baseWordLower = baseWord.toLowerCase();
     const wordPattern = getRhymePattern(baseWord);
 
-    // Update Modal Header
-    if (ui.elements.rhymeModalBaseWord) ui.elements.rhymeModalBaseWord.textContent = baseWord;
-    if (ui.elements.rhymeModalPatternContainer) {
-        ui.elements.rhymeModalPatternContainer.innerHTML = ''; // Clear previous
-        if (wordPattern) {
-            wordPattern.forEach(vowel => {
-                const block = document.createElement('span');
-                block.classList.add('vowel-pattern-block');
-                block.textContent = vowel;
-                ui.elements.rhymeModalPatternContainer.appendChild(block);
-            });
-        } else { /* ... show N/A block ... */ }
+    // Get rhyme matches to calculate count
+    const rhymeMatches = getValidRhymesForWord(baseWord);
+    const matchCount = rhymeMatches.length;
+
+    // Create dynamic heading (multi-line, with vowel blocks)
+    let headingHTML = '';
+    if (wordPattern && wordPattern.length > 0) {
+        const wordText = matchCount === 1 ? 'word' : 'words';
+        // Build vowel blocks HTML
+        const vowelBlocks = wordPattern.map(vowel => `<span class="vowel-pattern-block">${vowel}</span>`).join(' ');
+        headingHTML = `
+            <div>${matchCount} ${wordText}</div>
+            <div>sound like the</div>
+            <div style="margin: 8px 0;">${vowelBlocks}</div>
+            <div>in</div>
+            <div style="font-size:1.2em;font-weight:bold;margin-top:2px;">${baseWord}</div>
+        `;
+    } else {
+        headingHTML = `<div>No phonetic data available for "${baseWord}"</div>`;
     }
+
+    // Update Modal Header with dynamic heading (as HTML)
+    if (ui.elements.rhymeModalDynamicHeading) {
+        ui.elements.rhymeModalDynamicHeading.innerHTML = headingHTML;
+    }
+
     // Clear previous results and input
     if (ui.elements.rhymeResultsList) ui.elements.rhymeResultsList.innerHTML = '';
     if (ui.elements.rhymeNoResults) ui.elements.rhymeNoResults.style.display = 'none';
