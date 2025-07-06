@@ -102,6 +102,7 @@ async function initializeApp() {
 
     // 4. Display Initial Word & Sync Final UI
     ui.updateActivationUI(); // Sync activation/mode controls
+    ui.updateRhymeSortToggleButton(); // Initialize rhyme sort toggle button
     wordManager.changeWord('next', true, false); // Display first word & update rhymes
     window.requestAnimationFrame(() => ui.displayWord(state.currentWord));
 
@@ -361,6 +362,14 @@ function attachEventListeners() {
     // Rhyme Navigation Listeners
     ui.elements.upWordButton?.addEventListener('click', () => wordManager.selectRhyme('up'));
     ui.elements.downWordButton?.addEventListener('click', () => wordManager.selectRhyme('down'));
+    
+    // Rhyme Sort Toggle Listener
+    ui.elements.rhymeSortToggleButton?.addEventListener('click', () => {
+        state.isRhymeSortAlphabetical = !state.isRhymeSortAlphabetical;
+        ui.updateRhymeSortToggleButton();
+        storage.saveSettings();
+        ui.showFeedback(`Rhyme navigation: ${state.isRhymeSortAlphabetical ? 'Alphabetical' : 'Default'} order`, false, 2000);
+    });
 
     // Word Order Setting
     ui.elements.wordOrderSelect?.addEventListener('change', (e) => wordManager.setWordOrder(e.target.value));

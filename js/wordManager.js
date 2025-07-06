@@ -319,16 +319,45 @@ export function selectRhyme(direction) {
         ui.showFeedback("No rhymes available for current word.", true, 1500); return;
     }
 
-    const rhymeList = state.currentRhymeList;
+    // Get the rhyme list to use for navigation
+    let rhymeList = state.currentRhymeList;
+    let currentRhymeIndex = state.currentRhymeIndex;
+    
+    // If alphabetical mode is enabled, create a sorted copy and find the current word's position
+    if (state.isRhymeSortAlphabetical) {
+        const sortedRhymeList = [...state.currentRhymeList].sort((a, b) => a.localeCompare(b));
+        
+        // Find the current rhyme word in the sorted list
+        let currentRhymeWord = null;
+        if (currentRhymeIndex >= 0 && currentRhymeIndex < state.currentRhymeList.length) {
+            currentRhymeWord = state.currentRhymeList[currentRhymeIndex];
+        }
+        
+        // Use the sorted list for navigation
+        rhymeList = sortedRhymeList;
+        
+        // Find the current word's position in the sorted list
+        if (currentRhymeWord) {
+            currentRhymeIndex = sortedRhymeList.indexOf(currentRhymeWord);
+            if (currentRhymeIndex === -1) currentRhymeIndex = 0; // Fallback to first if not found
+        } else {
+            currentRhymeIndex = -1; // Start from base word
+        }
+    }
+
     const count = rhymeList.length;
-    let nextRhymeIndex = state.currentRhymeIndex;
+    let nextRhymeIndex = currentRhymeIndex;
 
     if (direction === 'down') { nextRhymeIndex = (nextRhymeIndex + 1) % count; }
     else if (direction === 'up') { nextRhymeIndex = (nextRhymeIndex - 1 + count) % count; }
     else return;
 
-    state.currentRhymeIndex = nextRhymeIndex;
-    const selectedRhymeWord = rhymeList[state.currentRhymeIndex];
+    // Find the selected word in the original list to maintain the correct index
+    const selectedRhymeWord = rhymeList[nextRhymeIndex];
+    const originalIndex = state.currentRhymeList.indexOf(selectedRhymeWord);
+    
+    // Update the state with the original index
+    state.currentRhymeIndex = originalIndex >= 0 ? originalIndex : 0;
 
     console.log(`Rhyme navigated (${direction}): "${selectedRhymeWord}" (Rhyme Index ${state.currentRhymeIndex})`);
 

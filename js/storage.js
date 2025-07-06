@@ -76,6 +76,7 @@ export function saveSettings() {
             cycleSpeed: state.cycleSpeed,
             minSyllables: state.minSyllables,
             maxSyllables: state.maxSyllables,
+            isRhymeSortAlphabetical: state.isRhymeSortAlphabetical,
             wordFrequencies: state.wordFrequencies,
             blacklist: Array.from(state.blacklist),
             favorites: Array.from(state.favorites),
@@ -111,6 +112,7 @@ export function loadSettings() {
              state.cycleSpeed = parsedData.cycleSpeed ?? 10;
              state.minSyllables = parsedData.minSyllables ?? 0;
              state.maxSyllables = parsedData.maxSyllables ?? 0;
+             state.isRhymeSortAlphabetical = parsedData.isRhymeSortAlphabetical ?? false;
              state.wordFrequencies = parsedData.wordFrequencies || {};
              state.blacklist = Array.isArray(parsedData.blacklist) ? new Set(parsedData.blacklist) : new Set();
              state.favorites = Array.isArray(parsedData.favorites) ? new Set(parsedData.favorites) : new Set();
@@ -175,6 +177,7 @@ export function resetToDefaults(saveAfterReset = true) {
     state.cycleSpeed = 10;
     state.minSyllables = 0;
     state.maxSyllables = 0;
+    state.isRhymeSortAlphabetical = false;
     state.activationMode = 'manual';
     state.rejectedRhymes = {};
     state.manualRhymes = {};
@@ -214,6 +217,7 @@ export function exportSettings() {
                 cycleSpeed: state.cycleSpeed,
                 minSyllables: state.minSyllables,
                 maxSyllables: state.maxSyllables,
+                isRhymeSortAlphabetical: state.isRhymeSortAlphabetical,
                 wordFrequencies: state.wordFrequencies,
                 blacklist: Array.from(state.blacklist),
                 favorites: Array.from(state.favorites),
@@ -265,6 +269,7 @@ export function importSettings(jsonData) {
         state.cycleSpeed = settings.cycleSpeed ?? 10;
         state.minSyllables = settings.minSyllables ?? 0;
         state.maxSyllables = settings.maxSyllables ?? 0;
+        state.isRhymeSortAlphabetical = settings.isRhymeSortAlphabetical ?? false;
         state.wordFrequencies = settings.wordFrequencies || {};
         state.blacklist = Array.isArray(settings.blacklist) ? new Set(settings.blacklist) : new Set();
         state.favorites = Array.isArray(settings.favorites) ? new Set(settings.favorites) : new Set();

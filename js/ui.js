@@ -58,6 +58,7 @@ export const elements = {
     // Word Display Area Arrows - Navigation controls for words and rhymes
     upWordButton: document.getElementById('up-word'), // NEW
     downWordButton: document.getElementById('down-word'), // NEW
+    rhymeSortToggleButton: document.getElementById('rhyme-sort-toggle'), // NEW
     prevWordButton: document.getElementById('prev-word'),
     nextWordButton: document.getElementById('next-word'),
 
@@ -719,6 +720,21 @@ export function updateRhymeNavButtons() {
         downButton.style.opacity = hasRhymes ? '1' : '0.3';
         downButton.style.cursor = hasRhymes ? 'pointer' : 'not-allowed';
     }
+}
+
+// --- NEW: Update Rhyme Sort Toggle Button ---
+// Updates the rhyme sort toggle button state and appearance
+export function updateRhymeSortToggleButton() {
+    if (!elements.rhymeSortToggleButton) return;
+    
+    const isAlphabetical = state.isRhymeSortAlphabetical;
+    const icon = elements.rhymeSortToggleButton.querySelector('i');
+    
+    if (icon) {
+        icon.className = isAlphabetical ? 'fas fa-sort-alpha-down' : 'fas fa-random';
+    }
+    
+    elements.rhymeSortToggleButton.title = `Sort Order: ${isAlphabetical ? 'Alphabetical' : 'Default'}`;
 }
 
 // Shows subtext below the main word display
