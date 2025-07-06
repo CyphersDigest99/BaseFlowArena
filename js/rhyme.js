@@ -110,6 +110,262 @@ export function getValidRhymesForWord(baseWord) {
     return sortedMatches;
 }
 
+// --- Rhyme Finder Sorting State ---
+let rhymeSortMode = 'default'; // 'default', 'alpha', 'phonetic', 'similarity'
+
+function setRhymeSortMode(mode) {
+    // If clicking the already active sort, revert to default
+    if (rhymeSortMode === mode) {
+        rhymeSortMode = 'default';
+    } else {
+        rhymeSortMode = mode;
+    }
+    updateRhymeSortButtonState();
+    // Re-render rhyme list
+    const baseWordLower = state.currentWord?.toLowerCase();
+    const wordPattern = getRhymePattern(state.currentWord);
+    displayRhymeList(baseWordLower, wordPattern);
+}
+
+function updateRhymeSortButtonState() {
+    const btns = [
+        { id: 'sort-alpha', mode: 'alpha' },
+        { id: 'sort-phonetic', mode: 'phonetic' },
+        { id: 'sort-similarity', mode: 'similarity' }
+    ];
+    btns.forEach(({ id, mode }) => {
+        const btn = document.getElementById(id);
+        if (btn) btn.classList.toggle('active', rhymeSortMode === mode);
+    });
+}
+
+function attachRhymeSortListeners() {
+    const btnAlpha = document.getElementById('sort-alpha');
+    const btnPhonetic = document.getElementById('sort-phonetic');
+    const btnSimilarity = document.getElementById('sort-similarity');
+    if (btnAlpha) btnAlpha.onclick = () => setRhymeSortMode('alpha');
+    if (btnPhonetic) btnPhonetic.onclick = () => setRhymeSortMode('phonetic');
+    if (btnSimilarity) btnSimilarity.onclick = () => setRhymeSortMode('similarity');
+}
+
+// --- Temporary Rejection State (modal-local) ---
+let tempRejected = new Set();
+
+// --- Enhanced Modal Open with Sorting ---
+export function openRhymeFinderModalWithSort() {
+    tempRejected = new Set();
+    rhymeSortMode = 'default';
+    updateRhymeSortButtonState();
+    attachRhymeSortListeners();
+    showRhymeFinder();
+}
+export function persistTempRejections() {
+    const baseWord = state.currentWord;
+    const baseWordLower = baseWord?.toLowerCase();
+    if (!baseWordLower) return;
+    if (!state.rejectedRhymes[baseWordLower]) state.rejectedRhymes[baseWordLower] = new Set();
+    for (const word of tempRejected) {
+        state.rejectedRhymes[baseWordLower].add(word.toLowerCase());
+    }
+    storage.saveSettings();
+    tempRejected.clear();
+}
+
+// Update createRhymeListItem for temp rejection/undo and slant tagging
+function createRhymeListItem(rhymeWord, baseWordLower) {
+    if (!ui.elements.rhymeResultsList) return;
+    const wordLower = rhymeWord.toLowerCase();
+    const li = document.createElement('li');
+    li.textContent = rhymeWord;
+    li.dataset.rhymeWord = rhymeWord;
+    const freq = state.wordFrequencies[wordLower] || 0;
+    if (freq >= 5) li.classList.add('rhyme-freq-high');
+    else if (freq >= 2) li.classList.add('rhyme-freq-med');
+    else if (freq === 1) li.classList.add('rhyme-freq-low');
+    else li.classList.add('rhyme-freq-none');
+    
+    // Check if word is slant tagged
+    const slantSet = state.slantRhymes[baseWordLower] || new Set();
+    const isSlantTagged = slantSet.has(wordLower);
+    if (isSlantTagged) {
+        li.classList.add('slant-tagged');
+        li.style.fontStyle = 'italic';
+    }
+    
+    // Check if word was manually added
+    const manualSet = state.manualRhymes[baseWordLower] || new Set();
+    const isManuallyAdded = manualSet.has(wordLower);
+    if (isManuallyAdded) {
+        li.classList.add('manually-added');
+        li.style.textDecoration = 'underline';
+        li.title = 'Manually added rhyme';
+    }
+    
+    // If temp rejected, add .rejected and show [undo] icon
+    if (tempRejected.has(wordLower)) {
+        li.classList.add('rejected');
+        const undo = document.createElement('span');
+        undo.className = 'rhyme-x';
+        undo.textContent = '↩';
+        undo.title = 'Undo rejection';
+        undo.onclick = (e) => {
+            e.stopPropagation();
+            tempRejected.delete(wordLower);
+            // Re-render
+            const baseWordLower = state.currentWord?.toLowerCase();
+            const wordPattern = getRhymePattern(state.currentWord);
+            displayRhymeList(baseWordLower, wordPattern);
+        };
+        li.appendChild(undo);
+    } else {
+        // Add the [X] icon
+        const x = document.createElement('span');
+        x.className = 'rhyme-x';
+        x.textContent = '×';
+        x.title = 'Reject this rhyme';
+        x.onclick = (e) => {
+            e.stopPropagation();
+            tempRejected.add(wordLower);
+            // Re-render
+            const baseWordLower = state.currentWord?.toLowerCase();
+            const wordPattern = getRhymePattern(state.currentWord);
+            displayRhymeList(baseWordLower, wordPattern);
+        };
+        li.appendChild(x);
+    }
+    
+    // Add the [Tag] icon for slant rhyming
+    const tag = document.createElement('span');
+    tag.className = 'rhyme-tag';
+    tag.textContent = isSlantTagged ? '📌' : '🏷️';
+    tag.title = isSlantTagged ? 'Remove slant rhyme tag' : 'Tag as slant rhyme';
+    tag.onclick = (e) => {
+        e.stopPropagation();
+        if (!state.slantRhymes[baseWordLower]) state.slantRhymes[baseWordLower] = new Set();
+        if (isSlantTagged) {
+            state.slantRhymes[baseWordLower].delete(wordLower);
+            if (state.slantRhymes[baseWordLower].size === 0) {
+                delete state.slantRhymes[baseWordLower];
+            }
+        } else {
+            state.slantRhymes[baseWordLower].add(wordLower);
+        }
+        storage.saveSettings();
+        // Re-render
+        const currentBaseWordLower = state.currentWord?.toLowerCase();
+        const wordPattern = getRhymePattern(state.currentWord);
+        displayRhymeList(currentBaseWordLower, wordPattern);
+    };
+    li.appendChild(tag);
+    
+    ui.elements.rhymeResultsList.appendChild(li);
+}
+
+// Update displayRhymeList to move tempRejected words to end
+function displayRhymeList(baseWordLower, wordPattern) {
+    if (!ui.elements.rhymeResultsList || !baseWordLower) return;
+    let rhymesToDisplay = getValidRhymesForWord(state.currentWord);
+    // Apply sorting
+    if (rhymeSortMode === 'alpha') {
+        rhymesToDisplay = [...rhymesToDisplay].sort((a, b) => a.localeCompare(b));
+    } else if (rhymeSortMode === 'phonetic') {
+        rhymesToDisplay = sortByPhoneticEnding(rhymesToDisplay);
+    } else if (rhymeSortMode === 'similarity') {
+        rhymesToDisplay = sortByRhymeSimilarity(rhymesToDisplay, state.currentWord);
+    }
+    // Move tempRejected words to end
+    const normal = [], rejected = [];
+    for (const word of rhymesToDisplay) {
+        if (tempRejected.has(word.toLowerCase())) rejected.push(word);
+        else normal.push(word);
+    }
+    const finalList = [...normal, ...rejected];
+    ui.elements.rhymeResultsList.innerHTML = '';
+    if (finalList.length > 0) {
+        finalList.forEach(match => createRhymeListItem(match, baseWordLower));
+        if (ui.elements.rhymeNoResults) ui.elements.rhymeNoResults.style.display = 'none';
+    } else {
+        if (ui.elements.rhymeNoResults) ui.elements.rhymeNoResults.style.display = 'block';
+    }
+}
+
+// --- Phonetic Ending Sort ---
+function sortByPhoneticEnding(words) {
+    // Group by last 1-2 phonemes
+    const groups = {};
+    for (const word of words) {
+        const pattern = getRhymePattern(word);
+        let ending = pattern ? pattern.slice(-2).join('-') : 'unknown';
+        if (!groups[ending]) groups[ending] = [];
+        groups[ending].push(word);
+    }
+    // Sort groups by size descending, then alphabetize within
+    const sortedGroups = Object.entries(groups)
+        .sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0]));
+    let result = [];
+    for (const [, group] of sortedGroups) {
+        result = result.concat(group.sort((a, b) => a.localeCompare(b)));
+    }
+    return result;
+}
+
+// --- Slant Rhymes State ---
+if (!state.slantRhymes) state.slantRhymes = {};
+
+// --- Helper: Is Perfect Rhyme ---
+function isPerfectRhyme(basePhonetic, candidatePhonetic) {
+    // Both are arrays of phonemes (e.g., ['AH0', 'N', 'D'])
+    if (!Array.isArray(basePhonetic) || !Array.isArray(candidatePhonetic)) return false;
+    // Find the last stressed vowel in basePhonetic
+    let baseIdx = -1;
+    for (let i = basePhonetic.length - 1; i >= 0; i--) {
+        if (/\d/.test(basePhonetic[i])) { baseIdx = i; break; }
+    }
+    if (baseIdx === -1) return false;
+    const baseEnding = basePhonetic.slice(baseIdx).join('-');
+    // Do the same for candidate
+    let candIdx = -1;
+    for (let i = candidatePhonetic.length - 1; i >= 0; i--) {
+        if (/\d/.test(candidatePhonetic[i])) { candIdx = i; break; }
+    }
+    if (candIdx === -1) return false;
+    const candEnding = candidatePhonetic.slice(candIdx).join('-');
+    return baseEnding === candEnding;
+}
+
+// --- Rhyme Similarity Sort ---
+function sortByRhymeSimilarity(words, baseWord) {
+    const basePhonetic = getRhymePattern(baseWord);
+    const baseWordLower = baseWord.toLowerCase();
+    const slantSet = state.slantRhymes[baseWordLower] || new Set();
+    const manualSet = state.manualRhymes[baseWordLower] || new Set();
+    let perfect = [], near = [], slant = [];
+    for (const word of words) {
+        const wordLower = word.toLowerCase();
+        if (slantSet.has(wordLower)) {
+            slant.push(word);
+        } else {
+            const candidatePhonetic = getRhymePattern(word);
+            if (isPerfectRhyme(basePhonetic, candidatePhonetic)) {
+                perfect.push(word);
+            } else {
+                near.push(word);
+            }
+        }
+    }
+    // Manual rhymes are always 'near' unless also tagged as slant
+    for (const word of manualSet) {
+        const wordLower = word.toLowerCase();
+        if (!slantSet.has(wordLower) && !near.includes(word)) {
+            near.push(word);
+        }
+    }
+    perfect.sort((a, b) => a.localeCompare(b));
+    near.sort((a, b) => a.localeCompare(b));
+    slant.sort((a, b) => a.localeCompare(b));
+    return [...perfect, ...near, ...slant];
+}
+
 // --- Show Rhyme Finder Modal ---
 // Opens the rhyme finder modal and populates it with rhymes for the current word
 export function showRhymeFinder() {
@@ -160,58 +416,6 @@ export function showRhymeFinder() {
     displayRhymeList(baseWordLower, wordPattern); // Calls internal helper which calls getValidRhymesForWord
 
     modal.openModal(ui.elements.rhymeFinderModal);
-}
-
-// --- Display Rhyme List (Internal Helper) ---
-// Populates the rhyme list in the modal for the given base word
-function displayRhymeList(baseWordLower, wordPattern) {
-    if (!ui.elements.rhymeResultsList || !baseWordLower) return;
-    // Calls the EXPORTED function (which is fine)
-    const rhymesToDisplay = getValidRhymesForWord(state.currentWord);
-    ui.elements.rhymeResultsList.innerHTML = '';
-
-    if (rhymesToDisplay.length > 0) {
-        rhymesToDisplay.forEach(match => createRhymeListItem(match, baseWordLower));
-        if (ui.elements.rhymeNoResults) ui.elements.rhymeNoResults.style.display = 'none';
-    } else {
-        if (ui.elements.rhymeNoResults) ui.elements.rhymeNoResults.style.display = 'block';
-    }
-}
-
-// --- createRhymeListItem (Internal Helper) ---
-// Creates a list item for a rhyme word and attaches rejection handler
-function createRhymeListItem(rhymeWord, baseWordLower) {
-    // ... (same as before) ...
-    if (!ui.elements.rhymeResultsList) return;
-    const li = document.createElement('li');
-    li.textContent = rhymeWord;
-    li.dataset.rhymeWord = rhymeWord;
-    const freq = state.wordFrequencies[rhymeWord.toLowerCase()] || 0;
-    if (freq >= 5) li.classList.add('rhyme-freq-high');
-    else if (freq >= 2) li.classList.add('rhyme-freq-med');
-    else if (freq === 1) li.classList.add('rhyme-freq-low');
-    else li.classList.add('rhyme-freq-none');
-    li.addEventListener('click', handleRhymeRejection);
-    ui.elements.rhymeResultsList.appendChild(li);
-}
-
-// --- handleRhymeRejection (Internal Handler) ---
-// Handles user rejection of a rhyme in the modal and updates state
-function handleRhymeRejection(event) {
-     // ... (same as before) ...
-    const liElement = event.currentTarget;
-    const rejectedWord = liElement.dataset.rhymeWord;
-    const baseWord = state.currentWord;
-    const baseWordLower = baseWord?.toLowerCase();
-    if (!rejectedWord || !baseWordLower || liElement.classList.contains('rejected')) return;
-    console.log(`Rejecting rhyme: "${rejectedWord}" for base word "${baseWord}"`);
-    if (!state.rejectedRhymes[baseWordLower]) state.rejectedRhymes[baseWordLower] = new Set();
-    state.rejectedRhymes[baseWordLower].add(rejectedWord.toLowerCase());
-    storage.saveSettings();
-    liElement.classList.add('rejected');
-    liElement.style.pointerEvents = 'none';
-    liElement.removeEventListener('click', handleRhymeRejection);
-    ui.showFeedback(`"${rejectedWord}" marked as poor rhyme for "${baseWord}".`);
 }
 
 // --- addManualRhyme (EXPORTED) ---

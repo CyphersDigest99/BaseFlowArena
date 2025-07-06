@@ -36,6 +36,7 @@ import * as autoBpm from './autoBpm.js'; // Import the Web Audio API version
 import * as datamuse from './datamuse.js'; // Import the Datamuse API module
 import * as wordApi from './wordApi.js'; // Import the new word API module
 import * as beatManager from './beatManager.js'; // Import the beat player module
+import { openRhymeFinderModalWithSort } from './rhyme.js';
 
 // Cached word data for tooltip display and performance optimization
 let lastWordData = { synonyms: '', definition: '', word: '' };
@@ -208,7 +209,7 @@ function attachEventListeners() {
     ui.elements.nextWordButton?.addEventListener('click', wordManager.nextWord);
     ui.elements.blacklistButton?.addEventListener('click', wordManager.toggleBlacklist);
     ui.elements.favoriteButton?.addEventListener('click', wordManager.toggleFavorite);
-    ui.elements.findRhymesButton?.addEventListener('click', rhyme.showRhymeFinder);
+    ui.elements.findRhymesButton?.addEventListener('click', openRhymeFinderModalWithSort);
 
     // Synonyms/Definition Hover Events
     let infoTimeout; // Timer for hiding tooltips when not hovered

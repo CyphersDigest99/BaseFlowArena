@@ -1784,6 +1784,7 @@ label.checkbox-label {
 .rhyme-legend .rhyme-freq-none { color: var(--text-color); opacity: 0.8; background-color: rgba(128,128,128, 0.1);}
 
 #rhyme-results-list {
+    position: relative;
     list-style: none;
     padding: 0;
     margin-top: 15px;
@@ -1799,6 +1800,7 @@ label.checkbox-label {
 }
 
 #rhyme-results-list li {
+    position: relative;
     padding: 5px 10px;
     background-color: rgba(255, 255, 255, 0.08);
     border-radius: 4px;
@@ -1826,6 +1828,16 @@ label.checkbox-label {
 
 #rhyme-results-list li.rejected:hover {
     background-color: inherit;
+}
+
+#rhyme-results-list li.slant-tagged {
+    font-style: italic;
+    color: var(--secondary-accent);
+}
+
+#rhyme-results-list li.manually-added {
+    text-decoration: underline;
+    color: var(--green-color);
 }
 
 #rhyme-no-results {
@@ -1995,4 +2007,108 @@ body.screen-shaking {
     0% { transform: scale(1); color: var(--primary-accent); }
     50% { transform: scale(1.25); color: var(--highlight-color); }
     100% { transform: scale(1); color: var(--primary-accent); }
+}
+
+/* --- Rhyme Finder Sorting Controls --- */
+.rhyme-sort-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 12px 0 16px 0;
+    font-size: 1em;
+}
+.sort-label {
+    color: var(--secondary-accent);
+    font-weight: bold;
+    margin-right: 6px;
+}
+.rhyme-sort-btn {
+    background: none;
+    border: 1.5px solid var(--border-color);
+    color: var(--primary-accent);
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 1.1em;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s, color 0.2s, box-shadow 0.2s;
+    outline: none;
+    position: relative;
+}
+.rhyme-sort-btn:hover,
+.rhyme-sort-btn:focus {
+    background: rgba(0,255,255,0.08);
+    border-color: var(--primary-accent);
+    color: var(--text-bright);
+    box-shadow: 0 0 8px var(--primary-accent);
+    z-index: 1;
+}
+.rhyme-sort-btn.active {
+    background: rgba(0,255,255,0.18);
+    border-color: var(--secondary-accent);
+    color: var(--secondary-accent);
+    box-shadow: 0 0 10px var(--secondary-accent);
+}
+.rhyme-sort-btn i {
+    pointer-events: none;
+}
+
+.rhyme-x {
+    display: none;
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1em;
+    color: var(--red-color);
+    cursor: pointer;
+    user-select: none;
+    z-index: 2;
+    background: none;
+    border: none;
+    padding: 0;
+    line-height: 1;
+}
+
+.rhyme-tag {
+    display: none;
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1em;
+    color: var(--secondary-accent);
+    cursor: pointer;
+    user-select: none;
+    z-index: 2;
+    background: none;
+    border: none;
+    padding: 0;
+    line-height: 1;
+}
+#rhyme-results-list li:hover:not(.rejected) .rhyme-x {
+    display: inline;
+}
+#rhyme-results-list li:hover:not(.rejected) .rhyme-tag {
+    display: inline;
+}
+#rhyme-results-list li.rejected .rhyme-x {
+    display: inline;
+    cursor: pointer !important;
+}
+
+@keyframes rhyme-x-pulse {
+    0% { transform: translateY(-50%) scale(1); }
+    50% { transform: translateY(-50%) scale(1.25); }
+    100% { transform: translateY(-50%) scale(1); }
+}
+.rhyme-x:hover {
+    animation: rhyme-x-pulse 0.25s cubic-bezier(.4,1.6,.6,1) 1;
+    color: var(--highlight-color);
+    text-shadow: 0 0 6px var(--highlight-color);
+}
+
+.rhyme-tag:hover {
+    animation: rhyme-x-pulse 0.25s cubic-bezier(.4,1.6,.6,1) 1;
+    color: var(--highlight-color);
+    text-shadow: 0 0 6px var(--highlight-color);
 }

@@ -81,6 +81,7 @@ export function saveSettings() {
             favorites: Array.from(state.favorites),
             rejectedRhymes: serializeNestedSets(state.rejectedRhymes),
             manualRhymes: serializeNestedSets(state.manualRhymes),
+            slantRhymes: serializeNestedSets(state.slantRhymes),
             wordList: state.wordList, // NEW: Save the word list
         };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(settingsToSave));
@@ -115,6 +116,7 @@ export function loadSettings() {
              state.favorites = Array.isArray(parsedData.favorites) ? new Set(parsedData.favorites) : new Set();
              state.rejectedRhymes = parsedData.rejectedRhymes ? deserializeNestedSets(parsedData.rejectedRhymes) : {};
              state.manualRhymes = parsedData.manualRhymes ? deserializeNestedSets(parsedData.manualRhymes) : {};
+             state.slantRhymes = parsedData.slantRhymes ? deserializeNestedSets(parsedData.slantRhymes) : {};
              
              // NEW: Load the word list if available
              if (Array.isArray(parsedData.wordList) && parsedData.wordList.length > 0) {
@@ -176,6 +178,7 @@ export function resetToDefaults(saveAfterReset = true) {
     state.activationMode = 'manual';
     state.rejectedRhymes = {};
     state.manualRhymes = {};
+    state.slantRhymes = {};
     // Note: Don't reset wordList here - let wordManager handle that
 
     applyLoadedSettingsToUI();
@@ -216,6 +219,7 @@ export function exportSettings() {
                 favorites: Array.from(state.favorites),
                 rejectedRhymes: serializeNestedSets(state.rejectedRhymes),
                 manualRhymes: serializeNestedSets(state.manualRhymes),
+                slantRhymes: serializeNestedSets(state.slantRhymes),
                 wordList: state.wordList,
             }
         };
@@ -266,6 +270,7 @@ export function importSettings(jsonData) {
         state.favorites = Array.isArray(settings.favorites) ? new Set(settings.favorites) : new Set();
         state.rejectedRhymes = settings.rejectedRhymes ? deserializeNestedSets(settings.rejectedRhymes) : {};
         state.manualRhymes = settings.manualRhymes ? deserializeNestedSets(settings.manualRhymes) : {};
+        state.slantRhymes = settings.slantRhymes ? deserializeNestedSets(settings.slantRhymes) : {};
         
         if (Array.isArray(settings.wordList) && settings.wordList.length > 0) {
             state.wordList = settings.wordList;

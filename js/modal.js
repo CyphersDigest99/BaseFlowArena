@@ -23,6 +23,7 @@ import { state } from './state.js';
 import * as ui from './ui.js';
 import * as wordManager from './wordManager.js'; // Needed for word list editor save/state
 import * as storage from './storage.js'; // Needed for saving favorites changes
+import { persistTempRejections } from './rhyme.js'; // Needed for persisting temp rejections
 
 // --- Generic Modal Controls ---
 /**
@@ -43,6 +44,7 @@ export function closeModal(modalElement) {
 
         // Specific cleanup when closing certain modals
         if (modalElement === ui.elements.rhymeFinderModal) {
+            persistTempRejections();
             clearRhymeModal();
         }
         if (modalElement === ui.elements.favoritesModal) {
