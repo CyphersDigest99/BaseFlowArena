@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flow Meter Test</title>
+    <style>
+        /* Import the same CSS variables and basic styles */
+        :root {
+            --bg-color: transparent;
+            --panel-bg: rgba(31, 31, 56, 0.92);
+            --panel-bg-opaque: rgb(31, 31, 56);
+            --border-color: rgba(74, 78, 105, 0.7);
+            --primary-accent: #00ffff;
+            --secondary-accent: #ff00ff;
+            --text-color: #e0e0e0;
+            --text-bright: #ffffff;
+            --highlight-color: #f9a826;
+            --red-color: #ff4500;
+            --green-color: #00ff00;
+            --disabled-color: #6c757d;
+        }
+
+        body {
+            background: linear-gradient(to bottom, rgba(16, 16, 32, 0.8), rgba(5, 5, 16, 0.9));
+            font-family: 'Roboto', sans-serif;
+            color: var(--text-color);
+            padding: 20px;
+            margin: 0;
+        }
+
+        .test-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: var(--panel-bg);
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        h1 {
+            color: var(--primary-accent);
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .test-button {
+            background-color: transparent;
+            color: var(--primary-accent);
+            border: 1px solid var(--primary-accent);
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px;
+            transition: all 0.2s ease;
+        }
+
+        .test-button:hover {
+            background-color: rgba(0, 255, 255, 0.1);
+            box-shadow: 0 0 8px var(--primary-accent);
+        }
+
+        .button-container {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        /* Flow Meter Styles */
+        .flow-meter {
+            width: 100%;
+            height: 80px;
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 20px;
+        }
+
+        .flow-meter h2 {
+            color: var(--primary-accent);
+            margin-bottom: 10px;
+            font-size: 1.3em;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 5px;
+        }
+
+        .flow-meter-container {
+            flex-grow: 1;
+            height: 20px;
+            background-color: rgba(0, 0, 0, 0.5);
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .flow-meter-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--primary-accent), var(--secondary-accent));
+            border-radius: 10px;
+            transition: width 0.3s ease-out;
+            box-shadow: 0 0 5px var(--primary-accent);
+            position: relative;
+        }
+
+        .flow-meter-bar::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            animation: flow-shimmer 2s infinite;
+        }
+
+        @keyframes flow-shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        /* Flow Meter Animation */
+        @keyframes flow-pulse {
+            0% { 
+                width: 0%; 
+                box-shadow: 0 0 5px var(--primary-accent);
+            }
+            50% { 
+                width: 100%; 
+                box-shadow: 0 0 20px var(--primary-accent), 0 0 30px var(--secondary-accent);
+            }
+            100% { 
+                width: 0%; 
+                box-shadow: 0 0 5px var(--primary-accent);
+            }
+        }
+
+        .flow-pulse { 
+            animation: flow-pulse 0.6s ease-out; 
+        }
+
+        @keyframes flow-breathe {
+            0%, 100% { 
+                opacity: 0.9; 
+                transform: scaleY(1);
+            }
+            50% { 
+                opacity: 1; 
+                transform: scaleY(1.02);
+            }
+        }
+
+        .description {
+            background-color: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            margin-top: 20px;
+        }
+
+        .description h3 {
+            color: var(--secondary-accent);
+            margin-bottom: 10px;
+        }
+
+        .description p {
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>Flow Meter Test</h1>
+        
+        <div class="flow-meter">
+            <h2><i class="fas fa-chart-line"></i> Flow Meter</h2>
+            <div class="flow-meter-container">
+                <div class="flow-meter-bar" id="flowMeterBar"></div>
+            </div>
+        </div>
+
+        <div class="button-container">
+            <button class="test-button" onclick="triggerFlowMeter()">Add Single Word</button>
+            <button class="test-button" onclick="triggerMultiplePulses()">Rapid Word Flow</button>
+            <button class="test-button" onclick="simulateWordFlow()">Simulate Real Flow</button>
+            <button class="test-button" onclick="resetFlowMeter()">Reset Meter</button>
+        </div>
+
+        <div class="description">
+            <h3>How it works:</h3>
+            <p>This Flow Meter demonstrates the dynamic behavior that responds to word activity in the Live Feed.</p>
+            <p>The meter behaves like a real-time flow indicator:</p>
+            <ul>
+                <li>Starts building up from 20% when words begin flowing</li>
+                <li>Hovers around 50-60% during active word flow</li>
+                <li>Has natural peaks and dips based on word frequency</li>
+                <li>Gradually decays when no new words are added</li>
+                <li>Changes color and glow intensity based on activity level</li>
+                <li>Includes subtle breathing animation when active</li>
+            </ul>
+            <p>In the main app, this will dynamically respond to the pace and frequency of words being transcribed, creating a realistic "flow" visualization that makes users feel like their vocabulary is being measured in real-time.</p>
+        </div>
+    </div>
+
+    <script>
+        // Flow Meter state management
+        let flowMeterLevel = 0;
+        let flowMeterDecayTimer = null;
+        let wordCount = 0;
+        let lastWordTime = 0;
+
+        function updateFlowMeter(isNewWord = false) {
+            const flowMeterBar = document.getElementById('flowMeterBar');
+            if (!flowMeterBar) return;
+            
+            const now = Date.now();
+            
+            if (isNewWord) {
+                // Increment word count and update last word time
+                wordCount++;
+                lastWordTime = now;
+                
+                // Increase flow level based on word frequency
+                const timeSinceLastWord = now - lastWordTime;
+                if (timeSinceLastWord < 2000) { // Words coming in quickly
+                    flowMeterLevel = Math.min(100, flowMeterLevel + 8 + Math.random() * 4);
+                } else if (timeSinceLastWord < 5000) { // Moderate pace
+                    flowMeterLevel = Math.min(100, flowMeterLevel + 5 + Math.random() * 3);
+                } else { // Slower pace
+                    flowMeterLevel = Math.min(100, flowMeterLevel + 3 + Math.random() * 2);
+                }
+                
+                // Ensure minimum level when words are being added
+                flowMeterLevel = Math.max(20, flowMeterLevel);
+            }
+            
+            // Natural decay over time
+            if (flowMeterDecayTimer) {
+                clearTimeout(flowMeterDecayTimer);
+            }
+            
+            flowMeterDecayTimer = setTimeout(() => {
+                // Gradual decay when no new words
+                const timeSinceLastWord = Date.now() - lastWordTime;
+                if (timeSinceLastWord > 3000) { // Start decaying after 3 seconds
+                    flowMeterLevel = Math.max(0, flowMeterLevel - 2);
+                    updateFlowMeterDisplay();
+                    
+                    // Continue decaying if still above 0
+                    if (flowMeterLevel > 0) {
+                        updateFlowMeter();
+                    }
+                }
+            }, 1000);
+            
+            updateFlowMeterDisplay();
+        }
+
+        function updateFlowMeterDisplay() {
+            const flowMeterBar = document.getElementById('flowMeterBar');
+            if (!flowMeterBar) return;
+            
+            // Add some natural variation to make it feel more alive
+            const variation = (Math.random() - 0.5) * 3; // ±1.5% variation
+            const displayLevel = Math.max(0, Math.min(100, flowMeterLevel + variation));
+            
+            flowMeterBar.style.width = `${displayLevel}%`;
+            
+            // Update glow intensity based on level
+            const glowIntensity = Math.max(5, displayLevel / 2);
+            flowMeterBar.style.boxShadow = `0 0 ${glowIntensity}px var(--primary-accent)`;
+            
+            // Add subtle color variation based on level
+            if (displayLevel > 80) {
+                flowMeterBar.style.background = 'linear-gradient(90deg, var(--primary-accent), var(--secondary-accent), var(--highlight-color))';
+            } else if (displayLevel > 50) {
+                flowMeterBar.style.background = 'linear-gradient(90deg, var(--primary-accent), var(--secondary-accent))';
+            } else {
+                flowMeterBar.style.background = 'linear-gradient(90deg, var(--primary-accent), rgba(0, 255, 255, 0.7))';
+            }
+            
+            // Add subtle breathing effect when level is above 20%
+            if (displayLevel > 20) {
+                flowMeterBar.style.animation = 'flow-breathe 3s ease-in-out infinite';
+            } else {
+                flowMeterBar.style.animation = 'none';
+            }
+        }
+
+        function resetFlowMeter() {
+            flowMeterLevel = 0;
+            wordCount = 0;
+            lastWordTime = 0;
+            if (flowMeterDecayTimer) {
+                clearTimeout(flowMeterDecayTimer);
+                flowMeterDecayTimer = null;
+            }
+            const flowMeterBar = document.getElementById('flowMeterBar');
+            if (flowMeterBar) {
+                flowMeterBar.style.width = '0%';
+                flowMeterBar.style.boxShadow = '0 0 5px var(--primary-accent)';
+                flowMeterBar.style.background = 'linear-gradient(90deg, var(--primary-accent), var(--secondary-accent))';
+                flowMeterBar.style.animation = 'none';
+            }
+        }
+
+        function triggerFlowMeter() {
+            updateFlowMeter(true);
+        }
+
+        function triggerMultiplePulses() {
+            // Simulate rapid word flow
+            for (let i = 0; i < 8; i++) {
+                setTimeout(() => {
+                    updateFlowMeter(true);
+                }, i * 400); // 400ms between each word
+            }
+        }
+
+        function simulateWordFlow() {
+            // Simulate a realistic word flow pattern
+            const patterns = [
+                { delay: 0, words: 3 },    // Quick burst
+                { delay: 2000, words: 2 }, // Another burst
+                { delay: 4000, words: 1 }, // Single word
+                { delay: 6000, words: 4 }, // Longer burst
+                { delay: 9000, words: 2 }, // Final burst
+            ];
+            
+            patterns.forEach(pattern => {
+                setTimeout(() => {
+                    for (let i = 0; i < pattern.words; i++) {
+                        setTimeout(() => {
+                            updateFlowMeter(true);
+                        }, i * 300);
+                    }
+                }, pattern.delay);
+            });
+        }
+    </script>
+</body>
+</html> 

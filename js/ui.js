@@ -83,6 +83,7 @@ export const elements = {
     cycleSpeedInput: document.getElementById('cycle-speed'),
     cycleSpeedSlider: document.getElementById('cycle-speed-slider'),
     transcriptContainer: document.getElementById('new-transcript'),
+    flowMeterBar: document.querySelector('.flow-meter-bar'),
 
     // Right Panel Controls (BPM) - Beat per minute detection and management
     bpmButton: document.getElementById('bpm-button'),
@@ -499,6 +500,10 @@ export function updateTranscript(lineText, isFinal) {
          while (elements.transcriptContainer.children.length > state.MAX_TRANSCRIPT_LINES) {
              elements.transcriptContainer.removeChild(elements.transcriptContainer.lastChild);
          }
+         
+         // Update Flow Meter for new word activity
+         console.log('Flow Meter Debug: Calling updateFlowMeter from updateTranscript');
+         updateFlowMeter(true);
      }
      elements.transcriptContainer.scrollTop = 0;
 }
@@ -506,6 +511,140 @@ export function updateTranscript(lineText, isFinal) {
 // Clears all transcript content
 export function clearTranscript() {
     if (elements.transcriptContainer) elements.transcriptContainer.innerHTML = '';
+}
+
+// Flow Meter state management
+let flowMeterLevel = 0;
+let flowMeterDecayTimer = null;
+let wordCount = 0;
+let lastWordTime = 0;
+
+// Debug: Log Flow Meter element on initialization
+console.log('Flow Meter Debug: Initializing...');
+console.log('Flow Meter element found:', !!elements.flowMeterBar);
+if (elements.flowMeterBar) {
+    console.log('Flow Meter element:', elements.flowMeterBar);
+    console.log('Flow Meter initial width:', elements.flowMeterBar.style.width);
+}
+
+// Manual test function for Flow Meter (can be called from browser console)
+window.testFlowMeter = function() {
+    console.log('Flow Meter Test: Manual test function called');
+    console.log('Flow Meter element exists:', !!elements.flowMeterBar);
+    if (elements.flowMeterBar) {
+        console.log('Testing Flow Meter update...');
+        updateFlowMeter(true);
+        console.log('Flow Meter test complete');
+    } else {
+        console.error('Flow Meter Test: Element not found!');
+    }
+};
+
+// Updates the Flow Meter based on word activity
+export function updateFlowMeter(isNewWord = false) {
+    console.log('Flow Meter Debug: updateFlowMeter called, isNewWord:', isNewWord);
+    console.log('Flow Meter element exists:', !!elements.flowMeterBar);
+    if (!elements.flowMeterBar) {
+        console.error('Flow Meter Debug: flowMeterBar element not found!');
+        return;
+    }
+    
+    const now = Date.now();
+    
+    if (isNewWord) {
+        // Increment word count and update last word time
+        wordCount++;
+        lastWordTime = now;
+        
+        // Increase flow level based on word frequency
+        const timeSinceLastWord = now - lastWordTime;
+        if (timeSinceLastWord < 2000) { // Words coming in quickly
+            flowMeterLevel = Math.min(100, flowMeterLevel + 8 + Math.random() * 4);
+        } else if (timeSinceLastWord < 5000) { // Moderate pace
+            flowMeterLevel = Math.min(100, flowMeterLevel + 5 + Math.random() * 3);
+        } else { // Slower pace
+            flowMeterLevel = Math.min(100, flowMeterLevel + 3 + Math.random() * 2);
+        }
+        
+        // Ensure minimum level when words are being added
+        flowMeterLevel = Math.max(20, flowMeterLevel);
+    }
+    
+    // Natural decay over time
+    if (flowMeterDecayTimer) {
+        clearTimeout(flowMeterDecayTimer);
+    }
+    
+    flowMeterDecayTimer = setTimeout(() => {
+        // Gradual decay when no new words
+        const timeSinceLastWord = Date.now() - lastWordTime;
+        if (timeSinceLastWord > 3000) { // Start decaying after 3 seconds
+            flowMeterLevel = Math.max(0, flowMeterLevel - 2);
+            updateFlowMeterDisplay();
+            
+            // Continue decaying if still above 0
+            if (flowMeterLevel > 0) {
+                updateFlowMeter();
+            }
+        }
+    }, 1000);
+    
+    updateFlowMeterDisplay();
+}
+
+// Updates the visual display of the Flow Meter
+function updateFlowMeterDisplay() {
+    console.log('Flow Meter Debug: updateFlowMeterDisplay called');
+    if (!elements.flowMeterBar) {
+        console.error('Flow Meter Debug: flowMeterBar element not found in display function!');
+        return;
+    }
+    
+    // Add some natural variation to make it feel more alive
+    const variation = (Math.random() - 0.5) * 3; // ±1.5% variation
+    const displayLevel = Math.max(0, Math.min(100, flowMeterLevel + variation));
+    
+    elements.flowMeterBar.style.width = `${displayLevel}%`;
+    
+    // Update glow intensity based on level
+    const glowIntensity = Math.max(5, displayLevel / 2);
+    elements.flowMeterBar.style.boxShadow = `0 0 ${glowIntensity}px var(--primary-accent)`;
+    
+    // Add subtle color variation based on level
+    if (displayLevel > 80) {
+        elements.flowMeterBar.style.background = 'linear-gradient(90deg, var(--primary-accent), var(--secondary-accent), var(--highlight-color))';
+    } else if (displayLevel > 50) {
+        elements.flowMeterBar.style.background = 'linear-gradient(90deg, var(--primary-accent), var(--secondary-accent))';
+    } else {
+        elements.flowMeterBar.style.background = 'linear-gradient(90deg, var(--primary-accent), rgba(0, 255, 255, 0.7))';
+    }
+    
+    // Add subtle breathing effect when level is above 20%
+    if (displayLevel > 20) {
+        elements.flowMeterBar.style.animation = 'flow-breathe 3s ease-in-out infinite';
+    } else {
+        elements.flowMeterBar.style.animation = 'none';
+    }
+}
+
+// Resets the Flow Meter when voice mode is deactivated
+export function resetFlowMeter() {
+    console.log('Flow Meter Debug: resetFlowMeter called');
+    flowMeterLevel = 0;
+    wordCount = 0;
+    lastWordTime = 0;
+    if (flowMeterDecayTimer) {
+        clearTimeout(flowMeterDecayTimer);
+        flowMeterDecayTimer = null;
+    }
+    if (elements.flowMeterBar) {
+        console.log('Flow Meter Debug: Resetting Flow Meter display');
+        elements.flowMeterBar.style.width = '0%';
+        elements.flowMeterBar.style.boxShadow = '0 0 5px var(--primary-accent)';
+        elements.flowMeterBar.style.background = 'linear-gradient(90deg, var(--primary-accent), var(--secondary-accent))';
+    } else {
+        console.error('Flow Meter Debug: flowMeterBar element not found in reset function!');
+    }
 }
 
 // Displays word frequency statistics with color-coded frequency levels

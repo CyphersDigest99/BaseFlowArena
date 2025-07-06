@@ -107,6 +107,20 @@ async function initializeApp() {
     // 5. Attach Event Listeners
     attachEventListeners();
 
+    // Debug Flow Meter initialization
+    console.log('Flow Meter Debug: Checking element after initialization');
+    console.log('Flow Meter element exists:', !!ui.elements.flowMeterBar);
+    if (ui.elements.flowMeterBar) {
+        console.log('Flow Meter element found:', ui.elements.flowMeterBar);
+        console.log('Flow Meter initial state:', {
+            width: ui.elements.flowMeterBar.style.width,
+            display: window.getComputedStyle(ui.elements.flowMeterBar).display,
+            visibility: window.getComputedStyle(ui.elements.flowMeterBar).visibility
+        });
+    } else {
+        console.error('Flow Meter Debug: Element not found during initialization!');
+    }
+    
     console.log("--- Initialization Complete ---");
 }
 
@@ -119,7 +133,11 @@ function setActivationMode(newMode) {
     state.activationMode = newMode;
     console.log(`Activation mode changed from ${previousMode} to ${state.activationMode}`);
     if (previousMode === 'timed' && state.timedInterval) { clearInterval(state.timedInterval); state.timedInterval = null; ui.updateWordDisplayAnimation(); }
-    if (previousMode === 'voice') speech.stopRecognition(true);
+    if (previousMode === 'voice') {
+        speech.stopRecognition(true);
+        console.log('Flow Meter Debug: Resetting Flow Meter due to voice mode deactivation');
+        ui.resetFlowMeter(); // Reset Flow Meter when voice mode is deactivated
+    }
     if (state.activationMode === 'timed') startTimedCycleInternal();
     else if (state.activationMode === 'voice') speech.startRecognition();
     ui.updateActivationUI();
