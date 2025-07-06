@@ -404,24 +404,94 @@ export function toggleBlacklist() {
     }
 
     const wasBlacklisted = state.blacklist.has(wordToToggle);
+    const wasBaseWord = wordToToggle === state.currentWord;
+    
     if (wasBlacklisted) {
-        state.blacklist.delete(wordToToggle); ui.showFeedback(`"${wordToToggle}" un-blacklisted.`);
+        state.blacklist.delete(wordToToggle); 
+        ui.showFeedback(`"${wordToToggle}" un-blacklisted.`);
     } else {
-        state.blacklist.add(wordToToggle); ui.showFeedback(`"${wordToToggle}" blacklisted!`, true);
-        if (wordToToggle === state.currentWord && state.currentStreak > 0) updateStreak(false);
+        state.blacklist.add(wordToToggle); 
+        ui.showFeedback(`"${wordToToggle}" blacklisted!`, true);
+        if (wasBaseWord && state.currentStreak > 0) updateStreak(false);
     }
     storage.saveSettings(); // Save changes
-    applyFiltersAndSort(); // Recalculate filtered list
-
-    // --- Decide what to display next ---
-    if (wordToToggle === state.currentWord) {
-        // If the BASE word was actioned
-        if (!wasBlacklisted) changeWord('next', false, false); // Just blacklisted -> move
-        else changeWord('stay', false, false); // Just unblacklisted -> refresh
+    
+    // --- Handle word advancement for blacklisting ---
+    if (!wasBlacklisted && wasBaseWord) {
+        // Word was just blacklisted - advance to next word immediately
+        // Store current state before filtering
+        const currentIndex = state.currentWordIndex;
+        
+        // Apply filters (this will remove the blacklisted word)
+        applyFiltersAndSort();
+        
+        // If the filtered list is empty, show "NO WORDS!"
+        if (state.filteredWordList.length === 0) {
+            state.currentWord = "NO WORDS!";
+            state.currentWordIndex = -1;
+            state.currentRhymeList = [];
+            state.currentRhymeIndex = -1;
+            ui.displayWord("NO WORDS!");
+            ui.showFeedback("Word list empty or fully blacklisted!", true, 3000);
+            return;
+        }
+        
+        // Advance to next word based on current word order mode
+        let nextIndex;
+        switch (state.wordOrderMode) {
+            case 'random':
+                if (state.filteredWordList.length > 1) {
+                    let tempIndex;
+                    do { tempIndex = Math.floor(Math.random() * state.filteredWordList.length); }
+                    while (tempIndex === currentIndex && state.filteredWordList.length > 1);
+                    nextIndex = tempIndex;
+                } else { 
+                    nextIndex = 0; 
+                } 
+                break;
+            case 'alphabetical': 
+            case 'sequential': 
+            default:
+                // For sequential modes, try to maintain position or move to next
+                if (currentIndex >= 0 && currentIndex < state.filteredWordList.length) {
+                    nextIndex = currentIndex % state.filteredWordList.length;
+                } else {
+                    nextIndex = 0;
+                }
+                break;
+        }
+        
+        // Update state with new word
+        const newWord = state.filteredWordList[nextIndex];
+        const previousWord = state.currentWord;
+        state.currentWordIndex = nextIndex;
+        state.currentWord = newWord;
+        state.lastMatchedWord = null;
+        
+        console.log(`Word blacklisted. Advanced to: "${state.currentWord}" (Index: ${state.currentWordIndex})`);
+        
+        // Fetch rhymes for new word
+        state.currentRhymeList = rhyme.getValidRhymesForWord(state.currentWord);
+        state.currentRhymeIndex = -1;
+        
+        // Update UI
+        ui.displayWord(state.currentWord);
+        
+        // Call the word change callback if set
+        if (onWordChangeCallback) {
+            onWordChangeCallback(state.currentWord, previousWord);
+        }
+        
+    } else if (wasBlacklisted && wasBaseWord) {
+        // Word was just un-blacklisted - refresh current word
+        applyFiltersAndSort();
+        changeWord('stay', false, false);
+        
     } else {
-        // If a RHYME was actioned, revert display to BASE word & refresh its rhymes
+        // A rhyme was actioned - revert to base word and refresh rhymes
         console.log(`Rhyme "${wordToToggle}" actioned. Reverting display to base word "${state.currentWord}" and refreshing rhymes.`);
-        changeWord('stay', false, false); // 'stay' re-fetches rhymes for current base word
+        applyFiltersAndSort();
+        changeWord('stay', false, false);
     }
 }
 
