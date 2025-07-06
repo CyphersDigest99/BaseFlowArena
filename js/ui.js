@@ -210,6 +210,26 @@ export function updateStreakDisplay(newStreak, grew) {
     }
 }
 
+// --- WINDOW RESIZE HANDLER FOR DYNAMIC FONT SCALING ---
+// Recalculates font size when window is resized to maintain proper scaling
+let resizeTimeout;
+window.addEventListener('resize', () => {
+    // Debounce resize events to avoid excessive recalculations
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(() => {
+        // Only recalculate if there's a current word displayed
+        if (elements.wordDisplay && elements.wordDisplay.textContent && 
+            elements.wordDisplay.textContent !== 'LOADING...' && 
+            elements.wordDisplay.textContent !== 'NO WORDS!') {
+            
+            console.log('Window resized, recalculating font size for current word');
+            // Re-display the current word to trigger font size recalculation
+            const currentWord = elements.wordDisplay.textContent;
+            displayWord(currentWord);
+        }
+    }, 250); // Wait 250ms after resize stops before recalculating
+});
+
 // Main word display function with dynamic font sizing and state management
 export function displayWord(word) { // word is the word to display (could be base or rhyme)
     console.log(`displayWord called with word: "${word}"`);
@@ -232,35 +252,66 @@ export function displayWord(word) { // word is the word to display (could be bas
     // Verify the text was actually set
     console.log(`After setting textContent, wordDisplay.textContent: "${elements.wordDisplay.textContent}"`);
 
-    // --- DYNAMIC FONT SIZE LOGIC RESTORED ---
+    // --- ENHANCED DYNAMIC FONT SIZE LOGIC ---
     // Calculate appropriate font size to fit word within the middle cell
     const container = elements.wordCell;
     const maxWidth = container ? container.offsetWidth - 40 : 400; // Account for padding and action buttons
-    const currentFontSize = parseFloat(window.getComputedStyle(elements.wordDisplay).fontSize);
+    const maxHeight = container ? container.offsetHeight - 10 : 200; // More generous vertical padding allowance
     
-    console.log(`Container width: ${container?.offsetWidth}, maxWidth: ${maxWidth}`);
-    console.log(`Current font size: ${currentFontSize}`);
+    console.log(`Container dimensions: ${container?.offsetWidth}x${container?.offsetHeight}, maxWidth: ${maxWidth}, maxHeight: ${maxHeight}`);
+    console.log(`Word length: ${word.length} characters`);
     
-    // Reset to base size first
-    elements.wordDisplay.style.fontSize = '4em';
-    console.log(`Reset font size to 4em`);
+    // Determine base font size based on word length and screen size
+    let baseFontSize = 4; // Default for short words
     
-    // Check if word overflows and reduce font size if needed
-    if (elements.wordDisplay.scrollWidth > maxWidth) {
-        console.log(`Word overflows, reducing font size. scrollWidth: ${elements.wordDisplay.scrollWidth}, maxWidth: ${maxWidth}`);
-        let fontSize = 4;
-        while (elements.wordDisplay.scrollWidth > maxWidth && fontSize > 1) {
-            fontSize -= 0.1;
-            elements.wordDisplay.style.fontSize = `${fontSize}em`;
-            console.log(`Reduced font size to ${fontSize}em, scrollWidth: ${elements.wordDisplay.scrollWidth}`);
-        }
+    // Adjust base font size based on word length
+    if (word.length <= 3) {
+        baseFontSize = 3.5; // Large but not overwhelming for short words like "run"
+    } else if (word.length <= 5) {
+        baseFontSize = 3.8; // Large for medium-short words
+    } else if (word.length <= 8) {
+        baseFontSize = 3.5; // Medium for medium words
+    } else if (word.length <= 12) {
+        baseFontSize = 3.0; // Smaller for longer words
     } else {
-        console.log(`Word fits within maxWidth, keeping 4em font size`);
+        baseFontSize = 2.5; // Smallest for very long words
     }
     
-    console.log(`Final font size: ${window.getComputedStyle(elements.wordDisplay).fontSize}`);
-    console.log(`Final scrollWidth: ${elements.wordDisplay.scrollWidth}`);
-    console.log(`Final container width: ${container?.offsetWidth}`);
+    // Adjust for screen size
+    const screenWidth = window.innerWidth;
+    if (screenWidth <= 480) {
+        baseFontSize *= 0.8; // Smaller on mobile
+    } else if (screenWidth <= 768) {
+        baseFontSize *= 0.9; // Slightly smaller on tablets
+    }
+    
+    console.log(`Calculated base font size: ${baseFontSize}em`);
+    
+    // Reset to calculated base size first
+    elements.wordDisplay.style.fontSize = `${baseFontSize}em`;
+    
+    // Check if word overflows and reduce font size if needed
+    let fontSize = baseFontSize;
+    let iterations = 0;
+    const maxIterations = 50; // Prevent infinite loops
+    const minFontSize = 1.5; // Minimum font size to ensure readability
+    
+    while ((elements.wordDisplay.scrollWidth > maxWidth || elements.wordDisplay.scrollHeight > maxHeight) && 
+           fontSize > minFontSize && iterations < maxIterations) {
+        fontSize -= 0.1;
+        elements.wordDisplay.style.fontSize = `${fontSize}em`;
+        iterations++;
+    }
+    
+    // Ensure we don't go below minimum font size
+    if (fontSize < minFontSize) {
+        fontSize = minFontSize;
+        elements.wordDisplay.style.fontSize = `${fontSize}em`;
+    }
+    
+    console.log(`Final font size: ${fontSize}em (${iterations} iterations)`);
+    console.log(`Final dimensions: ${elements.wordDisplay.scrollWidth}x${elements.wordDisplay.scrollHeight}`);
+    console.log(`Container dimensions: ${maxWidth}x${maxHeight}`);
     
     // Final visibility check
     const finalStyle = window.getComputedStyle(elements.wordDisplay);

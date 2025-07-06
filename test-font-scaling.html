@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Font Scaling Test</title>
+    <style>
+        body {
+            font-family: 'Orbitron', sans-serif;
+            background: #1f1f38;
+            color: #e0e0e0;
+            padding: 20px;
+        }
+        
+        .test-container {
+            width: 300px;
+            height: 150px;
+            border: 2px solid #00ffff;
+            margin: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        
+        .test-word {
+            font-size: 4em;
+            font-weight: bold;
+            color: #ffffff;
+            text-shadow: 0 0 10px #fff, 0 0 15px #00ffff;
+            text-align: center;
+            word-break: break-word;
+            overflow-wrap: break-word;
+            max-width: 100%;
+            max-height: 100%;
+        }
+        
+        .controls {
+            margin: 20px;
+        }
+        
+        button {
+            background: transparent;
+            border: 1px solid #00ffff;
+            color: #00ffff;
+            padding: 10px 15px;
+            margin: 5px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        
+        button:hover {
+            background: rgba(0, 255, 255, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <h1>Dynamic Font Scaling Test</h1>
+    
+    <div class="test-container">
+        <div id="test-word" class="test-word">TEST</div>
+    </div>
+    
+    <div class="controls">
+        <button onclick="testWord('run')">Short Word (3 chars)</button>
+        <button onclick="testWord('hello')">Medium Word (5 chars)</button>
+        <button onclick="testWord('beautiful')">Long Word (9 chars)</button>
+        <button onclick="testWord('extraordinary')">Very Long Word (13 chars)</button>
+        <button onclick="testWord('supercalifragilisticexpialidocious')">Extremely Long Word (34 chars)</button>
+    </div>
+    
+    <div class="controls">
+        <button onclick="resizeContainer(200, 100)">Small Container</button>
+        <button onclick="resizeContainer(300, 150)">Medium Container</button>
+        <button onclick="resizeContainer(400, 200)">Large Container</button>
+    </div>
+    
+    <div id="debug-info" style="margin: 20px; font-family: monospace; font-size: 12px;"></div>
+
+    <script>
+        const testWordElement = document.getElementById('test-word');
+        const container = document.querySelector('.test-container');
+        const debugInfo = document.getElementById('debug-info');
+        
+        function updateFontSize(word) {
+            const maxWidth = container.offsetWidth - 40;
+            const maxHeight = container.offsetHeight - 20;
+            
+            // Determine base font size based on word length
+            let baseFontSize = 4;
+            if (word.length <= 3) {
+                baseFontSize = 3.5;
+            } else if (word.length <= 5) {
+                baseFontSize = 3.8;
+            } else if (word.length <= 8) {
+                baseFontSize = 3.5;
+            } else if (word.length <= 12) {
+                baseFontSize = 3.0;
+            } else {
+                baseFontSize = 2.5;
+            }
+            
+            // Adjust for screen size
+            const screenWidth = window.innerWidth;
+            if (screenWidth <= 480) {
+                baseFontSize *= 0.8;
+            } else if (screenWidth <= 768) {
+                baseFontSize *= 0.9;
+            }
+            
+            // Reset to calculated base size
+            testWordElement.style.fontSize = `${baseFontSize}em`;
+            
+            // Check if word overflows and reduce font size if needed
+            let fontSize = baseFontSize;
+            let iterations = 0;
+            const maxIterations = 50;
+            
+            while ((testWordElement.scrollWidth > maxWidth || testWordElement.scrollHeight > maxHeight) && 
+                   fontSize > 1.5 && iterations < maxIterations) {
+                fontSize -= 0.1;
+                testWordElement.style.fontSize = `${fontSize}em`;
+                iterations++;
+            }
+            
+            // Update debug info
+            debugInfo.innerHTML = `
+                <strong>Debug Info:</strong><br>
+                Word: "${word}" (${word.length} chars)<br>
+                Container: ${container.offsetWidth}x${container.offsetHeight}<br>
+                Max dimensions: ${maxWidth}x${maxHeight}<br>
+                Base font size: ${baseFontSize}em<br>
+                Final font size: ${fontSize}em<br>
+                Word dimensions: ${testWordElement.scrollWidth}x${testWordElement.scrollHeight}<br>
+                Iterations: ${iterations}<br>
+                Screen width: ${screenWidth}px
+            `;
+        }
+        
+        function testWord(word) {
+            testWordElement.textContent = word;
+            updateFontSize(word);
+        }
+        
+        function resizeContainer(width, height) {
+            container.style.width = width + 'px';
+            container.style.height = height + 'px';
+            updateFontSize(testWordElement.textContent);
+        }
+        
+        // Initialize with a test word
+        testWord('hello');
+        
+        // Add resize listener
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                updateFontSize(testWordElement.textContent);
+            }, 250);
+        });
+    </script>
+</body>
+</html> 
