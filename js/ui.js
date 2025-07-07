@@ -727,14 +727,29 @@ export function updateRhymeNavButtons() {
 export function updateRhymeSortToggleButton() {
     if (!elements.rhymeSortToggleButton) return;
     
-    const isAlphabetical = state.isRhymeSortAlphabetical;
     const icon = elements.rhymeSortToggleButton.querySelector('i');
     
     if (icon) {
-        icon.className = isAlphabetical ? 'fas fa-sort-alpha-down' : 'fas fa-random';
+        switch (state.rhymeSortMode) {
+            case 'alphabetical':
+                icon.className = 'fas fa-sort-alpha-down';
+                break;
+            case 'high-similarity':
+                icon.className = 'fas fa-bullseye';
+                break;
+            default: // 'default'
+                icon.className = 'fas fa-random';
+                break;
+        }
     }
     
-    elements.rhymeSortToggleButton.title = `Sort Order: ${isAlphabetical ? 'Alphabetical' : 'Default'}`;
+    const modeNames = {
+        'default': 'Default',
+        'alphabetical': 'Alphabetical', 
+        'high-similarity': 'High-Similarity'
+    };
+    
+    elements.rhymeSortToggleButton.title = `Sort Order: ${modeNames[state.rhymeSortMode] || 'Default'}`;
 }
 
 // Shows subtext below the main word display

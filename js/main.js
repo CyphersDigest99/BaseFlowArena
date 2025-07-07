@@ -365,10 +365,19 @@ function attachEventListeners() {
     
     // Rhyme Sort Toggle Listener
     ui.elements.rhymeSortToggleButton?.addEventListener('click', () => {
-        state.isRhymeSortAlphabetical = !state.isRhymeSortAlphabetical;
+        // Cycle through three modes: default -> alphabetical -> high-similarity -> default ...
+        const modes = ['default', 'alphabetical', 'high-similarity'];
+        const currentIndex = modes.indexOf(state.rhymeSortMode);
+        const nextIndex = (currentIndex + 1) % modes.length;
+        state.rhymeSortMode = modes[nextIndex];
         ui.updateRhymeSortToggleButton();
         storage.saveSettings();
-        ui.showFeedback(`Rhyme navigation: ${state.isRhymeSortAlphabetical ? 'Alphabetical' : 'Default'} order`, false, 2000);
+        const modeNames = {
+            'default': 'Default',
+            'alphabetical': 'Alphabetical',
+            'high-similarity': 'High-Similarity'
+        };
+        ui.showFeedback(`Rhyme navigation: ${modeNames[state.rhymeSortMode] || 'Default'} order`, false, 2000);
     });
 
     // Word Order Setting

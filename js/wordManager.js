@@ -36,6 +36,43 @@ export function setWordChangeCallback(callback) {
     onWordChangeCallback = callback;
 }
 
+// --- Filter Rhymes by Similarity ---
+// Filters a list of rhymes to only include those with similarity score above threshold
+function filterRhymesBySimilarity(rhymeList, baseWord, threshold = 0.8) {
+    if (!rhymeList || rhymeList.length === 0 || !baseWord) {
+        return [];
+    }
+    
+    const basePhonemes = getPhonemes(baseWord);
+    if (!basePhonemes) {
+        return rhymeList; // If no phonetic data, return all rhymes
+    }
+    
+    const filteredRhymes = [];
+    for (const rhymeWord of rhymeList) {
+        const rhymePhonemes = getPhonemes(rhymeWord);
+        if (rhymePhonemes) {
+            const score = rhyme.calculateRhymeScore(basePhonemes, rhymePhonemes);
+            if (score >= threshold) {
+                filteredRhymes.push(rhymeWord);
+            }
+        }
+    }
+    
+    return filteredRhymes;
+}
+
+// --- Get Phonemes Helper ---
+// Retrieves the complete phoneme array for a given word from rhyme data
+function getPhonemes(word) {
+    if (!state.rhymeData || !word) return null;
+    const wordLower = word.toLowerCase();
+    const data = state.rhymeData[wordLower];
+    
+    if (!data || !data.phonemes) return null;
+    return data.phonemes;
+}
+
 // --- Syllable Counting Function ---
 // Calculates syllable count using JavaScript regex patterns
 function countSyllables(word) {
@@ -323,8 +360,8 @@ export function selectRhyme(direction) {
     let rhymeList = state.currentRhymeList;
     let currentRhymeIndex = state.currentRhymeIndex;
     
-    // If alphabetical mode is enabled, create a sorted copy and find the current word's position
-    if (state.isRhymeSortAlphabetical) {
+    // Apply sorting/filtering based on rhyme sort mode
+    if (state.rhymeSortMode === 'alphabetical') {
         const sortedRhymeList = [...state.currentRhymeList].sort((a, b) => a.localeCompare(b));
         
         // Find the current rhyme word in the sorted list
@@ -340,6 +377,30 @@ export function selectRhyme(direction) {
         if (currentRhymeWord) {
             currentRhymeIndex = sortedRhymeList.indexOf(currentRhymeWord);
             if (currentRhymeIndex === -1) currentRhymeIndex = 0; // Fallback to first if not found
+        } else {
+            currentRhymeIndex = -1; // Start from base word
+        }
+    } else if (state.rhymeSortMode === 'high-similarity') {
+        // Filter rhymes by high similarity score (threshold 0.8)
+        const highSimilarityRhymes = filterRhymesBySimilarity(state.currentRhymeList, state.currentWord, 0.8);
+        
+        if (highSimilarityRhymes.length === 0) {
+            ui.showFeedback("No high-similarity rhymes found. Try a different word.", true, 2000);
+            return;
+        }
+        
+        // Find the current rhyme word in the filtered list
+        let currentRhymeWord = null;
+        if (currentRhymeIndex >= 0 && currentRhymeIndex < state.currentRhymeList.length) {
+            currentRhymeWord = state.currentRhymeList[currentRhymeIndex];
+        }
+        
+        // Use the filtered list for navigation
+        rhymeList = highSimilarityRhymes;
+        
+        // Find the current word's position in the filtered list
+        if (currentRhymeWord && highSimilarityRhymes.includes(currentRhymeWord)) {
+            currentRhymeIndex = highSimilarityRhymes.indexOf(currentRhymeWord);
         } else {
             currentRhymeIndex = -1; // Start from base word
         }

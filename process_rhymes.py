@@ -37,6 +37,7 @@ Output Format:
     {
         "word": {
             "rhyme_pattern": ["AA", "IY"],
+            "phonemes": ["IH", "G", "Z", "AE", "M", "P", "AH", "L"],
             "syllables": 2
         }
     }
@@ -64,6 +65,36 @@ OUTPUT_PATH = os.path.join(SCRIPT_DIR, OUTPUT_JSON_FILE)
 
 
 # --- PHONETIC PROCESSING FUNCTIONS ---
+
+def get_all_phonemes(word):
+    """
+    Gets the complete phonetic representation of a word as an array of phonemes.
+    Uses the CMU Pronouncing Dictionary via the 'pronouncing' library.
+    Returns a list of all phonemes (e.g., ['IH', 'G', 'Z', 'AE', 'M', 'P', 'AH', 'L']) or None if not found.
+    
+    Args:
+        word (str): The word to analyze
+        
+    Returns:
+        list or None: List of all phonemes in order, or None if word not found
+        
+    Note:
+        This function extracts ALL phonemes in sequence, including consonants and vowels,
+        which is crucial for advanced rhyme similarity scoring.
+    """
+    # Ensure the word is lowercase for lookup, as CMUdict keys are often lowercase
+    word_lower = word.lower()
+    phones_list = pronouncing.phones_for_word(word_lower)
+
+    if not phones_list:
+        return None  # Word not found in the dictionary
+
+    # Use the first pronunciation found in the list (most common)
+    pronunciation = phones_list[0]
+    phonemes = pronunciation.split(' ')
+
+    # Return the list of phonemes if any were found, otherwise None
+    return phonemes if phonemes else None
 
 def get_all_vowel_pattern(word):
     """
@@ -185,13 +216,16 @@ def process_word_list():
     for word in words:
         # Get the vowel pattern using the helper function
         pattern = get_all_vowel_pattern(word)
+        # Get the complete phoneme array
+        phonemes = get_all_phonemes(word)
         # Get the syllable count
         syllable_count = get_syllable_count(word)
 
-        if pattern and syllable_count is not None:
-            # Store both pattern and syllable count with the original (case preserved) word as the key
+        if pattern and phonemes and syllable_count is not None:
+            # Store pattern, phonemes, and syllable count with the original (case preserved) word as the key
             rhyme_patterns[word] = {
                 "rhyme_pattern": pattern,
+                "phonemes": phonemes,
                 "syllables": syllable_count
             }
             processed_count += 1

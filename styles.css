@@ -1803,11 +1803,33 @@ label.checkbox-label {
     text-align: center;
     box-shadow: 0 1px 2px rgba(0,0,0,0.13);
     transition: transform 0.2s ease;
-    margin: 0 2px;
+    margin: 0 4px;
     vertical-align: middle;
 }
 
 .vowel-pattern-block:hover {
+    transform: scale(1.05);
+}
+
+.consonant-pattern-block {
+    display: inline-block;
+    background-color: rgba(0, 0, 0, 0.3);
+    color: var(--green-color);
+    border: 1px solid var(--green-color);
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 1em;
+    font-weight: bold;
+    min-width: 2em;
+    text-align: center;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.13);
+    transition: transform 0.2s ease;
+    margin: 0 4px;
+    vertical-align: middle;
+}
+
+.consonant-pattern-block:hover {
     transform: scale(1.05);
 }
 
@@ -1885,6 +1907,122 @@ label.checkbox-label {
 #rhyme-results-list li.manually-added {
     text-decoration: underline;
     color: var(--green-color);
+}
+
+/* Rhyme Tier Styling */
+#rhyme-results-list li.rhyme-tier-perfect {
+    background-color: rgba(255, 215, 0, 0.15);
+    border: 2px solid #FFD700;
+    color: #FFD700;
+    font-weight: bold;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.2s ease;
+}
+
+#rhyme-results-list li.rhyme-tier-perfect::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -100%;
+    width: 100%;
+    height: calc(100% + 4px);
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+#rhyme-results-list li.rhyme-tier-perfect.shimmer-active::before {
+    animation: shimmer-gold 1.5s ease-out;
+    opacity: 1;
+}
+
+#rhyme-results-list li.rhyme-tier-perfect:hover {
+    background-color: rgba(255, 215, 0, 0.25);
+    box-shadow: 0 0 12px rgba(255, 215, 0, 0.4);
+    transform: scale(1.02);
+}
+
+#rhyme-results-list li.rhyme-tier-perfect:hover::before {
+    animation: shimmer-gold 1s ease-out;
+    opacity: 1;
+}
+
+#rhyme-results-list li.rhyme-tier-strong {
+    background: linear-gradient(135deg, rgba(192, 192, 192, 0.15), rgba(169, 169, 169, 0.2));
+    border: 2px solid #C0C0C0;
+    color: #E8E8E8;
+    text-shadow: 0 0 2px rgba(192, 192, 192, 0.5);
+    position: relative;
+    overflow: hidden;
+    transition: all 0.2s ease;
+}
+
+#rhyme-results-list li.rhyme-tier-strong::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -100%;
+    width: 100%;
+    height: calc(100% + 4px);
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+#rhyme-results-list li.rhyme-tier-strong.shimmer-active::before {
+    animation: shimmer-silver 1.5s ease-out;
+    opacity: 1;
+}
+
+#rhyme-results-list li.rhyme-tier-strong:hover {
+    background: linear-gradient(135deg, rgba(192, 192, 192, 0.25), rgba(169, 169, 169, 0.3));
+    box-shadow: 0 0 12px rgba(192, 192, 192, 0.4), inset 0 0 4px rgba(255, 255, 255, 0.1);
+    text-shadow: 0 0 4px rgba(192, 192, 192, 0.8);
+    transform: scale(1.02);
+}
+
+#rhyme-results-list li.rhyme-tier-strong:hover::before {
+    animation: shimmer-silver 1s ease-out;
+    opacity: 1;
+}
+
+#rhyme-results-list li.rhyme-tier-standard {
+    /* Default styling - no special color */
+}
+
+#rhyme-results-list li.rhyme-tier-slant {
+    background-color: rgba(255, 0, 255, 0.15);
+    border-color: #FF00FF;
+    color: #FF00FF;
+    font-style: italic;
+}
+
+#rhyme-results-list li.rhyme-tier-slant:hover {
+    background-color: rgba(255, 0, 255, 0.25);
+    box-shadow: 0 0 8px rgba(255, 0, 255, 0.3);
+}
+
+/* Tier Separator Styling */
+.rhyme-tier-separator {
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border-color), transparent);
+    margin: 8px 0;
+    flex-basis: 100%;
+}
+
+.rhyme-tier-label {
+    display: block;
+    text-align: center;
+    font-size: 0.8em;
+    color: var(--text-color);
+    opacity: 0.7;
+    margin: 4px 0;
+    font-style: italic;
+    flex-basis: 100%;
 }
 
 #rhyme-no-results {
@@ -2158,4 +2296,32 @@ body.screen-shaking {
     animation: rhyme-x-pulse 0.25s cubic-bezier(.4,1.6,.6,1) 1;
     color: var(--highlight-color);
     text-shadow: 0 0 6px var(--highlight-color);
+}
+
+/* Shimmer Animations for Rhyme Tiers */
+@keyframes shimmer-gold {
+    0% { left: -100%; }
+    100% { left: 100%; }
+}
+
+@keyframes shimmer-silver {
+    0% { left: -100%; }
+    100% { left: 100%; }
+}
+
+/* Rhyme Tier Tooltip */
+.rhyme-tier-tooltip {
+    position: absolute;
+    background: rgba(0, 0, 0, 0.9);
+    color: var(--text-bright);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.75em;
+    pointer-events: none;
+    z-index: 1000;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    white-space: nowrap;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
 }

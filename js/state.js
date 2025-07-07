@@ -83,7 +83,7 @@ export const state = {
     // Rhyme Navigation State - Rhyme browsing functionality
     currentRhymeList: [], // Holds the valid rhymes for the currentWord
     currentRhymeIndex: -1, // Index within currentRhymeList (-1 means none selected, displaying base word)
-    isRhymeSortAlphabetical: false, // Controls whether rhyme navigation uses alphabetical order
+    rhymeSortMode: 'default', // 'default', 'alphabetical', 'high-similarity' - Controls rhyme navigation sorting
 
     // --- Tooltip State Management ---
     tooltip: {
