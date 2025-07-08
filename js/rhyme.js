@@ -173,12 +173,17 @@ function createModalHeaderHTML(baseWord, rhymeSortMode) {
         }
     }
     
+    // Add focusable header with prev/next buttons
     return `
         <div>${matchCount} ${wordText}</div>
         <div>sound like the</div>
         <div style="margin: 8px 0;">${patternDisplay}</div>
         <div>in</div>
-        <div style="font-size:1.2em;font-weight:bold;margin-top:2px;">${baseWord}</div>
+        <div class="rhyme-header-focus-row">
+            <button id="rhyme-header-prev" class="rhyme-header-nav" tabindex="-1" aria-label="Previous word"><i class='fas fa-chevron-left'></i></button>
+            <span id="rhyme-header-word" class="rhyme-header-word" tabindex="0">${baseWord}</span>
+            <button id="rhyme-header-next" class="rhyme-header-nav" tabindex="-1" aria-label="Next word"><i class='fas fa-chevron-right'></i></button>
+        </div>
     `;
 }
 
@@ -458,6 +463,17 @@ function createRhymeListItem(rhymeWord, baseWordLower, tierInfo = null) {
     const li = document.createElement('li');
     li.textContent = rhymeWord;
     li.dataset.rhymeWord = rhymeWord;
+    
+    // Add click handler to select this rhyme word
+    li.addEventListener('click', (e) => {
+        // Don't trigger if clicking on icons
+        if (e.target.classList.contains('rhyme-x') || e.target.classList.contains('rhyme-tag')) {
+            return;
+        }
+        
+        // Select the rhyme word
+        selectRhymeWordFromModal(rhymeWord);
+    });
     const freq = state.wordFrequencies[wordLower] || 0;
     if (freq >= 5) li.classList.add('rhyme-freq-high');
     else if (freq >= 2) li.classList.add('rhyme-freq-med');
@@ -898,20 +914,41 @@ export function showRhymeFinder() {
 // --- addManualRhyme (EXPORTED) ---
 // Allows user to manually add a rhyme for the current base word
 export function addManualRhyme() {
-     // ... (same as before) ...
     if (!ui.elements.manualRhymeInput) return;
     const suggestedWord = ui.elements.manualRhymeInput.value.trim();
     const baseWord = state.currentWord;
     const baseWordLower = baseWord?.toLowerCase();
-    if (!suggestedWord || !baseWordLower || baseWord === "NO WORDS!") { /* ... */ return; }
-    if (suggestedWord.toLowerCase() === baseWordLower) { /* ... */ return; }
+    if (!suggestedWord || !baseWordLower || baseWord === "NO WORDS!") { return; }
+    if (suggestedWord.toLowerCase() === baseWordLower) { return; }
     console.log(`Manually adding rhyme: "${suggestedWord}" for base word "${baseWord}"`);
     if (!state.manualRhymes[baseWordLower]) state.manualRhymes[baseWordLower] = new Set();
-    if (state.manualRhymes[baseWordLower].has(suggestedWord)) { /* ... */ return; }
+    if (state.manualRhymes[baseWordLower].has(suggestedWord)) { return; }
     state.manualRhymes[baseWordLower].add(suggestedWord);
     storage.saveSettings();
     // Refresh the displayed list
     displayRhymeList(baseWordLower); // Re-render list
     ui.showFeedback(`"${suggestedWord}" added to manual rhymes for "${baseWord}".`);
     ui.elements.manualRhymeInput.value = '';
+}
+
+// --- selectRhymeWordFromModal (INTERNAL) ---
+// Handles selecting a rhyme word from the modal
+function selectRhymeWordFromModal(rhymeWord) {
+    // Find the word in the current rhyme list and select it
+    const rhymeList = state.currentRhymeList;
+    const index = rhymeList.indexOf(rhymeWord);
+    
+    if (index !== -1) {
+        // Update the rhyme index
+        state.currentRhymeIndex = index;
+        
+        // Display the selected rhyme word
+        ui.displayWord(rhymeWord);
+        
+        // Close the modal
+        modal.closeModal(ui.elements.rhymeFinderModal);
+        
+        // Show feedback
+        ui.showFeedback(`Selected: ${rhymeWord}`, false, 1500);
+    }
 }

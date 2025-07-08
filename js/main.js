@@ -109,6 +109,9 @@ async function initializeApp() {
     // 5. Attach Event Listeners
     attachEventListeners();
 
+    // 6. Set up keyboard control system
+    setupModalObserver();
+
     // Debug Flow Meter initialization
     console.log('Flow Meter Debug: Checking element after initialization');
     console.log('Flow Meter element exists:', !!ui.elements.flowMeterBar);
@@ -548,7 +551,181 @@ function attachEventListeners() {
     }
     updateSaveBpmButtonState();
 
+    // --- KEYBOARD CONTROL SYSTEM ---
+    // Global keyboard event listener for all hotkeys
+    document.addEventListener('keydown', handleGlobalKeydown);
+
     console.log('Event listeners attached.');
+}
+
+// --- KEYBOARD CONTROL SYSTEM ---
+
+// Keyboard control state management
+let keyboardState = {
+    isRhymeModalOpen: false,
+    focusedSection: 'main', // 'main', 'header', 'sortIcons', 'rhymeList'
+    focusedRhymeIndex: -1,
+    focusedSortIndex: -1,
+    lastRhymeList: [],
+    headerSubFocus: 1 // 0=left, 1=word, 2=right
+};
+
+// Main keyboard event handler
+function handleGlobalKeydown(event) {
+    try {
+        const target = event.target;
+        const isInputField = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA';
+        
+        // Allow browser shortcuts to work normally (Ctrl, Alt, Meta combinations)
+        if (event.ctrlKey || event.altKey || event.metaKey) {
+            return; // Don't prevent default for browser shortcuts
+        }
+        
+        // Always allow Escape key regardless of input field
+        if (event.key === 'Escape') {
+            handleEscapeKey(event);
+            return;
+        }
+        
+        // Ignore all other hotkeys if in an input field
+        if (isInputField) {
+            return;
+        }
+        
+        // Handle different contexts based on modal state
+        if (keyboardState.isRhymeModalOpen) {
+            handleRhymeModalKeydown(event);
+        } else {
+            handleMainPageKeydown(event);
+        }
+    } catch (error) {
+        console.warn('Error in keyboard event handler:', error);
+    }
+}
+
+// Handle Escape key (always works)
+function handleEscapeKey(event) {
+    event.preventDefault();
+    
+    if (keyboardState.isRhymeModalOpen) {
+        // Close rhyme modal
+        modal.closeModal(ui.elements.rhymeFinderModal);
+        keyboardState.isRhymeModalOpen = false;
+        keyboardState.focusedSection = 'main';
+        keyboardState.focusedRhymeIndex = -1;
+        keyboardState.focusedSortIndex = -1;
+    }
+}
+
+// Handle main page keyboard shortcuts
+function handleMainPageKeydown(event) {
+    switch (event.key.toLowerCase()) {
+        case 'r':
+            event.preventDefault();
+            openRhymeFinderModalWithSort();
+            // Force modal state update after a short delay
+            setTimeout(() => {
+                updateKeyboardStateForModal();
+            }, 200);
+            break;
+            
+        case 'b':
+            event.preventDefault();
+            wordManager.toggleBlacklist();
+            break;
+            
+        case 'f':
+            event.preventDefault();
+            wordManager.toggleFavorite();
+            break;
+            
+        case ' ':
+            event.preventDefault();
+            // Toggle voice activation state
+            if (state.activationMode === 'voice') {
+                setActivationMode('manual');
+            } else {
+                setActivationMode('voice');
+            }
+            break;
+            
+        case 'arrowup':
+            event.preventDefault();
+            wordManager.selectRhyme('up');
+            break;
+            
+        case 'arrowdown':
+            event.preventDefault();
+            wordManager.selectRhyme('down');
+            break;
+            
+        case 'arrowleft':
+            event.preventDefault();
+            wordManager.previousWord();
+            break;
+            
+        case 'arrowright':
+            event.preventDefault();
+            wordManager.nextWord();
+            break;
+    }
+}
+
+// Monitor modal state changes
+function updateKeyboardStateForModal() {
+    const modalElement = ui.elements.rhymeFinderModal;
+    if (!modalElement) return;
+    const isModalVisible = modalElement.style.display === 'block';
+    if (isModalVisible && !keyboardState.isRhymeModalOpen) {
+        // Modal just opened
+        keyboardState.isRhymeModalOpen = true;
+        keyboardState.focusedSection = 'header';
+        keyboardState.focusedSortIndex = 0;
+        setTimeout(() => {
+            updateRhymeModalFocus();
+        }, 100);
+    } else if (!isModalVisible && keyboardState.isRhymeModalOpen) {
+        // Modal just closed
+        keyboardState.isRhymeModalOpen = false;
+        keyboardState.focusedSection = 'main';
+        keyboardState.focusedRhymeIndex = -1;
+        keyboardState.focusedSortIndex = -1;
+    }
+}
+
+// Set up modal state monitoring
+let modalObserver = null;
+
+function setupModalObserver() {
+    // Clean up existing observer
+    if (modalObserver) {
+        modalObserver.disconnect();
+        modalObserver = null;
+    }
+    
+    // Only set up observer if modal element exists
+    const modalElement = ui.elements.rhymeFinderModal;
+    if (!modalElement) {
+        console.warn('Rhyme finder modal element not found, retrying in 1 second...');
+        setTimeout(setupModalObserver, 1000);
+        return;
+    }
+    
+    modalObserver = new MutationObserver(() => {
+        try {
+            updateKeyboardStateForModal();
+        } catch (error) {
+            console.warn('Error in modal state update:', error);
+        }
+    });
+    
+    // Start observing modal display changes
+    modalObserver.observe(modalElement, {
+        attributes: true,
+        attributeFilter: ['style']
+    });
+    
+    console.log('Modal observer set up successfully');
 }
 
 // Prefetch word data on page load for immediate tooltip display
@@ -635,3 +812,299 @@ export async function updateTooltipForDisplayedWord() {
 // --- Start Application ---
 // Initialize the application when DOM is fully loaded
 document.addEventListener('DOMContentLoaded', initializeApp);
+
+// Ensure .rhyme-modal-header is focusable
+const headerEl = document.querySelector('.rhyme-modal-header');
+if (headerEl) headerEl.tabIndex = -1;
+
+// Add click handlers for modal header arrows
+function attachRhymeHeaderArrowHandlers() {
+    const leftArrow = document.getElementById('rhyme-header-prev');
+    const rightArrow = document.getElementById('rhyme-header-next');
+    if (leftArrow) {
+        leftArrow.onclick = () => {
+            leftArrow.classList.add('pulse');
+            setTimeout(() => leftArrow.classList.remove('pulse'), 300);
+            wordManager.changeWord('previous', false, false);
+            setTimeout(() => updateRhymeModalFocus(), 100);
+        };
+    }
+    if (rightArrow) {
+        rightArrow.onclick = () => {
+            rightArrow.classList.add('pulse');
+            setTimeout(() => rightArrow.classList.remove('pulse'), 300);
+            wordManager.changeWord('next', false, false);
+            setTimeout(() => updateRhymeModalFocus(), 100);
+        };
+    }
+}
+// Call this after rendering the modal header
+// attachRhymeHeaderArrowHandlers();
+
+// --- Enhanced Rhyme Modal Keyboard Navigation ---
+document.addEventListener('keydown', function(event) {
+    const modal = ui.elements.rhymeFinderModal;
+    if (!modal || modal.style.display !== 'block') return;
+    // Only handle navigation keys in modal
+    const navKeys = [
+        'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight',
+        'Tab', 'Enter', ' ', 'Home', 'End', 'PageUp', 'PageDown'
+    ];
+    if (navKeys.includes(event.key)) {
+        event.preventDefault();
+        handleRhymeModalKeydown(event);
+    }
+});
+
+function handleRhymeModalKeydown(event) {
+    console.log('handleRhymeModalKeydown fired:', event.key, 'section:', keyboardState.focusedSection);
+    if (!keyboardState.focusedSection) return;
+    if (keyboardState.focusedSection === 'header') {
+        if (event.key === 'ArrowLeft') {
+            if (keyboardState.headerSubFocus === 0) {
+                // Trigger previous word
+                const leftArrow = document.getElementById('rhyme-header-prev');
+                if (leftArrow) {
+                    leftArrow.classList.add('pulse');
+                    setTimeout(() => leftArrow.classList.remove('pulse'), 300);
+                }
+                wordManager.changeWord('previous', false, false);
+                setTimeout(() => updateRhymeModalFocus(), 100);
+            } else {
+                keyboardState.headerSubFocus = (keyboardState.headerSubFocus + 2) % 3;
+                updateRhymeModalFocus();
+            }
+        } else if (event.key === 'ArrowRight') {
+            if (keyboardState.headerSubFocus === 2) {
+                // Trigger next word
+                const rightArrow = document.getElementById('rhyme-header-next');
+                if (rightArrow) {
+                    rightArrow.classList.add('pulse');
+                    setTimeout(() => rightArrow.classList.remove('pulse'), 300);
+                }
+                wordManager.changeWord('next', false, false);
+                setTimeout(() => updateRhymeModalFocus(), 100);
+            } else {
+                keyboardState.headerSubFocus = (keyboardState.headerSubFocus + 1) % 3;
+                updateRhymeModalFocus();
+            }
+        } else if (event.key === 'ArrowDown' || (event.key === 'Tab' && !event.shiftKey)) {
+            keyboardState.focusedSection = 'sortIcons';
+            keyboardState.focusedSortIndex = 0;
+            updateRhymeModalFocus();
+        } else if (event.key === 'ArrowUp' || (event.key === 'Tab' && event.shiftKey)) {
+            keyboardState.focusedSection = 'rhymeList';
+            keyboardState.focusedRhymeIndex = 0;
+            updateRhymeModalFocus();
+        } else if (event.key === 'Enter') {
+            if (keyboardState.headerSubFocus === 0) {
+                const leftArrow = document.getElementById('rhyme-header-prev');
+                if (leftArrow) {
+                    leftArrow.classList.add('pulse');
+                    setTimeout(() => leftArrow.classList.remove('pulse'), 300);
+                }
+                wordManager.changeWord('previous', false, false);
+                setTimeout(() => updateRhymeModalFocus(), 100);
+            } else if (keyboardState.headerSubFocus === 2) {
+                const rightArrow = document.getElementById('rhyme-header-next');
+                if (rightArrow) {
+                    rightArrow.classList.add('pulse');
+                    setTimeout(() => rightArrow.classList.remove('pulse'), 300);
+                }
+                wordManager.changeWord('next', false, false);
+                setTimeout(() => updateRhymeModalFocus(), 100);
+            }
+        }
+    } else if (keyboardState.focusedSection === 'sortIcons') {
+        const sortButtons = document.querySelectorAll('.rhyme-sort-btn');
+        if (event.key === 'ArrowLeft' && keyboardState.focusedSortIndex > 0) {
+            keyboardState.focusedSortIndex--;
+            updateRhymeModalFocus();
+        } else if (event.key === 'ArrowRight' && keyboardState.focusedSortIndex < sortButtons.length - 1) {
+            keyboardState.focusedSortIndex++;
+            updateRhymeModalFocus();
+        } else if (event.key === 'ArrowUp' || (event.key === 'Tab' && event.shiftKey)) {
+            keyboardState.focusedSection = 'header';
+            keyboardState.headerSubFocus = 1;
+            updateRhymeModalFocus();
+        } else if (event.key === 'ArrowDown' || (event.key === 'Tab' && !event.shiftKey)) {
+            keyboardState.focusedSection = 'rhymeList';
+            keyboardState.focusedRhymeIndex = 0;
+            updateRhymeModalFocus();
+        } else if (event.key === 'Enter') {
+            if (sortButtons[keyboardState.focusedSortIndex]) {
+                sortButtons[keyboardState.focusedSortIndex].click();
+            }
+        }
+    } else if (keyboardState.focusedSection === 'rhymeList') {
+        const rhymeItems = document.querySelectorAll('#rhyme-results-list li');
+        const colCount = 3; // If grid changes, update this
+        let idx = keyboardState.focusedRhymeIndex;
+        if (event.key === 'ArrowLeft') {
+            if (idx % colCount > 0) {
+                keyboardState.focusedRhymeIndex--;
+                updateRhymeModalFocus();
+            }
+        } else if (event.key === 'ArrowRight') {
+            if (idx % colCount < colCount - 1 && idx < rhymeItems.length - 1) {
+                keyboardState.focusedRhymeIndex++;
+                updateRhymeModalFocus();
+            }
+        } else if (event.key === 'ArrowUp') {
+            if (idx - colCount >= 0) {
+                keyboardState.focusedRhymeIndex -= colCount;
+                updateRhymeModalFocus();
+            } else {
+                keyboardState.focusedSection = 'sortIcons';
+                keyboardState.focusedSortIndex = 0;
+                updateRhymeModalFocus();
+            }
+        } else if (event.key === 'ArrowDown') {
+            if (idx + colCount < rhymeItems.length) {
+                keyboardState.focusedRhymeIndex += colCount;
+                updateRhymeModalFocus();
+            }
+        } else if (event.key === 'Tab' && !event.shiftKey) {
+            keyboardState.focusedSection = 'header';
+            keyboardState.headerSubFocus = 1;
+            updateRhymeModalFocus();
+        } else if (event.key === 'Tab' && event.shiftKey) {
+            keyboardState.focusedSection = 'sortIcons';
+            keyboardState.focusedSortIndex = 0;
+            updateRhymeModalFocus();
+        } else if (event.key === 'Enter') {
+            if (rhymeItems[idx]) {
+                selectRhymeWordInModal(rhymeItems[idx].textContent.trim());
+            }
+        }
+    }
+}
+
+// Refactor selectRhymeWord for modal: update header, rhyme results, scroll to top, keep modal open, focus header
+function selectRhymeWordInModal(word) {
+    if (!word) return;
+    // Update main word and modal header/results
+    wordManager.changeWordTo(word);
+    setTimeout(() => {
+        // Scroll to top of modal
+        const modalContent = document.querySelector('.modal-content');
+        if (modalContent) modalContent.scrollTop = 0;
+        // Focus header word
+        keyboardState.focusedSection = 'header';
+        keyboardState.headerSubFocus = 1;
+        updateRhymeModalFocus();
+    }, 100);
+}
+
+// Update visual and programmatic focus in the rhyme modal
+function updateRhymeModalFocus() {
+    try {
+        // Remove all keyboard-focused classes and tabindexes
+        document.querySelectorAll('.rhyme-sort-btn').forEach(btn => {
+            btn.classList.remove('keyboard-focused');
+            btn.tabIndex = -1;
+        });
+        document.querySelectorAll('#rhyme-results-list li').forEach(item => {
+            item.classList.remove('keyboard-focused');
+            item.tabIndex = -1;
+        });
+        const headerRow = document.querySelector('.rhyme-header-focus-row');
+        const leftArrow = document.getElementById('rhyme-header-prev');
+        const wordSpan = document.getElementById('rhyme-header-word');
+        const rightArrow = document.getElementById('rhyme-header-next');
+        // Remove focus classes
+        if (leftArrow) { leftArrow.classList.remove('keyboard-focused'); leftArrow.tabIndex = -1; }
+        if (wordSpan) { wordSpan.classList.remove('keyboard-focused'); wordSpan.tabIndex = -1; }
+        if (rightArrow) { rightArrow.classList.remove('keyboard-focused'); rightArrow.tabIndex = -1; }
+        // Apply focus to current element
+        if (keyboardState.focusedSection === 'header') {
+            if (keyboardState.headerSubFocus === 0 && leftArrow) {
+                leftArrow.classList.add('keyboard-focused');
+                leftArrow.tabIndex = 0;
+                leftArrow.focus();
+            } else if (keyboardState.headerSubFocus === 1 && wordSpan) {
+                wordSpan.classList.add('keyboard-focused');
+                wordSpan.tabIndex = 0;
+                wordSpan.focus();
+            } else if (keyboardState.headerSubFocus === 2 && rightArrow) {
+                rightArrow.classList.add('keyboard-focused');
+                rightArrow.tabIndex = 0;
+                rightArrow.focus();
+            }
+        } else if (keyboardState.focusedSection === 'sortIcons') {
+            const sortButtons = document.querySelectorAll('.rhyme-sort-btn');
+            if (sortButtons && sortButtons[keyboardState.focusedSortIndex]) {
+                sortButtons[keyboardState.focusedSortIndex].classList.add('keyboard-focused');
+                sortButtons[keyboardState.focusedSortIndex].tabIndex = 0;
+                sortButtons[keyboardState.focusedSortIndex].focus();
+            }
+        } else if (keyboardState.focusedSection === 'rhymeList') {
+            const rhymeItems = document.querySelectorAll('#rhyme-results-list li');
+            if (rhymeItems && rhymeItems[keyboardState.focusedRhymeIndex]) {
+                rhymeItems[keyboardState.focusedRhymeIndex].classList.add('keyboard-focused');
+                rhymeItems[keyboardState.focusedRhymeIndex].tabIndex = 0;
+                rhymeItems[keyboardState.focusedRhymeIndex].focus();
+                try {
+                    rhymeItems[keyboardState.focusedRhymeIndex].scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'nearest'
+                    });
+                } catch (scrollError) {}
+            }
+        }
+    } catch (error) {
+        console.warn('Error updating rhyme modal focus:', error);
+    }
+}
+
+// Get current rhyme list from the DOM
+function getCurrentRhymeList() {
+    try {
+        const rhymeItems = document.querySelectorAll('#rhyme-results-list li');
+        return Array.from(rhymeItems).map(item => {
+            // Extract the word text from the list item
+            // The word is the main text content, before any spans
+            const textContent = item.textContent.trim();
+            // Remove any icon characters (×, ↩, 🏷️, 📌) and clean up
+            const cleanWord = textContent.replace(/[×↩🏷️📌]/g, '').trim();
+            return cleanWord;
+        }).filter(word => word.length > 0);
+    } catch (error) {
+        console.warn('Error getting current rhyme list:', error);
+        return [];
+    }
+}
+
+// Select a rhyme word (directly select it)
+function selectRhymeWord(word) {
+    try {
+        // Find the word in the current rhyme list and select it
+        const rhymeList = state.currentRhymeList;
+        if (!rhymeList || !Array.isArray(rhymeList)) {
+            console.warn('No rhyme list available');
+            return;
+        }
+        
+        const index = rhymeList.indexOf(word);
+        
+        if (index !== -1) {
+            // Update the rhyme index
+            state.currentRhymeIndex = index;
+            
+            // Display the selected rhyme word
+            ui.displayWord(word);
+            
+            // Close the modal
+            modal.closeModal(ui.elements.rhymeFinderModal);
+            keyboardState.isRhymeModalOpen = false;
+            keyboardState.focusedSection = 'main';
+            keyboardState.focusedRhymeIndex = -1;
+            keyboardState.focusedSortIndex = -1;
+            
+            // Show feedback
+            ui.showFeedback(`Selected: ${word}`, false, 1500);
+        }
+    } catch (error) {
+        console.warn('Error selecting rhyme word:', error);
+    }
+}

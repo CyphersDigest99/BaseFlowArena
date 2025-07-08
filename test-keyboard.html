@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Keyboard Control Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #1a1a2e;
+            color: #e0e0e0;
+        }
+        .test-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: rgba(31, 31, 56, 0.9);
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid rgba(74, 78, 105, 0.7);
+        }
+        .key-display {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-family: monospace;
+        }
+        .hotkey-list {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+        .hotkey-list h3 {
+            color: #00ffff;
+            margin-top: 0;
+        }
+        .hotkey-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 5px 0;
+            padding: 5px 0;
+        }
+        .key {
+            background: #333;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: monospace;
+            color: #00ffff;
+        }
+        .description {
+            color: #ccc;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>Keyboard Control System Test</h1>
+        
+        <div class="key-display">
+            <strong>Last Key Pressed:</strong> <span id="lastKey">None</span>
+        </div>
+        
+        <div class="key-display">
+            <strong>Current State:</strong> <span id="currentState">Main Page</span>
+        </div>
+        
+        <div class="hotkey-list">
+            <h3>Main Page Hotkeys:</h3>
+            <div class="hotkey-item">
+                <span class="key">R</span>
+                <span class="description">Open Rhyme Finder Modal</span>
+            </div>
+            <div class="hotkey-item">
+                <span class="key">B</span>
+                <span class="description">Toggle Blacklist</span>
+            </div>
+            <div class="hotkey-item">
+                <span class="key">F</span>
+                <span class="description">Toggle Favorite</span>
+            </div>
+            <div class="hotkey-item">
+                <span class="key">Spacebar</span>
+                <span class="description">Toggle Voice Activation</span>
+            </div>
+            <div class="hotkey-item">
+                <span class="key">↑↓</span>
+                <span class="description">Navigate Rhymes</span>
+            </div>
+            <div class="hotkey-item">
+                <span class="key">←→</span>
+                <span class="description">Navigate Words</span>
+            </div>
+        </div>
+        
+        <div class="hotkey-list">
+            <h3>Rhyme Modal Hotkeys:</h3>
+            <div class="hotkey-item">
+                <span class="key">Escape</span>
+                <span class="description">Close Modal</span>
+            </div>
+            <div class="hotkey-item">
+                <span class="key">A-Z</span>
+                <span class="description">Jump to Letter</span>
+            </div>
+            <div class="hotkey-item">
+                <span class="key">↑↓</span>
+                <span class="description">Navigate List</span>
+            </div>
+            <div class="hotkey-item">
+                <span class="key">←→</span>
+                <span class="description">Navigate Sort Icons</span>
+            </div>
+            <div class="hotkey-item">
+                <span class="key">Enter</span>
+                <span class="description">Select/Activate</span>
+            </div>
+            <div class="hotkey-item">
+                <span class="key">Tab</span>
+                <span class="description">Switch Focus</span>
+            </div>
+        </div>
+        
+        <div class="hotkey-list">
+            <h3>Test Instructions:</h3>
+            <p>1. Open the main application in another tab</p>
+            <p>2. Try the hotkeys listed above</p>
+            <p>3. Check that the keyboard navigation works as expected</p>
+            <p>4. Verify that input fields don't interfere with hotkeys (except Escape)</p>
+        </div>
+    </div>
+
+    <script>
+        // Simple test to verify keyboard events are working
+        document.addEventListener('keydown', (event) => {
+            const lastKeyElement = document.getElementById('lastKey');
+            const currentStateElement = document.getElementById('currentState');
+            
+            lastKeyElement.textContent = event.key;
+            
+            // Simulate state changes
+            if (event.key === 'r' || event.key === 'R') {
+                currentStateElement.textContent = 'Rhyme Modal (Simulated)';
+                currentStateElement.style.color = '#ff00ff';
+            } else if (event.key === 'Escape') {
+                currentStateElement.textContent = 'Main Page';
+                currentStateElement.style.color = '#e0e0e0';
+            }
+            
+            // Prevent default for test keys
+            if (['r', 'R', 'b', 'B', 'f', 'F', ' '].includes(event.key)) {
+                event.preventDefault();
+            }
+        });
+    </script>
+</body>
+</html> 

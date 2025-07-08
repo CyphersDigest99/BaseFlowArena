@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Keyboard System Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #1a1a2e;
+            color: #e0e0e0;
+        }
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(31, 31, 56, 0.9);
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid rgba(74, 78, 105, 0.7);
+        }
+        .status {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-family: monospace;
+        }
+        .status.success { border-left: 4px solid #00ff00; }
+        .status.error { border-left: 4px solid #ff0000; }
+        .status.warning { border-left: 4px solid #ffff00; }
+        .key-display {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-family: monospace;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 5px;
+        }
+        .test-section h3 {
+            color: #00ffff;
+            margin-top: 0;
+        }
+        button {
+            background: #333;
+            color: #00ffff;
+            border: 1px solid #00ffff;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: rgba(0, 255, 255, 0.2);
+        }
+        input {
+            background: #333;
+            color: #e0e0e0;
+            border: 1px solid #555;
+            padding: 8px;
+            border-radius: 4px;
+            margin: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>Keyboard Control System Test</h1>
+        
+        <div class="status" id="systemStatus">
+            <strong>System Status:</strong> <span id="statusText">Initializing...</span>
+        </div>
+        
+        <div class="key-display">
+            <strong>Last Key Pressed:</strong> <span id="lastKey">None</span>
+        </div>
+        
+        <div class="key-display">
+            <strong>Current State:</strong> <span id="currentState">Main Page</span>
+        </div>
+        
+        <div class="test-section">
+            <h3>DOM Element Tests</h3>
+            <div id="domTests">
+                <div class="status">Testing DOM elements...</div>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h3>Input Field Test</h3>
+            <p>Try typing in this input field - hotkeys should be ignored except Escape:</p>
+            <input type="text" id="testInput" placeholder="Type here to test input field behavior">
+            <button onclick="clearInput()">Clear Input</button>
+        </div>
+        
+        <div class="test-section">
+            <h3>Keyboard Event Test</h3>
+            <p>Press keys to test the keyboard system:</p>
+            <div id="keyLog"></div>
+            <button onclick="clearKeyLog()">Clear Log</button>
+        </div>
+        
+        <div class="test-section">
+            <h3>Test Instructions</h3>
+            <ol>
+                <li>Check that the system status shows "Ready"</li>
+                <li>Try pressing R, B, F, Spacebar, and arrow keys</li>
+                <li>Verify that keys are detected in the "Last Key Pressed" display</li>
+                <li>Type in the input field and verify hotkeys are ignored (except Escape)</li>
+                <li>Press Escape to test that it always works</li>
+                <li>Check the browser console for any error messages</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        // Test state
+        let testState = {
+            initialized: false,
+            domElements: {},
+            keyCount: 0
+        };
+        
+        // Initialize test
+        function initializeTest() {
+            console.log('Initializing keyboard test...');
+            
+            // Test DOM elements
+            testDomElements();
+            
+            // Set up keyboard listener
+            document.addEventListener('keydown', handleTestKeydown);
+            
+            testState.initialized = true;
+            updateStatus('Ready', 'success');
+            
+            console.log('Keyboard test initialized successfully');
+        }
+        
+        // Test DOM elements
+        function testDomElements() {
+            const domTests = document.getElementById('domTests');
+            domTests.innerHTML = '';
+            
+            const elements = [
+                { id: 'testInput', name: 'Test Input Field' },
+                { id: 'lastKey', name: 'Last Key Display' },
+                { id: 'currentState', name: 'Current State Display' },
+                { id: 'keyLog', name: 'Key Log Container' }
+            ];
+            
+            elements.forEach(element => {
+                const el = document.getElementById(element.id);
+                const status = document.createElement('div');
+                status.className = `status ${el ? 'success' : 'error'}`;
+                status.innerHTML = `<strong>${element.name}:</strong> ${el ? 'Found' : 'Missing'}`;
+                domTests.appendChild(status);
+                
+                if (el) {
+                    testState.domElements[element.id] = el;
+                }
+            });
+        }
+        
+        // Handle keyboard events for testing
+        function handleTestKeydown(event) {
+            const lastKeyElement = document.getElementById('lastKey');
+            const currentStateElement = document.getElementById('currentState');
+            const keyLogElement = document.getElementById('keyLog');
+            
+            if (lastKeyElement) {
+                lastKeyElement.textContent = event.key;
+            }
+            
+            // Log the key press
+            if (keyLogElement) {
+                testState.keyCount++;
+                const logEntry = document.createElement('div');
+                logEntry.style.fontSize = '0.9em';
+                logEntry.style.margin = '2px 0';
+                logEntry.textContent = `#${testState.keyCount}: ${event.key} (${event.target.tagName})`;
+                keyLogElement.appendChild(logEntry);
+                
+                // Keep only last 10 entries
+                while (keyLogElement.children.length > 10) {
+                    keyLogElement.removeChild(keyLogElement.firstChild);
+                }
+            }
+            
+            // Test input field behavior
+            const isInputField = event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA';
+            
+            if (isInputField) {
+                if (event.key === 'Escape') {
+                    currentStateElement.textContent = 'Escape from Input Field';
+                    currentStateElement.style.color = '#ffff00';
+                } else {
+                    currentStateElement.textContent = 'Input Field (Hotkeys Ignored)';
+                    currentStateElement.style.color = '#ff00ff';
+                }
+            } else {
+                // Simulate main page behavior
+                if (['r', 'R'].includes(event.key)) {
+                    currentStateElement.textContent = 'Rhyme Modal (Simulated)';
+                    currentStateElement.style.color = '#ff00ff';
+                } else if (event.key === 'Escape') {
+                    currentStateElement.textContent = 'Main Page';
+                    currentStateElement.style.color = '#e0e0e0';
+                } else if (['b', 'B', 'f', 'F', ' '].includes(event.key)) {
+                    currentStateElement.textContent = 'Main Page Action';
+                    currentStateElement.style.color = '#00ff00';
+                } else if (event.key.startsWith('Arrow')) {
+                    currentStateElement.textContent = 'Navigation';
+                    currentStateElement.style.color = '#00ffff';
+                }
+            }
+            
+            // Prevent default for test keys
+            if (['r', 'R', 'b', 'B', 'f', 'F', ' '].includes(event.key)) {
+                event.preventDefault();
+            }
+        }
+        
+        // Update status
+        function updateStatus(message, type = 'warning') {
+            const statusElement = document.getElementById('statusText');
+            const statusContainer = document.getElementById('systemStatus');
+            
+            if (statusElement) {
+                statusElement.textContent = message;
+            }
+            
+            if (statusContainer) {
+                statusContainer.className = `status ${type}`;
+            }
+        }
+        
+        // Utility functions
+        function clearInput() {
+            const input = document.getElementById('testInput');
+            if (input) {
+                input.value = '';
+                input.focus();
+            }
+        }
+        
+        function clearKeyLog() {
+            const keyLog = document.getElementById('keyLog');
+            if (keyLog) {
+                keyLog.innerHTML = '';
+                testState.keyCount = 0;
+            }
+        }
+        
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(initializeTest, 100);
+        });
+        
+        // Error handling
+        window.addEventListener('error', (event) => {
+            console.error('Test error:', event.error);
+            updateStatus(`Error: ${event.error.message}`, 'error');
+        });
+        
+        window.addEventListener('unhandledrejection', (event) => {
+            console.error('Unhandled promise rejection:', event.reason);
+            updateStatus(`Promise Error: ${event.reason}`, 'error');
+        });
+    </script>
+</body>
+</html> 

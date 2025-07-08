@@ -82,3 +82,116 @@
     color: var(--primary-accent);
     font-size: 1.1em;
 }
+
+/* --- KEYBOARD NAVIGATION STYLES --- */
+
+/* Keyboard focus indicator for sort buttons */
+.rhyme-sort-btn.keyboard-focused {
+    background-color: var(--primary-accent) !important;
+    color: var(--panel-bg-opaque) !important;
+    box-shadow: 0 0 10px var(--primary-accent), 0 0 20px var(--primary-accent) !important;
+    transform: scale(1.05);
+    transition: all 0.2s ease;
+}
+
+/* Keyboard focus indicator for rhyme list items */
+#rhyme-results-list li.keyboard-focused {
+    background-color: #00ffff !important;
+    color: #181c2b !important;
+    border: 3px solid #ff00ff !important;
+    box-shadow: 0 0 16px 4px #00ffff, 0 0 8px 2px #ff00ff !important;
+    font-weight: bold;
+    z-index: 10;
+    position: relative;
+    outline: 2px solid #fff !important;
+    outline-offset: 2px;
+    transition: all 0.15s cubic-bezier(.4,2,.6,1);
+}
+
+#rhyme-results-list li.keyboard-focused .rhyme-word {
+    color: #181c2b !important;
+    font-weight: bold;
+}
+
+/* Ensure smooth transitions for focus changes */
+.rhyme-sort-btn,
+#rhyme-results-list li {
+    transition: all 0.2s ease;
+}
+
+/* Remove default focus outlines for keyboard navigation */
+.rhyme-sort-btn:focus,
+#rhyme-results-list li:focus {
+    outline: none;
+}
+
+/* Accessibility: Keep focus visible for screen readers */
+.rhyme-sort-btn:focus-visible,
+#rhyme-results-list li:focus-visible {
+    outline: 2px solid var(--primary-accent);
+    outline-offset: 2px;
+}
+
+/* --- RHYME MODAL HEADER FOCUS STYLES --- */
+.rhyme-header-focus-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    margin: 8px 0 4px 0;
+    height: 2.6em;
+}
+.rhyme-header-word {
+    font-size: 1.3em;
+    font-weight: bold;
+    background: linear-gradient(90deg, var(--primary-accent), var(--secondary-accent));
+    color: var(--panel-bg-opaque);
+    border-radius: 6px;
+    outline: none;
+    box-shadow: 0 0 0 0 transparent;
+    transition: box-shadow 0.2s, background 0.2s;
+    text-align: center;
+    margin: 0 16px;
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 2px 0;
+}
+.rhyme-header-nav {
+    background: transparent !important;
+    color: var(--primary-accent);
+    border: none !important;
+    border-radius: 50%;
+    width: 2.6em;
+    height: 2.6em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    outline: none !important;
+    box-shadow: none !important;
+    transition: color 0.2s, background 0.2s;
+    margin: 0;
+    padding: 0;
+    z-index: 2;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    flex: 0 0 auto;
+}
+.rhyme-header-nav.keyboard-focused, .rhyme-header-nav:focus {
+    background: rgba(0,255,255,0.12) !important;
+    color: var(--secondary-accent) !important;
+    box-shadow: 0 0 16px 4px var(--primary-accent), 0 0 8px 2px var(--secondary-accent) !important;
+    outline: 2px solid var(--highlight-color);
+    outline-offset: 2px;
+    animation: nav-pulse 0.5s;
+}
+@keyframes nav-pulse {
+    0% { box-shadow: 0 0 0 0 var(--primary-accent); }
+    50% { box-shadow: 0 0 20px 10px var(--primary-accent), 0 0 8px 2px var(--secondary-accent); }
+    100% { box-shadow: 0 0 16px 4px var(--primary-accent), 0 0 8px 2px var(--secondary-accent); }
+}
