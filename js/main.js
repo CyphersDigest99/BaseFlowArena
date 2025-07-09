@@ -842,19 +842,7 @@ function attachRhymeHeaderArrowHandlers() {
 // attachRhymeHeaderArrowHandlers();
 
 // --- Enhanced Rhyme Modal Keyboard Navigation ---
-document.addEventListener('keydown', function(event) {
-    const modal = ui.elements.rhymeFinderModal;
-    if (!modal || modal.style.display !== 'block') return;
-    // Only handle navigation keys in modal
-    const navKeys = [
-        'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight',
-        'Tab', 'Enter', ' ', 'Home', 'End', 'PageUp', 'PageDown'
-    ];
-    if (navKeys.includes(event.key)) {
-        event.preventDefault();
-        handleRhymeModalKeydown(event);
-    }
-});
+// Removed redundant keydown event listener. All keyboard navigation is now handled by the state-aware listener in handleGlobalKeydown.
 
 function handleRhymeModalKeydown(event) {
     console.log('handleRhymeModalKeydown fired:', event.key, 'section:', keyboardState.focusedSection);
@@ -893,9 +881,18 @@ function handleRhymeModalKeydown(event) {
             keyboardState.focusedSortIndex = 0;
             updateRhymeModalFocus();
         } else if (event.key === 'ArrowUp' || (event.key === 'Tab' && event.shiftKey)) {
-            keyboardState.focusedSection = 'rhymeList';
-            keyboardState.focusedRhymeIndex = 0;
-            updateRhymeModalFocus();
+            if (keyboardState.headerSubFocus === 1) {
+                // If focus is on the main word, close the modal (like Escape)
+                modal.closeModal(ui.elements.rhymeFinderModal);
+                keyboardState.isRhymeModalOpen = false;
+                keyboardState.focusedSection = 'main';
+                keyboardState.focusedRhymeIndex = -1;
+                keyboardState.focusedSortIndex = -1;
+            } else {
+                keyboardState.focusedSection = 'rhymeList';
+                keyboardState.focusedRhymeIndex = 0;
+                updateRhymeModalFocus();
+            }
         } else if (event.key === 'Enter') {
             if (keyboardState.headerSubFocus === 0) {
                 const leftArrow = document.getElementById('rhyme-header-prev');
@@ -941,12 +938,12 @@ function handleRhymeModalKeydown(event) {
         const colCount = 3; // If grid changes, update this
         let idx = keyboardState.focusedRhymeIndex;
         if (event.key === 'ArrowLeft') {
-            if (idx % colCount > 0) {
+            if (idx > 0) {
                 keyboardState.focusedRhymeIndex--;
                 updateRhymeModalFocus();
             }
         } else if (event.key === 'ArrowRight') {
-            if (idx % colCount < colCount - 1 && idx < rhymeItems.length - 1) {
+            if (idx < rhymeItems.length - 1) {
                 keyboardState.focusedRhymeIndex++;
                 updateRhymeModalFocus();
             }
@@ -1041,11 +1038,17 @@ function updateRhymeModalFocus() {
         } else if (keyboardState.focusedSection === 'rhymeList') {
             const rhymeItems = document.querySelectorAll('#rhyme-results-list li');
             if (rhymeItems && rhymeItems[keyboardState.focusedRhymeIndex]) {
-                rhymeItems[keyboardState.focusedRhymeIndex].classList.add('keyboard-focused');
-                rhymeItems[keyboardState.focusedRhymeIndex].tabIndex = 0;
-                rhymeItems[keyboardState.focusedRhymeIndex].focus();
+                const focusedItem = rhymeItems[keyboardState.focusedRhymeIndex];
+                focusedItem.classList.add('keyboard-focused');
+                focusedItem.tabIndex = 0;
+                focusedItem.focus();
+                // Trigger shimmer animation for gold/silver tiers
+                if (focusedItem.classList.contains('rhyme-tier-perfect') || focusedItem.classList.contains('rhyme-tier-strong')) {
+                    focusedItem.classList.add('shimmer-active');
+                    setTimeout(() => focusedItem.classList.remove('shimmer-active'), 1500);
+                }
                 try {
-                    rhymeItems[keyboardState.focusedRhymeIndex].scrollIntoView({
+                    focusedItem.scrollIntoView({
                         behavior: 'smooth',
                         block: 'nearest'
                     });

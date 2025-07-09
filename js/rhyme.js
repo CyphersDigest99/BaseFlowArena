@@ -703,6 +703,12 @@ function displayRhymeList(baseWordLower) {
     } else {
         if (ui.elements.rhymeNoResults) ui.elements.rhymeNoResults.style.display = 'block';
     }
+    // Ensure keyboard focus is restored after rendering
+    if (typeof window.updateRhymeModalFocus === 'function') {
+        window.updateRhymeModalFocus();
+    } else if (typeof updateRhymeModalFocus === 'function') {
+        updateRhymeModalFocus();
+    }
 }
 
 // Helper function to get tier information for a word

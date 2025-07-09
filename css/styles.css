@@ -94,12 +94,37 @@
     transition: all 0.2s ease;
 }
 
-/* Keyboard focus indicator for rhyme list items */
+/* Keyboard focus indicator for rhyme list items - match hover effect for each tier */
+#rhyme-results-list li.keyboard-focused.rhyme-tier-perfect {
+    background-color: rgba(255, 215, 0, 0.25) !important;
+    box-shadow: 0 0 12px rgba(255, 215, 0, 0.4) !important;
+    transform: scale(1.02);
+    border: 2px solid #FFD700 !important;
+    color: #FFD700 !important;
+    font-weight: bold;
+}
+#rhyme-results-list li.keyboard-focused.rhyme-tier-strong {
+    background: linear-gradient(135deg, rgba(192, 192, 192, 0.25), rgba(169, 169, 169, 0.3)) !important;
+    box-shadow: 0 0 12px rgba(192, 192, 192, 0.4), inset 0 0 4px rgba(255, 255, 255, 0.1) !important;
+    text-shadow: 0 0 4px rgba(192, 192, 192, 0.8) !important;
+    transform: scale(1.02);
+    border: 2px solid #C0C0C0 !important;
+    color: #E8E8E8 !important;
+    font-weight: bold;
+}
+#rhyme-results-list li.keyboard-focused.rhyme-tier-slant {
+    background-color: rgba(255, 0, 255, 0.25) !important;
+    box-shadow: 0 0 8px rgba(255, 0, 255, 0.3) !important;
+    border-color: #FF00FF !important;
+    color: #FF00FF !important;
+    font-style: italic;
+}
 #rhyme-results-list li.keyboard-focused {
-    background-color: #00ffff !important;
+    /* fallback for standard and all others */
+    background-color: rgba(0, 255, 255, 0.15) !important;
     color: #181c2b !important;
-    border: 3px solid #ff00ff !important;
-    box-shadow: 0 0 16px 4px #00ffff, 0 0 8px 2px #ff00ff !important;
+    border: 3px solid #00ffff !important;
+    box-shadow: 0 0 16px 4px #00ffff, 0 0 8px 2px #00ffff !important;
     font-weight: bold;
     z-index: 10;
     position: relative;
