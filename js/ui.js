@@ -41,6 +41,14 @@ export const elements = {
     streakDisplay: document.getElementById('streak-counter'),
     feedbackMessage: document.getElementById('feedback-message'),
     bgCanvas: document.getElementById('bg-canvas'),
+    
+    // Theme Controls
+    themeDarkButton: document.getElementById('theme-dark'),
+    themeLightButton: document.getElementById('theme-light'),
+    randomizePaletteButton: document.getElementById('randomize-palette'),
+    randomizeDropdown: document.getElementById('randomize-dropdown'),
+    generatePaletteButton: document.getElementById('generate-palette'),
+    copyCssButton: document.getElementById('copy-css'),
 
     // Word Display Area - Main word display and associated controls
     wordDisplay: document.getElementById('word-display'),
@@ -879,5 +887,184 @@ export function updateTooltipView(synonyms = null, definition = null) {
             elements.meansLikeButton.title = 'Show synonyms only';
             if (synonyms !== null) showSynonyms(synonyms);
             if (definition !== null) showDefinition(definition);
+    }
+}
+
+// --- Theme Management Functions ---
+
+// Initialize theme system
+export function initializeThemeSystem() {
+    // Load saved theme preference or set default
+    const savedTheme = localStorage.getItem('preferred-theme');
+    const defaultTheme = savedTheme || 'dark';
+    document.body.setAttribute('data-theme', defaultTheme);
+    
+    // Add event listeners for theme buttons
+    if (elements.themeDarkButton) {
+        elements.themeDarkButton.addEventListener('click', () => switchTheme('dark'));
+    }
+    if (elements.themeLightButton) {
+        elements.themeLightButton.addEventListener('click', () => switchTheme('light'));
+    }
+    
+    // Add event listeners for randomize functionality
+    if (elements.randomizePaletteButton) {
+        elements.randomizePaletteButton.addEventListener('click', toggleRandomizeDropdown);
+    }
+    if (elements.generatePaletteButton) {
+        elements.generatePaletteButton.addEventListener('click', generateRandomPalette);
+    }
+    if (elements.copyCssButton) {
+        elements.copyCssButton.addEventListener('click', copyCssToConsole);
+    }
+    
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (event) => {
+        if (!event.target.closest('.randomize-container')) {
+            hideRandomizeDropdown();
+        }
+    });
+    
+    // Update theme button states
+    updateThemeButtonStates();
+}
+
+// Switch between themes
+export function switchTheme(theme) {
+    document.body.setAttribute('data-theme', theme);
+    updateThemeButtonStates();
+    
+    // Update color previews in randomize dropdown
+    updateColorPreviews();
+    
+    // Store theme preference
+    localStorage.setItem('preferred-theme', theme);
+    
+    console.log(`Theme switched to: ${theme}`);
+}
+
+// Update theme button active states
+function updateThemeButtonStates() {
+    const currentTheme = document.body.getAttribute('data-theme') || 'dark';
+    
+    if (elements.themeDarkButton) {
+        elements.themeDarkButton.classList.toggle('active', currentTheme === 'dark');
+    }
+    if (elements.themeLightButton) {
+        elements.themeLightButton.classList.toggle('active', currentTheme === 'light');
+    }
+}
+
+// Toggle randomize dropdown visibility
+function toggleRandomizeDropdown() {
+    if (elements.randomizeDropdown) {
+        elements.randomizeDropdown.classList.toggle('show');
+    }
+}
+
+// Hide randomize dropdown
+function hideRandomizeDropdown() {
+    if (elements.randomizeDropdown) {
+        elements.randomizeDropdown.classList.remove('show');
+    }
+}
+
+// Generate random palette based on selected colors
+function generateRandomPalette() {
+    const colorOptions = document.querySelectorAll('.color-option input[type="checkbox"]:checked');
+    const root = document.documentElement;
+    
+    colorOptions.forEach(checkbox => {
+        const colorVar = checkbox.getAttribute('data-color');
+        const newColor = generateAestheticColor(colorVar);
+        root.style.setProperty(colorVar, newColor);
+    });
+    
+    // Update color previews
+    updateColorPreviews();
+    
+    // Show copy CSS button
+    if (elements.copyCssButton) {
+        elements.copyCssButton.style.display = 'block';
+    }
+    
+    // Hide dropdown
+    hideRandomizeDropdown();
+    
+    console.log('Random palette generated!');
+}
+
+// Generate aesthetically pleasing colors using HSL
+function generateAestheticColor(colorVar) {
+    // Define color ranges for different variables
+    const colorRanges = {
+        '--primary-accent': { h: [180, 240], s: [60, 100], l: [40, 70] }, // Blues/Cyans
+        '--secondary-accent': { h: [280, 320], s: [60, 100], l: [40, 70] }, // Magentas/Purples
+        '--panel-bg': { h: [200, 280], s: [10, 30], l: [15, 35] }, // Dark backgrounds
+        '--text-color': { h: [0, 360], s: [0, 20], l: [70, 95] }, // Light text
+        '--highlight-color': { h: [30, 60], s: [70, 100], l: [50, 80] }, // Oranges/Yellows
+        '--border-color': { h: [200, 280], s: [20, 50], l: [30, 60] } // Medium borders
+    };
+    
+    const range = colorRanges[colorVar] || { h: [0, 360], s: [50, 100], l: [40, 70] };
+    
+    const h = Math.floor(Math.random() * (range.h[1] - range.h[0]) + range.h[0]);
+    const s = Math.floor(Math.random() * (range.s[1] - range.s[0]) + range.s[0]);
+    const l = Math.floor(Math.random() * (range.l[1] - range.l[0]) + range.l[0]);
+    
+    return `hsl(${h}, ${s}%, ${l}%)`;
+}
+
+// Update color previews in the randomize dropdown
+function updateColorPreviews() {
+    const colorPreviews = document.querySelectorAll('.color-preview');
+    colorPreviews.forEach(preview => {
+        const checkbox = preview.parentElement.querySelector('input[type="checkbox"]');
+        if (checkbox) {
+            const colorVar = checkbox.getAttribute('data-color');
+            const currentColor = getComputedStyle(document.documentElement).getPropertyValue(colorVar);
+            preview.style.background = currentColor;
+        }
+    });
+}
+
+// Copy current CSS variables to console
+function copyCssToConsole() {
+    const colorVars = [
+        '--primary-accent',
+        '--secondary-accent', 
+        '--panel-bg',
+        '--panel-bg-opaque',
+        '--border-color',
+        '--text-color',
+        '--text-bright',
+        '--highlight-color',
+        '--red-color',
+        '--green-color',
+        '--disabled-color'
+    ];
+    
+    let cssBlock = '/* Generated Theme CSS */\n';
+    cssBlock += '[data-theme="custom"] {\n';
+    
+    colorVars.forEach(varName => {
+        const value = getComputedStyle(document.documentElement).getPropertyValue(varName);
+        cssBlock += `    ${varName}: ${value};\n`;
+    });
+    
+    cssBlock += '}';
+    
+    console.log('%cGenerated CSS Theme:', 'color: #00ffff; font-weight: bold; font-size: 14px;');
+    console.log(cssBlock);
+    
+    // Also copy to clipboard if possible
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(cssBlock).then(() => {
+            showFeedback('CSS copied to clipboard and console!', false, 2000);
+        }).catch(() => {
+            showFeedback('CSS copied to console!', false, 2000);
+        });
+    } else {
+        showFeedback('CSS copied to console!', false, 2000);
     }
 }

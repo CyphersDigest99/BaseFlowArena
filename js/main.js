@@ -106,10 +106,13 @@ async function initializeApp() {
     wordManager.changeWord('next', true, false); // Display first word & update rhymes
     window.requestAnimationFrame(() => ui.displayWord(state.currentWord));
 
-    // 5. Attach Event Listeners
+    // 5. Initialize Theme System
+    ui.initializeThemeSystem();
+
+    // 6. Attach Event Listeners
     attachEventListeners();
 
-    // 6. Set up keyboard control system
+    // 7. Set up keyboard control system
     setupModalObserver();
 
     // Debug Flow Meter initialization

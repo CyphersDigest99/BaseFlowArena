@@ -28,6 +28,39 @@
     --font-display: 'Orbitron', sans-serif; /* More distinct font */
 }
 
+/* --- Theme Variables --- */
+/* Dark Theme (Default) */
+[data-theme="dark"] {
+    --bg-color: transparent;
+    --panel-bg: rgba(31, 31, 56, 0.92);
+    --panel-bg-opaque: rgb(31, 31, 56);
+    --border-color: rgba(74, 78, 105, 0.7);
+    --primary-accent: #00ffff;
+    --secondary-accent: #ff00ff;
+    --text-color: #e0e0e0;
+    --text-bright: #ffffff;
+    --highlight-color: #f9a826;
+    --red-color: #ff4500;
+    --green-color: #00ff00;
+    --disabled-color: #6c757d;
+}
+
+/* Light Theme */
+[data-theme="light"] {
+    --bg-color: transparent;
+    --panel-bg: rgba(240, 240, 250, 0.92);
+    --panel-bg-opaque: rgb(240, 240, 250);
+    --border-color: rgba(100, 100, 150, 0.7);
+    --primary-accent: #0066cc;
+    --secondary-accent: #cc0066;
+    --text-color: #2a2a2a;
+    --text-bright: #000000;
+    --highlight-color: #ff6600;
+    --red-color: #cc0000;
+    --green-color: #006600;
+    --disabled-color: #999999;
+}
+
 * {
     box-sizing: border-box;
     margin: 0;
@@ -80,6 +113,138 @@ body {
     font-family: var(--font-display);
     color: var(--primary-accent);
     text-shadow: 0 0 5px var(--primary-accent);
+}
+
+/* --- Theme Controls Styling --- */
+.theme-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.theme-button {
+    background: var(--panel-bg);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.theme-button:hover {
+    background: rgba(0, 0, 0, 0.2);
+    border-color: var(--primary-accent);
+    color: var(--primary-accent);
+}
+
+.theme-button.active {
+    background: var(--primary-accent);
+    color: var(--panel-bg-opaque);
+    border-color: var(--primary-accent);
+}
+
+.randomize-container {
+    position: relative;
+}
+
+.randomize-btn {
+    background: var(--secondary-accent);
+    color: var(--text-bright);
+    border-color: var(--secondary-accent);
+}
+
+.randomize-btn:hover {
+    background: rgba(255, 0, 255, 0.8);
+    border-color: var(--secondary-accent);
+    color: var(--text-bright);
+}
+
+.randomize-dropdown {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background: var(--panel-bg-opaque);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 15px;
+    min-width: 280px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+    z-index: 1000;
+    display: none;
+    margin-top: 5px;
+}
+
+.randomize-dropdown.show {
+    display: block;
+}
+
+.randomize-dropdown h4 {
+    margin: 0 0 15px 0;
+    color: var(--primary-accent);
+    font-size: 1em;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 8px;
+}
+
+.color-options {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.color-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 4px;
+    transition: background 0.2s ease;
+}
+
+.color-option:hover {
+    background: rgba(0, 0, 0, 0.1);
+}
+
+.color-option input[type="checkbox"] {
+    margin: 0;
+}
+
+.color-preview {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    border: 1px solid var(--border-color);
+    display: inline-block;
+}
+
+.randomize-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+.randomize-actions .theme-button {
+    flex: 1;
+    justify-content: center;
+}
+
+.copy-btn {
+    background: var(--highlight-color);
+    color: var(--text-bright);
+    border-color: var(--highlight-color);
+}
+
+.copy-btn:hover {
+    background: rgba(249, 168, 38, 0.8);
+    border-color: var(--highlight-color);
+    color: var(--text-bright);
 }
 
 .stats-display {
@@ -1011,6 +1176,27 @@ input[type="range"] {
         gap: 10px; 
         text-align: center; 
         padding: 10px;
+    }
+    
+    .theme-controls {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 8px;
+    }
+    
+    .theme-button {
+        font-size: 0.8em;
+        padding: 6px 10px;
+    }
+    
+    .randomize-dropdown {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        right: auto;
+        min-width: 90vw;
+        max-width: 320px;
     }
     
     .stats-display { 
