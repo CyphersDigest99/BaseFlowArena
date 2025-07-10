@@ -29,8 +29,8 @@
 }
 
 /* --- Theme Variables --- */
-/* Dark Theme (Default) */
-[data-theme="dark"] {
+/* Classic Theme (Original Dark) */
+[data-theme="classic"] {
     --bg-color: transparent;
     --panel-bg: rgba(31, 31, 56, 0.92);
     --panel-bg-opaque: rgb(31, 31, 56);
@@ -45,20 +45,36 @@
     --disabled-color: #6c757d;
 }
 
-/* Light Theme */
+/* Dark Theme (Modern, Studio) */
+[data-theme="dark"] {
+    --bg-color: #181A1B;
+    --panel-bg: rgba(35, 37, 38, 0.95);
+    --panel-bg-opaque: #232526;
+    --border-color: #313436;
+    --primary-accent: #26A69A;
+    --secondary-accent: #FFB300;
+    --text-color: #ECEFF1;
+    --text-bright: #FFFFFF;
+    --highlight-color: #FF7043;
+    --red-color: #EF5350;
+    --green-color: #66BB6A;
+    --disabled-color: #424242;
+}
+
+/* Light Theme (Modern, Minimalist, Engaging) */
 [data-theme="light"] {
-    --bg-color: transparent;
-    --panel-bg: rgba(240, 240, 250, 0.92);
-    --panel-bg-opaque: rgb(240, 240, 250);
-    --border-color: rgba(100, 100, 150, 0.7);
-    --primary-accent: #0066cc;
-    --secondary-accent: #cc0066;
-    --text-color: #2a2a2a;
-    --text-bright: #000000;
-    --highlight-color: #ff6600;
-    --red-color: #cc0000;
-    --green-color: #006600;
-    --disabled-color: #999999;
+    --bg-color: #F7FAFC;
+    --panel-bg: rgba(255, 255, 255, 0.98);
+    --panel-bg-opaque: #FFFFFF;
+    --border-color: #E2E8F0;
+    --primary-accent: #10B981; /* Emerald/Teal */
+    --secondary-accent: #F59E42; /* Orange/Amber */
+    --text-color: #22223B;
+    --text-bright: #111827;
+    --highlight-color: #2563EB; /* Blue for highlights */
+    --red-color: #EF4444;
+    --green-color: #22C55E;
+    --disabled-color: #CBD5E1;
 }
 
 * {
@@ -2510,4 +2526,54 @@ body.screen-shaking {
     white-space: nowrap;
     border: 1px solid var(--border-color);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+/* Light Mode Word Display Area & Panels Improvements */
+[data-theme="light"] #word-display-unit {
+    background: #fff;
+    border: 3px solid var(--primary-accent);
+    border-radius: 18px;
+    box-shadow: 0 2px 12px rgba(16, 185, 129, 0.07);
+}
+[data-theme="light"] .word-display-cell.middle-cell {
+    background: #fff;
+    border: 2px solid var(--primary-accent);
+    color: #1a202c;
+    border-radius: 14px;
+    font-weight: 700;
+}
+[data-theme="light"] .word-display-cell.top-cell,
+[data-theme="light"] .word-display-cell.bottom-cell {
+    background: #F1F5F9;
+    color: #1a202c;
+    border-radius: 10px;
+}
+[data-theme="light"] .syllable-filter-section,
+[data-theme="light"] #rng-controls {
+    background: #F1F5F9;
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    color: #1a202c;
+}
+[data-theme="light"] .syllable-header h3,
+[data-theme="light"] .control-group label {
+    color: var(--secondary-accent);
+}
+[data-theme="light"] .syllable-select,
+[data-theme="light"] input[type="number"] {
+    background: #fff;
+    color: #1a202c;
+    border: 1px solid var(--border-color);
+}
+[data-theme="light"] .icon-button,
+[data-theme="light"] .theme-button {
+    background: #fff;
+    color: var(--primary-accent);
+    border: 1.5px solid var(--primary-accent);
+    border-radius: 8px;
+}
+[data-theme="light"] .icon-button:hover,
+[data-theme="light"] .theme-button:hover {
+    background: var(--primary-accent);
+    color: #fff;
 }

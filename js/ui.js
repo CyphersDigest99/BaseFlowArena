@@ -44,6 +44,7 @@ export const elements = {
     
     // Theme Controls
     themeDarkButton: document.getElementById('theme-dark'),
+    themeClassicButton: document.getElementById('theme-classic'),
     themeLightButton: document.getElementById('theme-light'),
     randomizePaletteButton: document.getElementById('randomize-palette'),
     randomizeDropdown: document.getElementById('randomize-dropdown'),
@@ -896,12 +897,15 @@ export function updateTooltipView(synonyms = null, definition = null) {
 export function initializeThemeSystem() {
     // Load saved theme preference or set default
     const savedTheme = localStorage.getItem('preferred-theme');
-    const defaultTheme = savedTheme || 'dark';
+    const defaultTheme = savedTheme || 'classic';
     document.body.setAttribute('data-theme', defaultTheme);
     
     // Add event listeners for theme buttons
     if (elements.themeDarkButton) {
         elements.themeDarkButton.addEventListener('click', () => switchTheme('dark'));
+    }
+    if (elements.themeClassicButton) {
+        elements.themeClassicButton.addEventListener('click', () => switchTheme('classic'));
     }
     if (elements.themeLightButton) {
         elements.themeLightButton.addEventListener('click', () => switchTheme('light'));
@@ -927,6 +931,9 @@ export function initializeThemeSystem() {
     
     // Update theme button states
     updateThemeButtonStates();
+    
+    // Initialize color previews
+    updateColorPreviews();
 }
 
 // Switch between themes
@@ -945,10 +952,13 @@ export function switchTheme(theme) {
 
 // Update theme button active states
 function updateThemeButtonStates() {
-    const currentTheme = document.body.getAttribute('data-theme') || 'dark';
+    const currentTheme = document.body.getAttribute('data-theme') || 'classic';
     
     if (elements.themeDarkButton) {
         elements.themeDarkButton.classList.toggle('active', currentTheme === 'dark');
+    }
+    if (elements.themeClassicButton) {
+        elements.themeClassicButton.classList.toggle('active', currentTheme === 'classic');
     }
     if (elements.themeLightButton) {
         elements.themeLightButton.classList.toggle('active', currentTheme === 'light');
@@ -1003,7 +1013,11 @@ function generateAestheticColor(colorVar) {
         '--panel-bg': { h: [200, 280], s: [10, 30], l: [15, 35] }, // Dark backgrounds
         '--text-color': { h: [0, 360], s: [0, 20], l: [70, 95] }, // Light text
         '--highlight-color': { h: [30, 60], s: [70, 100], l: [50, 80] }, // Oranges/Yellows
-        '--border-color': { h: [200, 280], s: [20, 50], l: [30, 60] } // Medium borders
+        '--border-color': { h: [200, 280], s: [20, 50], l: [30, 60] }, // Medium borders
+        '--text-bright': { h: [0, 360], s: [0, 20], l: [85, 100] }, // Bright text
+        '--red-color': { h: [0, 15], s: [70, 100], l: [40, 70] }, // Reds
+        '--green-color': { h: [120, 150], s: [60, 100], l: [40, 70] }, // Greens
+        '--disabled-color': { h: [200, 220], s: [10, 30], l: [40, 60] } // Disabled colors
     };
     
     const range = colorRanges[colorVar] || { h: [0, 360], s: [50, 100], l: [40, 70] };
