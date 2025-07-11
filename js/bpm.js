@@ -73,7 +73,7 @@ export function adjustBpm(amount) {
     if (newBpm !== state.bpm) {
         state.bpm = newBpm;
         state.bpmClickTimestamps = [];
-        ui.updateBpmIndicator(state.bpm);
+        // ui.updateBpmIndicator(state.bpm); // Comment out ui.updateBpmIndicator(state.bpm) in bpm.js
         storage.saveSettings();
         if (state.bpm > 0) {
             startBeatAnimation();
@@ -91,7 +91,7 @@ export function stopBpm() {
     console.log('Stopping BPM...');
     state.bpm = 0;
     state.bpmClickTimestamps = [];
-    ui.updateBpmIndicator(state.bpm);
+    // ui.updateBpmIndicator(state.bpm); // Comment out ui.updateBpmIndicator(state.bpm) in bpm.js
     stopBeatAnimation();
     stopWordDisplayShake();
     storage.saveSettings();
@@ -109,7 +109,7 @@ export function setBpm(newBpmValue) {
         console.log(`Setting BPM directly to: ${newBpmValue}`);
         state.bpm = newBpmValue;
         state.bpmClickTimestamps = [];
-        ui.updateBpmIndicator(state.bpm);
+        // ui.updateBpmIndicator(state.bpm); // Comment out ui.updateBpmIndicator(state.bpm) in bpm.js
         storage.saveSettings();
         if (state.bpm > 0) {
             startBeatAnimation();

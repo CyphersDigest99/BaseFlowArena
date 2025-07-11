@@ -148,7 +148,8 @@ export function loadSettings() {
  */
 function applyLoadedSettingsToUI() {
     ui.updateActivationUI();
-    updateBpmIndicator(state.bpm);
+    // Comment out updateBpmIndicator(state.bpm) in storage.js
+    // updateBpmIndicator(state.bpm);
     updateGrid(); // Rebuild beat grid (this is imported from bpm.js)
     ui.displayFrequencies(state.wordFrequencies);
 

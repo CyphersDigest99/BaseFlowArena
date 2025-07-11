@@ -92,7 +92,10 @@ async function initializeApp() {
     // it's handled when startDetection is called.
 
     // 2. Load Settings, Rhyme Data, Word List
-    storage.loadSettings(); // Loads ALL settings, applies defaults, updates relevant UI
+    const loadedSettings = storage.loadSettings(); // Loads ALL settings, applies defaults, updates relevant UI
+    // Temporarily comment out BPM UI update for stabilization
+    // updateBpmIndicator(loadedSettings.bpm);
+    // ui.updateBPMIndicator(loadedSettings.bpm);
     await rhyme.loadRhymeData();
     await wordManager.loadWords(); // Applies filters based on loaded blacklist
 
