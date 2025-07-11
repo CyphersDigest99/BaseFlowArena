@@ -550,18 +550,27 @@
         <img id="album-art" width="50" height="50" style="object-fit:cover;border-radius:6px;margin:0 10px;" alt="Album Art" />
         <!-- Beat player controls -->
         <div class="beat-player-controls">
-            <button id="beat-play-pause" class="icon-button"><i class="fas fa-play"></i></button>
-            <button id="beat-prev" class="icon-button"><i class="fas fa-backward"></i></button>
-            <button id="beat-next" class="icon-button"><i class="fas fa-forward"></i></button>
+            <button id="beat-play-pause" class="icon-button" title="Play/Pause"><i class="fas fa-play"></i></button>
+            <button id="beat-prev" class="icon-button" title="Previous Beat"><i class="fas fa-backward"></i></button>
+            <button id="beat-next" class="icon-button" title="Next Beat"><i class="fas fa-forward"></i></button>
         </div>
         <!-- Current beat display -->
         <div id="current-beat-display" style="margin:0 10px;min-width:180px;"></div>
         <!-- BPM display -->
         <div id="beat-bpm" style="margin:0 10px;min-width:60px;"></div>
+        <!-- Mood display -->
+        <div id="beat-mood" style="margin:0 10px;min-width:80px;font-size:0.9em;"></div>
+        <!-- Artist display -->
+        <div id="beat-artist" style="margin:0 10px;min-width:100px;font-size:0.9em;"></div>
         <!-- Waveform container (hidden for Howler-only player) -->
         <div id="waveform" style="display:none;flex:1 1 0%;height:40px;min-width:120px;margin:0 10px;"></div>
         <!-- Volume control slider -->
-        <input id="beat-volume" type="range" min="0" max="100" value="70" style="width:120px;margin:0 10px;" />
+        <input id="beat-volume" type="range" min="0" max="100" value="70" style="width:120px;margin:0 10px;" title="Volume Control" />
+        <!-- Metadata mode selector -->
+        <select id="metadata-mode" style="margin:0 10px;background:#333;color:#fff;border:1px solid #555;border-radius:4px;padding:2px 6px;font-size:0.8em;" title="Metadata Mode">
+            <option value="lightweight">Lightweight</option>
+            <option value="full">Full</option>
+        </select>
     </div>
 
     <!-- --- INLINE STYLES FOR BEAT PLAYER BAR --- -->
@@ -582,8 +591,21 @@
     }
     #beat-player-bar .icon-button { margin: 0 2px; }
     #album-art { background: #222; }
-    #current-beat-display, #beat-bpm { color: #fff; font-size: 1em; }
+    #current-beat-display, #beat-bpm, #beat-mood, #beat-artist { color: #fff; font-size: 1em; }
+    /* Mood styling */
+    .beat-mood.energetic { color: #FFD700; }
+    .beat-mood.neutral { color: #87CEEB; }
+    .beat-mood.melancholic { color: #DDA0DD; }
+    .beat-mood.dark { color: #8B0000; }
     #waveform { background: transparent; }
+    #current-beat-display {
+        max-width: 320px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        display: inline-block;
+        vertical-align: middle;
+    }
     </style>
 </body>
 </html>

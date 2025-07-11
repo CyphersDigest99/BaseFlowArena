@@ -119,6 +119,9 @@ export const elements = {
     beatNextButton: document.getElementById('beat-next'),
     beatPreviousButton: document.getElementById('beat-previous'),
     beatVolumeSlider: document.getElementById('beat-volume'),
+    beatMood: document.getElementById('beat-mood'),
+    beatArtist: document.getElementById('beat-artist'),
+    albumArt: document.getElementById('album-art'),
 
     // Right Panel Controls (Frequencies) - Word frequency display
     frequentWordsContainer: document.getElementById('frequent-words'),

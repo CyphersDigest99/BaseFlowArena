@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced Beat Manager Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        
+        .test-section {
+            background: #2a2a2a;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border: 1px solid #444;
+        }
+        
+        .beat-player {
+            background: #333;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        
+        .beat-controls {
+            display: flex;
+            gap: 10px;
+            margin: 10px 0;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        button:hover {
+            background: #45a049;
+        }
+        
+        button:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+        
+        .metadata-display {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 15px 0;
+        }
+        
+        .metadata-item {
+            background: #444;
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .album-art {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        
+        .volume-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 10px 0;
+        }
+        
+        input[type="range"] {
+            width: 150px;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin: 15px 0;
+        }
+        
+        .stat-card {
+            background: #444;
+            padding: 15px;
+            border-radius: 4px;
+        }
+        
+        .stat-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #4CAF50;
+        }
+        
+        .beat-list {
+            max-height: 300px;
+            overflow-y: auto;
+            background: #333;
+            padding: 15px;
+            border-radius: 4px;
+        }
+        
+        .beat-item {
+            padding: 8px;
+            border-bottom: 1px solid #555;
+            cursor: pointer;
+        }
+        
+        .beat-item:hover {
+            background: #444;
+        }
+        
+        .beat-item.active {
+            background: #4CAF50;
+            color: white;
+        }
+        
+        .mood-energetic { color: #FFD700; }
+        .mood-neutral { color: #87CEEB; }
+        .mood-melancholic { color: #DDA0DD; }
+        .mood-dark { color: #8B0000; }
+        
+        .loading {
+            color: #FFA500;
+            font-style: italic;
+        }
+        
+        .error {
+            color: #FF6B6B;
+            font-weight: bold;
+        }
+        
+        .success {
+            color: #4CAF50;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>Enhanced Beat Manager Test</h1>
+    
+    <div class="test-section">
+        <h2>Initialization</h2>
+        <button id="init-btn">Initialize Enhanced Beat Manager</button>
+        <div id="init-status" class="loading">Not initialized</div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Metadata Mode Control</h2>
+        <div class="beat-controls">
+            <button id="switch-lightweight">Switch to Lightweight</button>
+            <button id="switch-full">Switch to Full</button>
+            <div id="current-mode">Current Mode: Not set</div>
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Beat Player</h2>
+        <div class="beat-player">
+            <div class="beat-controls">
+                <button id="play-pause">Play/Pause</button>
+                <button id="stop">Stop</button>
+                <button id="prev">Previous</button>
+                <button id="next">Next</button>
+            </div>
+            
+            <div class="volume-control">
+                <label>Volume:</label>
+                <input type="range" id="volume" min="0" max="100" value="70">
+                <span id="volume-display">70%</span>
+            </div>
+            
+            <div id="current-beat-display">No beat loaded</div>
+            
+            <div class="metadata-display">
+                <div class="metadata-item">
+                    <strong>BPM:</strong> <span id="beat-bpm">-</span>
+                </div>
+                <div class="metadata-item">
+                    <strong>Mood:</strong> <span id="beat-mood">-</span>
+                </div>
+                <div class="metadata-item">
+                    <strong>Artist:</strong> <span id="beat-artist">-</span>
+                </div>
+                <div class="metadata-item">
+                    <strong>Duration:</strong> <span id="beat-duration">-</span>
+                </div>
+            </div>
+            
+            <img id="album-art" class="album-art" alt="Album Art">
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Collection Statistics</h2>
+        <button id="get-stats-btn">Get Collection Stats</button>
+        <div id="stats-display" class="stats-grid"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Beat List (First 10)</h2>
+        <div id="beat-list" class="beat-list"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Testing Functions</h2>
+        <div class="beat-controls">
+            <button id="test-functions">Test All Functions</button>
+            <button id="find-energetic">Find Energetic Beats</button>
+            <button id="find-medium-bpm">Find Medium BPM (90-120)</button>
+            <button id="get-random">Get Random Beat</button>
+        </div>
+        <div id="test-results"></div>
+    </div>
+
+    <script type="module">
+        import * as beatManager from './js/beatManagerEnhanced.js';
+        import * as integration from './js/beatManagerIntegration.js';
+        
+        // DOM elements
+        const initBtn = document.getElementById('init-btn');
+        const initStatus = document.getElementById('init-status');
+        const switchLightweight = document.getElementById('switch-lightweight');
+        const switchFull = document.getElementById('switch-full');
+        const currentMode = document.getElementById('current-mode');
+        const playPauseBtn = document.getElementById('play-pause');
+        const stopBtn = document.getElementById('stop');
+        const prevBtn = document.getElementById('prev');
+        const nextBtn = document.getElementById('next');
+        const volumeSlider = document.getElementById('volume');
+        const volumeDisplay = document.getElementById('volume-display');
+        const currentBeatDisplay = document.getElementById('current-beat-display');
+        const beatBpm = document.getElementById('beat-bpm');
+        const beatMood = document.getElementById('beat-mood');
+        const beatArtist = document.getElementById('beat-artist');
+        const beatDuration = document.getElementById('beat-duration');
+        const albumArt = document.getElementById('album-art');
+        const getStatsBtn = document.getElementById('get-stats-btn');
+        const statsDisplay = document.getElementById('stats-display');
+        const beatList = document.getElementById('beat-list');
+        const testFunctionsBtn = document.getElementById('test-functions');
+        const findEnergeticBtn = document.getElementById('find-energetic');
+        const findMediumBpmBtn = document.getElementById('find-medium-bpm');
+        const getRandomBtn = document.getElementById('get-random');
+        const testResults = document.getElementById('test-results');
+        
+        // Initialize
+        initBtn.addEventListener('click', async () => {
+            try {
+                initStatus.textContent = 'Initializing...';
+                initStatus.className = 'loading';
+                
+                await beatManager.initializeBeatPlayer();
+                
+                initStatus.textContent = 'Successfully initialized!';
+                initStatus.className = 'success';
+                
+                updateUI();
+                updateBeatList();
+                
+            } catch (error) {
+                initStatus.textContent = `Error: ${error.message}`;
+                initStatus.className = 'error';
+                console.error('Initialization error:', error);
+            }
+        });
+        
+        // Metadata mode controls
+        switchLightweight.addEventListener('click', async () => {
+            await switchMode('lightweight');
+        });
+        
+        switchFull.addEventListener('click', async () => {
+            await switchMode('full');
+        });
+        
+        async function switchMode(mode) {
+            try {
+                const success = await beatManager.switchMetadataMode(mode);
+                if (success) {
+                    currentMode.textContent = `Current Mode: ${mode}`;
+                    updateUI();
+                    updateBeatList();
+                }
+            } catch (error) {
+                console.error('Mode switch error:', error);
+            }
+        }
+        
+        // Beat controls
+        playPauseBtn.addEventListener('click', () => beatManager.playPause());
+        stopBtn.addEventListener('click', () => beatManager.stop());
+        prevBtn.addEventListener('click', () => beatManager.previousBeat());
+        nextBtn.addEventListener('click', () => beatManager.nextBeat());
+        
+        volumeSlider.addEventListener('input', (e) => {
+            const volume = e.target.value / 100;
+            beatManager.setVolume(volume);
+            volumeDisplay.textContent = `${e.target.value}%`;
+        });
+        
+        // Statistics
+        getStatsBtn.addEventListener('click', () => {
+            const stats = integration.getBeatCollectionStats();
+            displayStats(stats);
+        });
+        
+        function displayStats(stats) {
+            statsDisplay.innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-title">Total Beats</div>
+                    <div>${stats.total}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-title">Average BPM</div>
+                    <div>${stats.averageBPM}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-title">BPM Ranges</div>
+                    <div>Slow (60-90): ${stats.bpmRanges.slow}</div>
+                    <div>Medium (90-120): ${stats.bpmRanges.medium}</div>
+                    <div>Fast (120+): ${stats.bpmRanges.fast}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-title">Moods</div>
+                    ${Object.entries(stats.moods).map(([mood, count]) => 
+                        `<div>${mood}: ${count}</div>`
+                    ).join('')}
+                </div>
+            `;
+        }
+        
+        // Beat list
+        function updateBeatList() {
+            const playlist = beatManager.getPlaylist();
+            const currentIndex = beatManager.getCurrentBeatInfo().index;
+            
+            beatList.innerHTML = playlist.slice(0, 10).map((beat, index) => `
+                <div class="beat-item ${index === currentIndex ? 'active' : ''}" 
+                     onclick="window.switchToBeat(${index})">
+                    <strong>${beat.name}</strong><br>
+                    <small>BPM: ${beat.bpm || 'Unknown'} | Mood: ${beat.mood || 'Unknown'}</small>
+                </div>
+            `).join('');
+        }
+        
+        // Make switchToBeat available globally
+        window.switchToBeat = (index) => {
+            // This would need to be implemented in the beat manager
+            console.log(`Switching to beat index ${index}`);
+        };
+        
+        // Testing functions
+        testFunctionsBtn.addEventListener('click', async () => {
+            testResults.innerHTML = '<div class="loading">Testing functions...</div>';
+            
+            try {
+                await integration.testEnhancedBeatManager();
+                integration.displayAllBeatsInfo();
+                
+                testResults.innerHTML = '<div class="success">All tests completed! Check console for details.</div>';
+            } catch (error) {
+                testResults.innerHTML = `<div class="error">Test error: ${error.message}</div>`;
+            }
+        });
+        
+        findEnergeticBtn.addEventListener('click', () => {
+            const energeticBeats = integration.findBeatsByMood('energetic');
+            testResults.innerHTML = `
+                <div class="success">Found ${energeticBeats.length} energetic beats:</div>
+                <div class="beat-list">
+                    ${energeticBeats.map(beat => `
+                        <div class="beat-item">
+                            <strong>${beat.name}</strong><br>
+                            <small>BPM: ${beat.bpm || 'Unknown'}</small>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        });
+        
+        findMediumBpmBtn.addEventListener('click', () => {
+            const mediumBeats = integration.findBeatsByBPM(90, 120);
+            testResults.innerHTML = `
+                <div class="success">Found ${mediumBeats.length} medium BPM beats (90-120):</div>
+                <div class="beat-list">
+                    ${mediumBeats.map(beat => `
+                        <div class="beat-item">
+                            <strong>${beat.name}</strong><br>
+                            <small>BPM: ${beat.bpm || 'Unknown'} | Mood: ${beat.mood || 'Unknown'}</small>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        });
+        
+        getRandomBtn.addEventListener('click', () => {
+            const randomBeat = integration.getRandomBeat();
+            testResults.innerHTML = `
+                <div class="success">Random beat selected:</div>
+                <div class="beat-item">
+                    <strong>${randomBeat.name}</strong><br>
+                    <small>BPM: ${randomBeat.bpm || 'Unknown'} | Mood: ${randomBeat.mood || 'Unknown'}</small>
+                </div>
+            `;
+        });
+        
+        // Update UI function
+        function updateUI() {
+            const beatInfo = beatManager.getCurrentBeatInfo();
+            const sentiment = beatManager.getCurrentSentiment();
+            
+            currentBeatDisplay.textContent = `${beatInfo.index + 1}/${beatInfo.total}: ${beatInfo.name}`;
+            currentMode.textContent = `Current Mode: ${beatManager.getCurrentMetadataMode()}`;
+            
+            // Update metadata display
+            if (beatInfo.bpm) beatBpm.textContent = beatInfo.bpm;
+            if (beatInfo.mood) {
+                beatMood.textContent = beatInfo.mood;
+                beatMood.className = `beat-mood mood-${beatInfo.mood.toLowerCase()}`;
+            }
+            if (beatInfo.artist) beatArtist.textContent = beatInfo.artist;
+            if (beatInfo.duration) {
+                const minutes = Math.floor(beatInfo.duration / 60);
+                const seconds = Math.floor(beatInfo.duration % 60);
+                beatDuration.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            }
+            
+            // Update play/pause button
+            playPauseBtn.textContent = beatInfo.isPlaying ? 'Pause' : 'Play';
+            
+            // Update volume
+            const currentVolume = beatManager.getCurrentVolume();
+            volumeSlider.value = currentVolume * 100;
+            volumeDisplay.textContent = `${Math.round(currentVolume * 100)}%`;
+        }
+        
+        // Set up periodic UI updates
+        setInterval(updateUI, 1000);
+        
+        console.log('Enhanced Beat Manager Test Page Loaded');
+        console.log('Available functions: beatManager.*, integration.*');
+    </script>
+</body>
+</html> 

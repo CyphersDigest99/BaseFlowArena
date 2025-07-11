@@ -299,15 +299,17 @@ export function importSettings(jsonData) {
 
 // --- Beat Player Storage Functions ---
 /**
- * Saves beat player settings (current track index and volume) to LocalStorage.
+ * Saves beat player settings (current track index, volume, and metadata mode) to LocalStorage.
  * @param {number} currentBeatIndex - The current beat index
  * @param {number} volume - The current volume (0.0 to 1.0)
+ * @param {string} metadataMode - The current metadata mode ('full' or 'lightweight')
  */
-export function saveBeatPlayerSettings(currentBeatIndex = 0, volume = 0.7) {
+export function saveBeatPlayerSettings(currentBeatIndex = 0, volume = 0.7, metadataMode = 'lightweight') {
     try {
         const beatPlayerSettings = {
             currentBeatIndex: currentBeatIndex,
-            volume: volume
+            volume: volume,
+            metadataMode: metadataMode
         };
         localStorage.setItem(BEAT_PLAYER_STORAGE_KEY, JSON.stringify(beatPlayerSettings));
     } catch (e) {
@@ -316,14 +318,19 @@ export function saveBeatPlayerSettings(currentBeatIndex = 0, volume = 0.7) {
 }
 
 /**
- * Loads beat player settings (current track index and volume) from LocalStorage.
+ * Loads beat player settings (current track index, volume, and metadata mode) from LocalStorage.
  * @returns {object|null} The beat player settings object, or null if not found
  */
 export function loadBeatPlayerSettings() {
     try {
         const savedSettings = localStorage.getItem(BEAT_PLAYER_STORAGE_KEY);
         if (savedSettings) {
-            return JSON.parse(savedSettings);
+            const settings = JSON.parse(savedSettings);
+            // Ensure backward compatibility with old settings
+            if (!settings.metadataMode) {
+                settings.metadataMode = 'lightweight';
+            }
+            return settings;
         }
     } catch (e) {
         console.error("Error loading beat player settings:", e);

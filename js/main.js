@@ -35,7 +35,7 @@ import * as modal from './modal.js';
 import * as autoBpm from './autoBpm.js'; // Import the Web Audio API version
 import * as datamuse from './datamuse.js'; // Import the Datamuse API module
 import * as wordApi from './wordApi.js'; // Import the new word API module
-import * as beatManager from './beatManager.js'; // Import the beat player module
+import * as beatManager from './beatManagerEnhanced.js'; // Import the enhanced beat player module
 import { openRhymeFinderModalWithSort } from './rhyme.js';
 
 // Cached word data for tooltip display and performance optimization
@@ -101,7 +101,7 @@ async function initializeApp() {
 
     // 3. Setup Features
     speech.setupSpeechRecognition();
-    beatManager.initializeBeatPlayer(); // Initialize beat player
+    await beatManager.initializeBeatPlayer(); // Initialize enhanced beat player
 
     // 4. Display Initial Word & Sync Final UI
     ui.updateActivationUI(); // Sync activation/mode controls
@@ -486,6 +486,22 @@ function attachEventListeners() {
         const volume = parseInt(e.target.value, 10) / 100; // Convert percentage to 0-1
         beatManager.setVolume(volume);
     });
+    
+    // Metadata mode selector
+    const metadataModeSelector = document.getElementById('metadata-mode');
+    if (metadataModeSelector) {
+        metadataModeSelector.addEventListener('change', async (e) => {
+            const newMode = e.target.value;
+            const success = await beatManager.switchMetadataMode(newMode);
+            if (success) {
+                ui.showFeedback(`Switched to ${newMode} mode`, false, 2000);
+            } else {
+                ui.showFeedback(`Failed to switch to ${newMode} mode`, true, 2000);
+                // Revert selection
+                e.target.value = beatManager.getCurrentMetadataMode();
+            }
+        });
+    }
     // --- END BEAT PLAYER CONTROLS ---
 
     // RNG Controls
