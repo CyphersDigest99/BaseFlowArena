@@ -24,6 +24,7 @@ import * as ui from './ui.js';
 import { updateGrid } from './bpm.js'; // For updating grid visuals after load/reset
 
 const STORAGE_KEY = 'freestyleArenaSettings_v6'; // Increment version for word list persistence
+const BEAT_PLAYER_STORAGE_KEY = 'freestyleArenaBeatPlayerSettings_v1';
 
 // --- Serialization Helpers for Sets within Objects ---
 /**
