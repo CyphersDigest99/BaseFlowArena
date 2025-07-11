@@ -19,6 +19,7 @@
 // Handles saving and loading settings to/from LocalStorage.
 
 import { state } from './state.js';
+import { updateBpmIndicator } from './ui-helpers.js';
 import * as ui from './ui.js';
 import { updateGrid } from './bpm.js'; // For updating grid visuals after load/reset
 
@@ -147,7 +148,7 @@ export function loadSettings() {
  */
 function applyLoadedSettingsToUI() {
     ui.updateActivationUI();
-    ui.updateBpmIndicator(state.bpm);
+    updateBpmIndicator(state.bpm);
     updateGrid(); // Rebuild beat grid (this is imported from bpm.js)
     ui.displayFrequencies(state.wordFrequencies);
 

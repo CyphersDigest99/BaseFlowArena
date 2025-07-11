@@ -25,6 +25,7 @@
 // Handles DOM element selection and UI updates.
 
 import { state } from './state.js';
+import { updateBpmIndicator } from './ui-helpers.js';
 
 // Callback for when displayed word changes (for tooltip updates)
 let onDisplayedWordChangeCallback = null;
@@ -419,16 +420,6 @@ export function showTooltip(data) {
 export function hideTooltip() {
     if (elements.wordDefinitionTooltip) {
         elements.wordDefinitionTooltip.style.display = 'none';
-    }
-}
-
-// Updates BPM display and sets CSS variables for beat timing
-export function updateBpmIndicator(bpmValue) {
-    if(elements.bpmDisplay) elements.bpmDisplay.textContent = bpmValue;
-    const beatIntervalSeconds = bpmValue > 0 ? 60 / bpmValue : 0.5;
-    document.documentElement.style.setProperty('--beat-interval', `${beatIntervalSeconds}s`);
-    if (elements.wordDisplayUnit?.classList.contains('buzz-with-bpm')) {
-        elements.wordDisplayUnit.style.animationDuration = `${beatIntervalSeconds}s`;
     }
 }
 
