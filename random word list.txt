@@ -7,7 +7,7 @@ search
 free
 other
 information
-time
+timepytho
 site
 news
 out
