@@ -158,7 +158,7 @@ function applyLoadedSettingsToUI() {
     document.querySelectorAll('.multiplier-btn').forEach(btn => {
         const btnMultiplierValue = parseInt(btn.dataset.multiplier);
         // A button is selected if its value matches state.bpmMultiplier, AND state.bpmMultiplier is NOT 1.
-        btn.classList.toggle('selected', btnMultiplierValue === state.bpmMultiplier && state.bpmMultiplier !== 1);
+        btn.classList.toggle('selected', btnMultiplierValue === state.bpmMultiplier.toString() && state.bpmMultiplier !== 1);
     });
 }
 

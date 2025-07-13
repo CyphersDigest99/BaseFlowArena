@@ -138,6 +138,15 @@ function startBeatAnimation() {
     if (totalBoxes <= 0 || !isFinite(baseIntervalMs) || baseIntervalMs <= 0) return;
     state.currentBeat = -1; // Start before the first beat to make the first one hit 0 index
 
+    // Calculate interval based on multiplier
+    let intervalMs = baseIntervalMs;
+    if (state.bpmMultiplier === 0.5) {
+        intervalMs = baseIntervalMs * 2; // Slower animation
+    } else if (state.bpmMultiplier === 2) {
+        intervalMs = baseIntervalMs / 2; // Faster animation
+    }
+    // For triplet mode, we keep the same interval but add subdivision logic
+
     const updateVisualsForBeat = (beatIndex) => {
         if (!ui.elements.fourCountContainer) return;
         const boxes = ui.elements.fourCountContainer.querySelectorAll('.beat-box');
@@ -152,8 +161,26 @@ function startBeatAnimation() {
             const containerRect = ui.elements.fourCountContainer.getBoundingClientRect();
             
             // Calculate relative position within the container
-            const relativeX = ((rect.left + rect.width / 2) - containerRect.left) / containerRect.width * 100;
-            const relativeY = ((rect.top + rect.height / 2) - containerRect.top) / containerRect.height * 100;
+            let relativeX = ((rect.left + rect.width / 2) - containerRect.left) / containerRect.width * 100;
+            let relativeY = ((rect.top + rect.height / 2) - containerRect.top) / containerRect.height * 100;
+            
+            // For triplet mode, adjust light position within the box
+            if (state.bpmMultiplier === 'triplet') {
+                const tripletPhase = (Date.now() % baseIntervalMs) / baseIntervalMs; // 0 to 1
+                const boxWidth = rect.width;
+                const boxLeft = rect.left;
+                
+                if (tripletPhase < 0.33) {
+                    // First third
+                    relativeX = ((boxLeft + boxWidth * 0.167) - containerRect.left) / containerRect.width * 100;
+                } else if (tripletPhase < 0.67) {
+                    // Middle third
+                    relativeX = ((boxLeft + boxWidth * 0.5) - containerRect.left) / containerRect.width * 100;
+                } else {
+                    // Last third
+                    relativeX = ((boxLeft + boxWidth * 0.833) - containerRect.left) / containerRect.width * 100;
+                }
+            }
             
             // Update CSS custom properties for light position
             ui.elements.fourCountContainer.style.setProperty('--light-x', `${relativeX}%`);
@@ -179,12 +206,32 @@ function startBeatAnimation() {
     };
 
     updateVisualsForBeat(-1); // Ensure all off initially
+    
+    // For triplet mode, we need a faster update rate for smooth subdivision
+    const updateInterval = (state.bpmMultiplier === 'triplet') ? 16 : intervalMs; // 60fps for triplets
+    
     state.beatIntervalId = setInterval(() => {
         if (state.bpm <= 0) { stopBeatAnimation(); return; }
-        state.currentBeat = (state.currentBeat + 1) % totalBoxes;
-        updateVisualsForBeat(state.currentBeat);
-    }, baseIntervalMs);
-    // console.log(`Beat animation started. Base Interval: ${baseIntervalMs}ms`);
+        
+        // For triplet mode, we need to track both beat and subdivision
+        if (state.bpmMultiplier === 'triplet') {
+            // Update visuals every frame for smooth triplet animation
+            if (state.currentBeat >= 0) {
+                updateVisualsForBeat(state.currentBeat);
+            }
+            
+            // Advance to next beat at the regular interval
+            if (Date.now() % baseIntervalMs < updateInterval) {
+                state.currentBeat = (state.currentBeat + 1) % totalBoxes;
+            }
+        } else {
+            // Regular multiplier logic
+            state.currentBeat = (state.currentBeat + 1) % totalBoxes;
+            updateVisualsForBeat(state.currentBeat);
+        }
+    }, updateInterval);
+    
+    // console.log(`Beat animation started. Base Interval: ${baseIntervalMs}ms, Actual Interval: ${intervalMs}ms`);
 }
 
 // Stops the beat grid animation and resets visuals
@@ -234,13 +281,17 @@ export function updateColumnCount(delta) {
 }
 
 // --- Multiplier ---
-// Sets the BPM multiplier for beat grid animation (2x, 3x, 4x, or 1x)
+// Sets the BPM multiplier for beat grid animation (0.5x, 2x, triplet, or 1x)
 export function setMultiplier(newMultiplierValue) {
-    const clickedMultiplier = parseInt(newMultiplierValue, 10);
-
-    if (isNaN(clickedMultiplier) || clickedMultiplier < 2 || clickedMultiplier > 4) {
-        console.warn("Invalid multiplier value passed from button:", newMultiplierValue);
-        return;
+    let clickedMultiplier = newMultiplierValue;
+    
+    // Handle numeric values
+    if (newMultiplierValue !== 'triplet') {
+        clickedMultiplier = parseFloat(newMultiplierValue);
+        if (isNaN(clickedMultiplier) || (clickedMultiplier !== 0.5 && clickedMultiplier !== 2)) {
+            console.warn("Invalid multiplier value passed from button:", newMultiplierValue);
+            return;
+        }
     }
 
     let finalMultiplierToSet;
@@ -249,30 +300,23 @@ export function setMultiplier(newMultiplierValue) {
         finalMultiplierToSet = 1; // Toggle OFF, revert to 1x
         console.log(`BPM Multiplier toggled OFF (reverted to 1x).`);
     } else {
-        finalMultiplierToSet = clickedMultiplier; // Set to 2x, 3x, or 4x
-        console.log(`BPM Multiplier set to: ${finalMultiplierToSet}x`);
+        finalMultiplierToSet = clickedMultiplier; // Set to 0.5x, 2x, or triplet
+        console.log(`BPM Multiplier set to: ${finalMultiplierToSet}`);
     }
 
     if (state.bpmMultiplier !== finalMultiplierToSet) {
         state.bpmMultiplier = finalMultiplierToSet;
 
         document.querySelectorAll('.multiplier-btn').forEach(btn => {
-            const btnMultiplierValue = parseInt(btn.dataset.multiplier);
-            btn.classList.toggle('selected', btnMultiplierValue === state.bpmMultiplier && state.bpmMultiplier !== 1);
+            const btnMultiplierValue = btn.dataset.multiplier;
+            btn.classList.toggle('selected', btnMultiplierValue === state.bpmMultiplier.toString() && state.bpmMultiplier !== 1);
         });
 
         storage.saveSettings();
 
-        // If animation is running and BPM active, update flash duration for the currently active box
-        if (state.beatIntervalId && state.currentBeat >= 0 && ui.elements.fourCountContainer && state.bpm > 0) {
-             const currentActiveBox = ui.elements.fourCountContainer.querySelector(`.beat-box:nth-child(${state.currentBeat + 1})`);
-             if (currentActiveBox && currentActiveBox.classList.contains('flashing-border')){
-                 const baseIntervalMs = (60 / state.bpm) * 1000;
-                 const baseIntervalSeconds = baseIntervalMs / 1000;
-                 const flashDurationSeconds = baseIntervalSeconds / state.bpmMultiplier;
-                 currentActiveBox.style.animationDuration = `${flashDurationSeconds}s`;
-                 // console.log(`Updated flash duration for active box to ${flashDurationSeconds}s`);
-              }
+        // Restart animation to apply new multiplier
+        if (state.bpm > 0) {
+            startBeatAnimation();
         }
     }
 }
