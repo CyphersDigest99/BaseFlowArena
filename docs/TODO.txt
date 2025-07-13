@@ -1,3 +1,4 @@
+- Triplet mode visual bug: Gold haze/background still appears behind the grid. Needs further cleanup so only the active box flashes gold, with no container-wide effect.
 - Add tests for major features (e.g., speech recognition, word expansion).
 - Refactor `index.html` to <300 lines (currently ~350).
 - Collect audio for dialect training with Google Cloud Speech.
