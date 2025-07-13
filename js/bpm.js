@@ -142,29 +142,37 @@ function startBeatAnimation() {
         if (!ui.elements.fourCountContainer) return;
         const boxes = ui.elements.fourCountContainer.querySelectorAll('.beat-box');
         if (boxes.length !== totalBoxes) {
-            // console.warn("Beatbox count mismatch during updateVisuals. Grid may be rebuilding.");
-            // updateGrid(); // Avoid recursive call if updateGrid also calls startBeatAnimation
             return; // Skip this frame if grid is not ready
         }
-        const baseIntervalSeconds = baseIntervalMs / 1000;
-        const flashDurationSeconds = baseIntervalSeconds / state.bpmMultiplier;
 
+        // Update light position based on active beat
+        if (beatIndex >= 0 && beatIndex < boxes.length) {
+            const activeBox = boxes[beatIndex];
+            const rect = activeBox.getBoundingClientRect();
+            const containerRect = ui.elements.fourCountContainer.getBoundingClientRect();
+            
+            // Calculate relative position within the container
+            const relativeX = ((rect.left + rect.width / 2) - containerRect.left) / containerRect.width * 100;
+            const relativeY = ((rect.top + rect.height / 2) - containerRect.top) / containerRect.height * 100;
+            
+            // Update CSS custom properties for light position
+            ui.elements.fourCountContainer.style.setProperty('--light-x', `${relativeX}%`);
+            ui.elements.fourCountContainer.style.setProperty('--light-y', `${relativeY}%`);
+            ui.elements.fourCountContainer.classList.add('has-light');
+        } else {
+            ui.elements.fourCountContainer.classList.remove('has-light');
+        }
+
+        // Update box states
         boxes.forEach((box, index) => {
             const shouldBeActive = (index === beatIndex);
-            if (shouldBeActive) { // If this specific box should be active
-                if (!box.classList.contains('active')) { // Add classes only if not already present
+            if (shouldBeActive) {
+                if (!box.classList.contains('active')) {
                     box.classList.add('active');
-                    box.classList.add('flashing-border');
-                    box.style.animationDuration = `${flashDurationSeconds}s`;
-                } else if (box.classList.contains('flashing-border') && box.style.animationDuration !== `${flashDurationSeconds}s`) {
-                    // If already active but multiplier changed, just update duration
-                    box.style.animationDuration = `${flashDurationSeconds}s`;
                 }
-            } else { // If this box should NOT be active
-                if (box.classList.contains('active')) { // Remove classes if present
+            } else {
+                if (box.classList.contains('active')) {
                     box.classList.remove('active');
-                    box.classList.remove('flashing-border');
-                    box.style.animationDuration = '';
                 }
             }
         });
@@ -186,9 +194,10 @@ function stopBeatAnimation() {
         state.beatIntervalId = null;
         if (ui.elements.fourCountContainer) {
             ui.elements.fourCountContainer.querySelectorAll('.beat-box').forEach(box => {
-                box.classList.remove('active', 'flashing-border');
-                box.style.animationDuration = '';
+                box.classList.remove('active');
             });
+            // Remove light effect
+            ui.elements.fourCountContainer.classList.remove('has-light');
         }
         // console.log("Beat animation stopped.");
     }
@@ -296,10 +305,17 @@ export function resyncAnimation() {
         const boxes = ui.elements.fourCountContainer.querySelectorAll('.beat-box');
         if (boxes.length > 0) {
             // Immediately activate the first box
-            boxes[0].classList.add('active', 'flashing-border');
-            const baseIntervalSeconds = baseIntervalMs / 1000;
-            const flashDurationSeconds = baseIntervalSeconds / state.bpmMultiplier;
-            boxes[0].style.animationDuration = `${flashDurationSeconds}s`;
+            boxes[0].classList.add('active');
+            
+            // Position light at first box
+            const rect = boxes[0].getBoundingClientRect();
+            const containerRect = ui.elements.fourCountContainer.getBoundingClientRect();
+            const relativeX = ((rect.left + rect.width / 2) - containerRect.left) / containerRect.width * 100;
+            const relativeY = ((rect.top + rect.height / 2) - containerRect.top) / containerRect.height * 100;
+            
+            ui.elements.fourCountContainer.style.setProperty('--light-x', `${relativeX}%`);
+            ui.elements.fourCountContainer.style.setProperty('--light-y', `${relativeY}%`);
+            ui.elements.fourCountContainer.classList.add('has-light');
         }
     }
     
@@ -316,24 +332,30 @@ export function resyncAnimation() {
         if (ui.elements.fourCountContainer) {
             const boxes = ui.elements.fourCountContainer.querySelectorAll('.beat-box');
             if (boxes.length === totalBoxes) {
-                const baseIntervalSeconds = baseIntervalMs / 1000;
-                const flashDurationSeconds = baseIntervalSeconds / state.bpmMultiplier;
+                // Update light position
+                if (state.currentBeat >= 0 && state.currentBeat < boxes.length) {
+                    const activeBox = boxes[state.currentBeat];
+                    const rect = activeBox.getBoundingClientRect();
+                    const containerRect = ui.elements.fourCountContainer.getBoundingClientRect();
+                    
+                    const relativeX = ((rect.left + rect.width / 2) - containerRect.left) / containerRect.width * 100;
+                    const relativeY = ((rect.top + rect.height / 2) - containerRect.top) / containerRect.height * 100;
+                    
+                    ui.elements.fourCountContainer.style.setProperty('--light-x', `${relativeX}%`);
+                    ui.elements.fourCountContainer.style.setProperty('--light-y', `${relativeY}%`);
+                    ui.elements.fourCountContainer.classList.add('has-light');
+                }
                 
+                // Update box states
                 boxes.forEach((box, index) => {
                     const shouldBeActive = (index === state.currentBeat);
                     if (shouldBeActive) {
                         if (!box.classList.contains('active')) {
                             box.classList.add('active');
-                            box.classList.add('flashing-border');
-                            box.style.animationDuration = `${flashDurationSeconds}s`;
-                        } else if (box.classList.contains('flashing-border') && box.style.animationDuration !== `${flashDurationSeconds}s`) {
-                            box.style.animationDuration = `${flashDurationSeconds}s`;
                         }
                     } else {
                         if (box.classList.contains('active')) {
                             box.classList.remove('active');
-                            box.classList.remove('flashing-border');
-                            box.style.animationDuration = '';
                         }
                     }
                 });
