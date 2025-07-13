@@ -212,6 +212,24 @@ function startBeatAnimation() {
         });
     };
 
+    // Function to update triplet pulse position to follow active beat box
+    function updateTripletPosition(beatIndex) {
+        if (state.bpmMultiplier !== 'triplet' || !ui.elements.fourCountContainer) return;
+        
+        const boxes = ui.elements.fourCountContainer.querySelectorAll('.beat-box');
+        if (beatIndex >= 0 && beatIndex < boxes.length) {
+            const activeBox = boxes[beatIndex];
+            const rect = activeBox.getBoundingClientRect();
+            const containerRect = ui.elements.fourCountContainer.getBoundingClientRect();
+            
+            const relativeX = ((rect.left + rect.width / 2) - containerRect.left) / containerRect.width * 100;
+            const relativeY = ((rect.top + rect.height / 2) - containerRect.top) / containerRect.height * 100;
+            
+            ui.elements.fourCountContainer.style.setProperty('--triplet-x', `${relativeX}%`);
+            ui.elements.fourCountContainer.style.setProperty('--triplet-y', `${relativeY}%`);
+        }
+    }
+
     updateVisualsForBeat(-1); // Ensure all off initially
     
     // For triplet mode, we need a faster update rate for smooth subdivision
@@ -225,6 +243,8 @@ function startBeatAnimation() {
             // Update visuals every frame for smooth triplet animation
             if (state.currentBeat >= 0) {
                 updateVisualsForBeat(state.currentBeat);
+                // Update triplet position to follow active beat box
+                updateTripletPosition(state.currentBeat);
             }
             
             // Advance to next beat at the regular interval
@@ -327,6 +347,9 @@ export function setMultiplier(newMultiplierValue) {
                 const baseIntervalMs = (60 / state.bpm) * 1000;
                 const tripletDuration = (baseIntervalMs / 3) / 1000; // Convert to seconds
                 ui.elements.fourCountContainer.style.setProperty('--triplet-duration', `${tripletDuration}s`);
+                // Set initial triplet position to center
+                ui.elements.fourCountContainer.style.setProperty('--triplet-x', '50%');
+                ui.elements.fourCountContainer.style.setProperty('--triplet-y', '50%');
             } else {
                 ui.elements.fourCountContainer.classList.remove('triplet-mode');
             }

@@ -1710,13 +1710,25 @@ input[type="range"] {
 /* Triplet mode background pulse */
 @keyframes triplet-pulse {
     0%, 100% { 
-        background: linear-gradient(135deg, rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.4));
+        background: radial-gradient(circle at var(--triplet-x, 50%) var(--triplet-y, 50%), 
+                    rgba(255, 215, 0, 0.15) 0%, 
+                    rgba(255, 215, 0, 0.08) 30%, 
+                    rgba(255, 215, 0, 0.03) 60%, 
+                    transparent 80%);
     }
     33% { 
-        background: linear-gradient(135deg, rgba(0, 255, 255, 0.1), rgba(0, 0, 0, 0.4));
+        background: radial-gradient(circle at var(--triplet-x, 50%) var(--triplet-y, 50%), 
+                    rgba(255, 215, 0, 0.25) 0%, 
+                    rgba(255, 215, 0, 0.15) 30%, 
+                    rgba(255, 215, 0, 0.08) 60%, 
+                    transparent 80%);
     }
     66% { 
-        background: linear-gradient(135deg, rgba(0, 0, 0, 0.6), rgba(0, 255, 255, 0.1));
+        background: radial-gradient(circle at var(--triplet-x, 50%) var(--triplet-y, 50%), 
+                    rgba(255, 215, 0, 0.35) 0%, 
+                    rgba(255, 215, 0, 0.20) 30%, 
+                    rgba(255, 215, 0, 0.10) 60%, 
+                    transparent 80%);
     }
 }
 
