@@ -273,11 +273,34 @@ export function setMultiplier(newMultiplierValue) {
 export function resyncAnimation() {
     if (state.bpm <= 0) return;
     
+    // Stop the current animation immediately
+    stopBeatAnimation();
+    
     // Reset the current beat to -1 so the next interval will start at box 0
     state.currentBeat = -1;
     
-    // Restart the animation immediately
-    startBeatAnimation();
+    // Immediately light up the first box for instant feedback
+    if (ui.elements.fourCountContainer) {
+        const boxes = ui.elements.fourCountContainer.querySelectorAll('.beat-box');
+        if (boxes.length > 0) {
+            // Clear all boxes first
+            boxes.forEach(box => {
+                box.classList.remove('active', 'flashing-border');
+                box.style.animationDuration = '';
+            });
+            // Immediately activate the first box
+            boxes[0].classList.add('active', 'flashing-border');
+            const baseIntervalMs = (60 / state.bpm) * 1000;
+            const baseIntervalSeconds = baseIntervalMs / 1000;
+            const flashDurationSeconds = baseIntervalSeconds / state.bpmMultiplier;
+            boxes[0].style.animationDuration = `${flashDurationSeconds}s`;
+        }
+    }
+    
+    // Start the new animation after a brief delay to ensure the immediate feedback is visible
+    setTimeout(() => {
+        startBeatAnimation();
+    }, 50);
     
     console.log('Beat grid resynced to current moment');
 }
