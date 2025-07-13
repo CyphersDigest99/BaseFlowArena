@@ -119,7 +119,11 @@ export function setBpm(newBpmValue) {
         }
     } else {
          // console.log(`BPM already set to ${newBpmValue}, no change.`);
-         if (state.bpm > 0 && !state.beatIntervalId) startBeatAnimation();
+         // Always restart animation to resync, even if BPM value hasn't changed
+         if (state.bpm > 0) {
+             startBeatAnimation();
+             if (!state.isBpmLockedShaking) startWordDisplayShake();
+         }
     }
 }
 

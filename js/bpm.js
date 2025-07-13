@@ -73,7 +73,7 @@ export function adjustBpm(amount) {
     if (newBpm !== state.bpm) {
         state.bpm = newBpm;
         state.bpmClickTimestamps = [];
-        // ui.updateBpmIndicator(state.bpm); // Comment out ui.updateBpmIndicator(state.bpm) in bpm.js
+        ui.updateBpmIndicator(state.bpm);
         storage.saveSettings();
         if (state.bpm > 0) {
             startBeatAnimation();
@@ -91,7 +91,7 @@ export function stopBpm() {
     console.log('Stopping BPM...');
     state.bpm = 0;
     state.bpmClickTimestamps = [];
-    // ui.updateBpmIndicator(state.bpm); // Comment out ui.updateBpmIndicator(state.bpm) in bpm.js
+    ui.updateBpmIndicator(state.bpm);
     stopBeatAnimation();
     stopWordDisplayShake();
     storage.saveSettings();
@@ -109,7 +109,7 @@ export function setBpm(newBpmValue) {
         console.log(`Setting BPM directly to: ${newBpmValue}`);
         state.bpm = newBpmValue;
         state.bpmClickTimestamps = [];
-        // ui.updateBpmIndicator(state.bpm); // Comment out ui.updateBpmIndicator(state.bpm) in bpm.js
+        ui.updateBpmIndicator(state.bpm);
         storage.saveSettings();
         if (state.bpm > 0) {
             startBeatAnimation();
@@ -119,7 +119,11 @@ export function setBpm(newBpmValue) {
         }
     } else {
          // console.log(`BPM already set to ${newBpmValue}, no change.`);
-         if (state.bpm > 0 && !state.beatIntervalId) startBeatAnimation();
+         // Always restart animation to resync, even if BPM value hasn't changed
+         if (state.bpm > 0) {
+             startBeatAnimation();
+             if (!state.isBpmLockedShaking) startWordDisplayShake();
+         }
     }
 }
 
