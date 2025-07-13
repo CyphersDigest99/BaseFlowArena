@@ -126,6 +126,13 @@ export function setBpm(newBpmValue) {
              if (!state.isBpmLockedShaking) startWordDisplayShake();
          }
     }
+    
+    // Update triplet animation duration if triplet mode is active
+    if (state.bpmMultiplier === 'triplet' && ui.elements.fourCountContainer) {
+        const baseIntervalMs = (60 / state.bpm) * 1000;
+        const tripletDuration = (baseIntervalMs / 3) / 1000; // Convert to seconds
+        ui.elements.fourCountContainer.style.setProperty('--triplet-duration', `${tripletDuration}s`);
+    }
 }
 
 // --- Beat Grid Animation ---
@@ -311,6 +318,19 @@ export function setMultiplier(newMultiplierValue) {
             const btnMultiplierValue = btn.dataset.multiplier;
             btn.classList.toggle('selected', btnMultiplierValue === state.bpmMultiplier.toString() && state.bpmMultiplier !== 1);
         });
+
+        // Update triplet mode class and animation duration
+        if (ui.elements.fourCountContainer) {
+            if (state.bpmMultiplier === 'triplet') {
+                ui.elements.fourCountContainer.classList.add('triplet-mode');
+                // Set animation duration to 1/3 of the beat interval
+                const baseIntervalMs = (60 / state.bpm) * 1000;
+                const tripletDuration = (baseIntervalMs / 3) / 1000; // Convert to seconds
+                ui.elements.fourCountContainer.style.setProperty('--triplet-duration', `${tripletDuration}s`);
+            } else {
+                ui.elements.fourCountContainer.classList.remove('triplet-mode');
+            }
+        }
 
         storage.saveSettings();
 

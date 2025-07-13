@@ -1707,6 +1707,23 @@ input[type="range"] {
     opacity: 1;
 }
 
+/* Triplet mode background pulse */
+@keyframes triplet-pulse {
+    0%, 100% { 
+        background: linear-gradient(135deg, rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.4));
+    }
+    33% { 
+        background: linear-gradient(135deg, rgba(0, 255, 255, 0.1), rgba(0, 0, 0, 0.4));
+    }
+    66% { 
+        background: linear-gradient(135deg, rgba(0, 0, 0, 0.6), rgba(0, 255, 255, 0.1));
+    }
+}
+
+#four-count-container.triplet-mode {
+    animation: triplet-pulse var(--triplet-duration, 0.5s) ease-in-out infinite;
+}
+
 .beat-box {
     background: linear-gradient(135deg, #2a2a2a, #1a1a1a);
     width: 100%;
