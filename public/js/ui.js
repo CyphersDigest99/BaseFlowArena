@@ -459,6 +459,18 @@ export function rebuildBeatGrid(rows, cols) {
     }
     if(elements.rowCountDisplay) elements.rowCountDisplay.textContent = rows;
     if(elements.colCountDisplay) elements.colCountDisplay.textContent = cols;
+    
+    // Reattach click listener to the first beat box for resync
+    const firstBeatBox = elements.fourCountContainer.querySelector('.beat-box:first-child');
+    if (firstBeatBox) {
+        firstBeatBox.addEventListener('click', () => {
+            // Import bpm module dynamically to avoid circular dependency
+            import('./bpm.js').then(bpmModule => {
+                bpmModule.resyncAnimation();
+                showFeedback('Beat grid resynced!', false, 1000);
+            });
+        });
+    }
 }
 
 // Triggers screen shake animation effect

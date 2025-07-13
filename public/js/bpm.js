@@ -268,6 +268,20 @@ export function setMultiplier(newMultiplierValue) {
     }
 }
 
+// --- Beat Grid Resync ---
+// Resyncs the beat grid animation to start from the current moment
+export function resyncAnimation() {
+    if (state.bpm <= 0) return;
+    
+    // Reset the current beat to -1 so the next interval will start at box 0
+    state.currentBeat = -1;
+    
+    // Restart the animation immediately
+    startBeatAnimation();
+    
+    console.log('Beat grid resynced to current moment');
+}
+
 // --- Word Display Buzz Effect ---
 // Starts the word display buzz effect when BPM is locked
 function startWordDisplayShake() {

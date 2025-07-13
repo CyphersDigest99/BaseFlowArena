@@ -466,6 +466,15 @@ function attachEventListeners() {
     ui.elements.removeRowButton?.addEventListener('click', () => bpm.updateRowCount(-1));
     ui.elements.addColButton?.addEventListener('click', () => bpm.updateColumnCount(1));
     ui.elements.removeColButton?.addEventListener('click', () => bpm.updateColumnCount(-1));
+
+    // Clickable first beat box for resync
+    const firstBeatBox = document.querySelector('#four-count-container .beat-box:first-child');
+    if (firstBeatBox) {
+        firstBeatBox.addEventListener('click', () => {
+            bpm.resyncAnimation();
+            ui.showFeedback('Beat grid resynced!', false, 1000);
+        });
+    }
     // Multiplier Buttons
     ui.elements.multiplierButtons.forEach(button => {
         button.addEventListener('click', (event) => {
