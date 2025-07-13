@@ -16,7 +16,7 @@
  * Dependencies: ui.js (for feedback), Web Audio API, browser microphone access
  */
 
-// js/autoBpm.js
+// js/autoBPM.js
 // Handles automatic BPM detection using Web Audio API AnalyserNode.
 
 import * as ui from './ui.js'; // For feedback messages

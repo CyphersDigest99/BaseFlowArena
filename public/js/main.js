@@ -32,7 +32,7 @@ import * as speech from './speech.js';
 import * as bpm from './bpm.js';
 import * as rng from './rng.js';
 import * as modal from './modal.js';
-import * as autoBpm from './autoBpm.js'; // Import the Web Audio API version
+import * as autoBPM from './autoBPM.js'; // Import the Web Audio API version
 import * as datamuse from './datamuse.js'; // Import the Datamuse API module
 import * as wordApi from './wordApi.js'; // Import the new word API module
 import * as beatManager from './beatManager.js'; // Import the beat player module
@@ -175,7 +175,7 @@ async function handleDetectBpmClick() {
         console.log("Stopping BPM detection...");
         state.isDetectingBpm = false;
         ui.updateDetectBpmButtonState(false);
-        await autoBpm.stopDetection();
+        await autoBPM.stopDetection();
         ui.showFeedback("BPM detection stopped", false, 2000);
         return;
     }
@@ -184,7 +184,7 @@ async function handleDetectBpmClick() {
     ui.updateDetectBpmButtonState(true);
 
     try {
-        const result = await autoBpm.startDetection(8);
+        const result = await autoBPM.startDetection(8);
         console.log("BPM Detection completed:", result);
 
         if (result && result.bpm > 0) {
@@ -202,7 +202,7 @@ async function handleDetectBpmClick() {
         }
     } catch (error) {
         console.error("BPM Detection failed:", error);
-        // Error messages are already shown by autoBpm module
+        // Error messages are already shown by autoBPM module
     } finally {
         state.isDetectingBpm = false;
         ui.updateDetectBpmButtonState(false);

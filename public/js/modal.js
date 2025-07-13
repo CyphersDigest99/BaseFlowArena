@@ -46,6 +46,7 @@ export function closeModal(modalElement) {
         if (modalElement === ui.elements.rhymeFinderModal) {
             persistTempRejections();
             clearRhymeModal();
+            removeAllMatchTooltips(); // Remove any lingering tooltips
         }
         if (modalElement === ui.elements.favoritesModal) {
             clearFavoritesListDisplay(); // Avoid showing old list briefly
@@ -55,6 +56,10 @@ export function closeModal(modalElement) {
         }
         // No specific cleanup needed for word list editor on close
     }
+}
+
+function removeAllMatchTooltips() {
+    document.querySelectorAll('.match-tooltip').forEach(el => el.remove());
 }
 
 // --- Favorites Modal ---
