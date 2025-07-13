@@ -276,33 +276,72 @@ export function resyncAnimation() {
     // Stop the current animation immediately
     stopBeatAnimation();
     
-    // Reset the current beat to -1 so the next interval will start at box 0
-    state.currentBeat = -1;
+    // Clear all boxes first
+    if (ui.elements.fourCountContainer) {
+        const boxes = ui.elements.fourCountContainer.querySelectorAll('.beat-box');
+        boxes.forEach(box => {
+            box.classList.remove('active', 'flashing-border');
+            box.style.animationDuration = '';
+        });
+    }
+    
+    // Calculate timing based on current BPM
+    const totalBoxes = state.beatGridRows * state.beatGridCols;
+    const baseIntervalMs = (60 / state.bpm) * 1000;
+    
+    if (totalBoxes <= 0 || !isFinite(baseIntervalMs) || baseIntervalMs <= 0) return;
     
     // Immediately light up the first box for instant feedback
     if (ui.elements.fourCountContainer) {
         const boxes = ui.elements.fourCountContainer.querySelectorAll('.beat-box');
         if (boxes.length > 0) {
-            // Clear all boxes first
-            boxes.forEach(box => {
-                box.classList.remove('active', 'flashing-border');
-                box.style.animationDuration = '';
-            });
             // Immediately activate the first box
             boxes[0].classList.add('active', 'flashing-border');
-            const baseIntervalMs = (60 / state.bpm) * 1000;
             const baseIntervalSeconds = baseIntervalMs / 1000;
             const flashDurationSeconds = baseIntervalSeconds / state.bpmMultiplier;
             boxes[0].style.animationDuration = `${flashDurationSeconds}s`;
         }
     }
     
-    // Start the new animation after a brief delay to ensure the immediate feedback is visible
-    setTimeout(() => {
-        startBeatAnimation();
-    }, 50);
+    // Set current beat to 0 (first box) since we just activated it
+    state.currentBeat = 0;
     
-    console.log('Beat grid resynced to current moment');
+    // Start the interval immediately, but schedule the next beat based on the BPM interval
+    // This ensures the rhythm starts from the click moment
+    state.beatIntervalId = setInterval(() => {
+        if (state.bpm <= 0) { stopBeatAnimation(); return; }
+        state.currentBeat = (state.currentBeat + 1) % totalBoxes;
+        
+        // Update visuals for the new beat
+        if (ui.elements.fourCountContainer) {
+            const boxes = ui.elements.fourCountContainer.querySelectorAll('.beat-box');
+            if (boxes.length === totalBoxes) {
+                const baseIntervalSeconds = baseIntervalMs / 1000;
+                const flashDurationSeconds = baseIntervalSeconds / state.bpmMultiplier;
+                
+                boxes.forEach((box, index) => {
+                    const shouldBeActive = (index === state.currentBeat);
+                    if (shouldBeActive) {
+                        if (!box.classList.contains('active')) {
+                            box.classList.add('active');
+                            box.classList.add('flashing-border');
+                            box.style.animationDuration = `${flashDurationSeconds}s`;
+                        } else if (box.classList.contains('flashing-border') && box.style.animationDuration !== `${flashDurationSeconds}s`) {
+                            box.style.animationDuration = `${flashDurationSeconds}s`;
+                        }
+                    } else {
+                        if (box.classList.contains('active')) {
+                            box.classList.remove('active');
+                            box.classList.remove('flashing-border');
+                            box.style.animationDuration = '';
+                        }
+                    }
+                });
+            }
+        }
+    }, baseIntervalMs);
+    
+    console.log('Beat grid resynced to current moment - rhythm starts now');
 }
 
 // --- Word Display Buzz Effect ---
