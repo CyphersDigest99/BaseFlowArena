@@ -204,10 +204,22 @@ function startBeatAnimation() {
                 if (!box.classList.contains('active')) {
                     box.classList.add('active');
                 }
+                // Triplet flash effect
+                if (state.bpmMultiplier === 'triplet') {
+                    box.classList.add('triplet-flash');
+                    // Restart animation by reflow
+                    void box.offsetWidth;
+                    box.classList.remove('triplet-flash');
+                    void box.offsetWidth;
+                    box.classList.add('triplet-flash');
+                } else {
+                    box.classList.remove('triplet-flash');
+                }
             } else {
                 if (box.classList.contains('active')) {
                     box.classList.remove('active');
                 }
+                box.classList.remove('triplet-flash');
             }
         });
     };
