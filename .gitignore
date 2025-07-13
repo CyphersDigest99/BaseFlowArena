@@ -1,1 +1,3 @@
 google-credentials.json
+# Ignore backup directories
+BaseFlowArena-1/

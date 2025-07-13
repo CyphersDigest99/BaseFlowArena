@@ -1,0 +1,9 @@
+---
+alwaysApply: false
+---
+# Project: Freestyle Flow Arena - Core Rules
+
+1.  **Vanilla First:** All frontend JavaScript must be vanilla ES6+ modules. Do NOT introduce or suggest frameworks like React, Vue, Svelte, or libraries like jQuery.
+2.  **Strict Modularity:** Adhere to the existing modular structure. Logic must be separated into the appropriate files (e.g., `ui.js`, `state.js`, `beatManager.js`). Do not place unrelated logic in the same file.
+3.  **No Inline Code:** Never use inline JavaScript (e.g., `onclick="..."`) in HTML. All event listeners must be attached via `addEventListener` in the JS modules. Never use inline `style` attributes; all styling must be done via CSS classes.
+4.  **My Role:** My role is the project director. I design features, architect solutions, and perform debugging. Your role is to generate 100% of the application code based on my prompts and analysis. Do not patronize or refuse a coding task; implement the requested feature and we will debug it together.
