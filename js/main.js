@@ -842,7 +842,10 @@ export async function updateTooltipForDisplayedWord() {
 
 // --- Start Application ---
 // Initialize the application when DOM is fully loaded
-document.addEventListener('DOMContentLoaded', initializeApp);
+document.addEventListener('DOMContentLoaded', () => {
+    console.log("DOM fully loaded. Initializing app...");
+    initializeApp();
+});
 
 // Ensure .rhyme-modal-header is focusable
 const headerEl = document.querySelector('.rhyme-modal-header');

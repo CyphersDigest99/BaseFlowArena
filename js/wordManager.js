@@ -422,8 +422,8 @@ export function selectRhyme(direction) {
 
     console.log(`Rhyme navigated (${direction}): "${selectedRhymeWord}" (Rhyme Index ${state.currentRhymeIndex})`);
 
-    // Trigger vertical swipe animation for rhyme navigation
-    utils.triggerVerticalSwipe(direction);
+    // Trigger vertical swipe animation for rhyme navigation with the new word
+    utils.triggerVerticalSwipe(direction, selectedRhymeWord);
     
     // Delay the UI update to allow animation to complete
     setTimeout(() => {
@@ -471,16 +471,37 @@ export function navigateNextRhymeForVoice() {
 
 // Helper function export for listeners - Navigation with animations
 export function nextWord() { 
+    // Get the next word before animation
+    const nextIndex = getNextIndex('next');
+    const newWord = nextIndex >= 0 ? state.filteredWordList[nextIndex] : null;
+    
     // Trigger horizontal swipe animation for right navigation
-    utils.triggerHorizontalSwipe('right');
+    utils.triggerHorizontalSwipe('right', newWord);
     // Delay the actual word change to allow animation to complete
     setTimeout(() => changeWord('next', false, false), 200);
 }
 export function previousWord() { 
+    // Get the previous word before animation
+    const prevIndex = getNextIndex('previous');
+    const newWord = prevIndex >= 0 ? state.filteredWordList[prevIndex] : null;
+    
     // Trigger horizontal swipe animation for left navigation
-    utils.triggerHorizontalSwipe('left');
+    utils.triggerHorizontalSwipe('left', newWord);
     // Delay the actual word change to allow animation to complete
     setTimeout(() => changeWord('previous', false, false), 200);
+}
+
+// Helper function to get the next/previous index
+function getNextIndex(direction) {
+    if (state.filteredWordList.length === 0) return -1;
+    
+    let nextIndex = state.currentWordIndex;
+    if (direction === 'next') {
+        nextIndex = (nextIndex + 1) % state.filteredWordList.length;
+    } else if (direction === 'previous') {
+        nextIndex = nextIndex <= 0 ? state.filteredWordList.length - 1 : nextIndex - 1;
+    }
+    return nextIndex;
 }
 export function stayWord() { changeWord('stay', false, false); }
 

@@ -103,163 +103,83 @@ export function triggerParticleBurst(streak = 0) {
     }
 }
 
-// --- Directional Swipe Animations for Manual Navigation ---
+// --- Two-Slot Animation System ---
 /**
  * Triggers a horizontal swipe animation for word navigation.
  * @param {string} direction - 'right' or 'left'
+ * @param {string} newWord - The new word to display
  */
-export function triggerHorizontalSwipe(direction = 'right') {
-    const wordDisplay = document.getElementById('word-display');
-    if (!wordDisplay) return;
+export function triggerHorizontalSwipe(direction = 'right', newWord = null) {
+    const currentSlot = document.getElementById('word-slot-current');
+    const nextSlot = document.getElementById('word-slot-next');
+    const animationStage = document.getElementById('animation-stage');
+    
+    if (!currentSlot || !nextSlot || !animationStage) return;
 
-    const currentWord = wordDisplay.textContent;
+    const currentWord = currentSlot.textContent;
     if (!currentWord || currentWord === "NO WORDS!" || currentWord === "LOADING..." || currentWord === "ERROR") {
         return;
     }
 
-    // --- PARENT/CHILD/SIBLING RELATIONSHIP ---
-    // The overlay is a child of the word display's parent container
-    // The parent container is set to position: relative and overflow: hidden
-    // This ensures the overlay is always clipped to the word display area and appears behind all UI controls
-    // The overlay uses position: absolute and z-index: 1 so it is always behind siblings (buttons, icons, etc.)
-    const computedStyle = window.getComputedStyle(wordDisplay);
-    const parent = wordDisplay.parentElement;
-    if (!parent) return;
-    parent.style.position = 'relative'; // Ensure parent is positioned
-    parent.style.overflow = 'hidden'; // Clip overlay to word display area
-    const rect = wordDisplay.getBoundingClientRect();
-    const parentRect = parent.getBoundingClientRect();
-    const offsetLeft = rect.left - parentRect.left;
-    const offsetTop = rect.top - parentRect.top;
-
-    // Create overlay for swipe animation as a child of the word display's parent
-    const overlay = document.createElement('div');
-    overlay.style.cssText = `
-        position: absolute;
-        left: ${offsetLeft - 15}px;
-        top: ${offsetTop - 15}px;
-        width: ${rect.width + 30}px;
-        height: ${rect.height + 30}px;
-        font-family: ${computedStyle.fontFamily};
-        font-size: ${computedStyle.fontSize};
-        font-weight: ${computedStyle.fontWeight};
-        color: ${computedStyle.color};
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: transparent;
-        pointer-events: none;
-        z-index: 1;
-        text-align: center;
-        border-radius: 8px;
-        opacity: 1;
-        transform: translateX(${direction === 'right' ? '0%' : '0%'});
-        transition: transform 0.4s ease-out;
-        overflow: hidden;
-    `;
-    parent.appendChild(overlay);
-
-    // Hide original word display during animation
-    const originalDisplay = wordDisplay.style.display;
-    wordDisplay.style.display = 'none';
-
-    // Set initial content
-    overlay.textContent = currentWord;
-
-    // Add glow effect
-    overlay.style.textShadow = '0 0 15px #00ffff, 0 0 30px #ff00ff';
-
-    // Trigger swipe animation - REVERSED: right arrow makes word move left, left arrow makes word move right
-    setTimeout(() => {
-        overlay.style.transform = `translateX(${direction === 'right' ? '-100%' : '100%'})`;
-    }, 50);
-
-    // Cleanup after animation
-    setTimeout(() => {
-        if (overlay.parentNode) {
-            overlay.parentNode.removeChild(overlay);
-        }
-        wordDisplay.style.display = originalDisplay;
-    }, 450);
+    // Set the new word in the next slot
+    nextSlot.textContent = newWord || currentWord;
+    
+    // Apply the appropriate animation class
+    const animationClass = direction === 'right' ? 'is-sliding-left' : 'is-sliding-right';
+    animationStage.classList.add(animationClass);
+    
+    // Listen for the transition to complete
+    const onTransitionEnd = () => {
+        // Copy text from next slot to current slot
+        currentSlot.textContent = nextSlot.textContent;
+        
+        // Remove the animation class to reset positions
+        animationStage.classList.remove(animationClass);
+        
+        // Clean up the event listener
+        nextSlot.removeEventListener('transitionend', onTransitionEnd);
+    };
+    
+    nextSlot.addEventListener('transitionend', onTransitionEnd);
 }
 
 /**
  * Triggers a vertical swipe animation for word navigation.
  * @param {string} direction - 'down' or 'up'
+ * @param {string} newWord - The new word to display
  */
-export function triggerVerticalSwipe(direction = 'down') {
-    const wordDisplay = document.getElementById('word-display');
-    if (!wordDisplay) return;
+export function triggerVerticalSwipe(direction = 'down', newWord = null) {
+    const currentSlot = document.getElementById('word-slot-current');
+    const nextSlot = document.getElementById('word-slot-next');
+    const animationStage = document.getElementById('animation-stage');
+    
+    if (!currentSlot || !nextSlot || !animationStage) return;
 
-    const currentWord = wordDisplay.textContent;
+    const currentWord = currentSlot.textContent;
     if (!currentWord || currentWord === "NO WORDS!" || currentWord === "LOADING..." || currentWord === "ERROR") {
         return;
     }
 
-    // --- PARENT/CHILD/SIBLING RELATIONSHIP ---
-    // The overlay is a child of the word display's parent container
-    // The parent container is set to position: relative and overflow: hidden
-    // This ensures the overlay is always clipped to the word display area and appears behind all UI controls
-    // The overlay uses position: absolute and z-index: 1 so it is always behind siblings (buttons, icons, etc.)
-    const computedStyle = window.getComputedStyle(wordDisplay);
-    const parent = wordDisplay.parentElement;
-    if (!parent) return;
-    parent.style.position = 'relative'; // Ensure parent is positioned
-    parent.style.overflow = 'hidden'; // Clip overlay to word display area
-    const rect = wordDisplay.getBoundingClientRect();
-    const parentRect = parent.getBoundingClientRect();
-    const offsetLeft = rect.left - parentRect.left;
-    const offsetTop = rect.top - parentRect.top;
-
-    // Create overlay for swipe animation as a child of the word display's parent
-    const overlay = document.createElement('div');
-    overlay.style.cssText = `
-        position: absolute;
-        left: ${offsetLeft - 15}px;
-        top: ${offsetTop - 15}px;
-        width: ${rect.width + 30}px;
-        height: ${rect.height + 30}px;
-        font-family: ${computedStyle.fontFamily};
-        font-size: ${computedStyle.fontSize};
-        font-weight: ${computedStyle.fontWeight};
-        color: ${computedStyle.color};
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: transparent;
-        pointer-events: none;
-        z-index: 1;
-        text-align: center;
-        border-radius: 8px;
-        opacity: 1;
-        transform: translateY(${direction === 'down' ? '0%' : '0%'});
-        transition: transform 0.4s ease-out;
-        overflow: hidden;
-    `;
-    parent.appendChild(overlay);
-
-    // Hide original word display during animation
-    const originalDisplay = wordDisplay.style.display;
-    wordDisplay.style.display = 'none';
-
-    // Set initial content
-    overlay.textContent = currentWord;
-
-    // Add glow effect
-    overlay.style.textShadow = '0 0 15px #00ffff, 0 0 30px #ff00ff';
-
-    // Trigger swipe animation - REVERSED: down arrow makes word move up, up arrow makes word move down
-    setTimeout(() => {
-        overlay.style.transform = `translateY(${direction === 'down' ? '-100%' : '100%'})`;
-    }, 50);
-
-    // Cleanup after animation
-    setTimeout(() => {
-        if (overlay.parentNode) {
-            overlay.parentNode.removeChild(overlay);
-        }
-        wordDisplay.style.display = originalDisplay;
-    }, 450);
+    // Set the new word in the next slot
+    nextSlot.textContent = newWord || currentWord;
+    
+    // Apply the appropriate animation class
+    const animationClass = direction === 'down' ? 'is-sliding-up' : 'is-sliding-down';
+    animationStage.classList.add(animationClass);
+    
+    // Listen for the transition to complete
+    const onTransitionEnd = () => {
+        // Copy text from next slot to current slot
+        currentSlot.textContent = nextSlot.textContent;
+        
+        // Remove the animation class to reset positions
+        animationStage.classList.remove(animationClass);
+        
+        // Clean up the event listener
+        nextSlot.removeEventListener('transitionend', onTransitionEnd);
+    };
+    
+    nextSlot.addEventListener('transitionend', onTransitionEnd);
 }
 
 // --- Text Dissolve/Construct Effect ---
@@ -417,6 +337,30 @@ export function triggerPixelBlockEffect() {
             cleanup();
         }
     }, 5000); // 5 second safety timeout
+}
+
+// Function to cancel all animations (for mode switching)
+export function cancelAllAnimations() {
+    // Clear the animation queue
+    animationQueue = [];
+    isAnimating = false;
+    
+    // Remove any existing overlays from middle cells
+    const middleCells = document.querySelectorAll('.word-display-cell.middle-cell');
+    middleCells.forEach(cell => {
+        const overlays = cell.querySelectorAll('[style*="position: absolute"]');
+        overlays.forEach(overlay => {
+            if (overlay.parentNode) {
+                overlay.parentNode.removeChild(overlay);
+            }
+        });
+    });
+    
+    // Restore word display visibility
+    const wordDisplay = document.getElementById('word-display');
+    if (wordDisplay) {
+        wordDisplay.style.display = 'flex';
+    }
 }
 
 // Legacy confetti function (kept for compatibility)

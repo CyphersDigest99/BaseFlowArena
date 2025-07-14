@@ -660,7 +660,6 @@ input[type="range"] {
     justify-content: center;
 }
 .word-display-cell.middle-cell {
-    position: relative;
     grid-area: word;
     min-height: 100px;
     display: flex;
@@ -682,10 +681,69 @@ input[type="range"] {
     justify-content: center;
 }
 
+/* Animation stage for clean room animation context */
+#animation-stage {
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Two-slot animation system */
+.word-slot {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.4s ease-in-out;
+    font-family: var(--font-display);
+    font-weight: bold;
+    color: var(--text-bright);
+    text-shadow: 0 0 10px #fff, 0 0 15px var(--primary-accent);
+}
+
+/* Initial state for the 'next' slot, ready to slide in from the right */
+#word-slot-next {
+    transform: translateX(100%);
+}
+
+/* Animation trigger classes */
+#animation-stage.is-sliding-left #word-slot-current {
+    transform: translateX(-100%);
+}
+#animation-stage.is-sliding-left #word-slot-next {
+    transform: translateX(0);
+}
+
+#animation-stage.is-sliding-right #word-slot-current {
+    transform: translateX(100%);
+}
+#animation-stage.is-sliding-right #word-slot-next {
+    transform: translateX(0);
+}
+
+#animation-stage.is-sliding-up #word-slot-current {
+    transform: translateY(-100%);
+}
+#animation-stage.is-sliding-up #word-slot-next {
+    transform: translateY(0);
+}
+
+#animation-stage.is-sliding-down #word-slot-current {
+    transform: translateY(100%);
+}
+#animation-stage.is-sliding-down #word-slot-next {
+    transform: translateY(0);
+}
+
 /* Remove obsolete 3D, absolute, and z-index styles from arrows/content */
 .word-content-container,
 #word-display-unit {
-    transform: none !important;
     perspective: none !important;
     transform-style: flat !important;
     z-index: auto !important;
@@ -2660,6 +2718,75 @@ body.screen-shaking {
         0 2px 4px rgba(0,0,0,0.3),
         inset 0 1px 0 rgba(255,255,255,0.1);
     }
+}
+
+/* Word slide animations for synchronized slide-in/slide-out */
+.word-slide-out-left {
+    animation: slideOutLeft 0.4s ease-out forwards;
+}
+
+.word-slide-out-right {
+    animation: slideOutRight 0.4s ease-out forwards;
+}
+
+.word-slide-out-up {
+    animation: slideOutUp 0.4s ease-out forwards;
+}
+
+.word-slide-out-down {
+    animation: slideOutDown 0.4s ease-out forwards;
+}
+
+.word-slide-in-left {
+    animation: slideInLeft 0.4s ease-out forwards;
+}
+
+.word-slide-in-right {
+    animation: slideInRight 0.4s ease-out forwards;
+}
+
+.word-slide-in-up {
+    animation: slideInUp 0.4s ease-out forwards;
+}
+
+.word-slide-in-down {
+    animation: slideInDown 0.4s ease-out forwards;
+}
+
+@keyframes slideOutLeft {
+    to { transform: translateX(-120%); }
+}
+
+@keyframes slideOutRight {
+    to { transform: translateX(120%); }
+}
+
+@keyframes slideOutUp {
+    to { transform: translateY(-110%); }
+}
+
+@keyframes slideOutDown {
+    to { transform: translateY(110%); }
+}
+
+@keyframes slideInLeft {
+    from { transform: translateX(-120%); }
+    to { transform: translateX(0%); }
+}
+
+@keyframes slideInRight {
+    from { transform: translateX(120%); }
+    to { transform: translateX(0%); }
+}
+
+@keyframes slideInUp {
+    from { transform: translateY(-110%); }
+    to { transform: translateY(0%); }
+}
+
+@keyframes slideInDown {
+    from { transform: translateY(110%); }
+    to { transform: translateY(0%); }
 }
 
 /* Remove old triplet-pulse animation and container styles */

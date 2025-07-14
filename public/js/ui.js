@@ -52,7 +52,7 @@ export const elements = {
     copyCssButton: document.getElementById('copy-css'),
 
     // Word Display Area - Main word display and associated controls
-    wordDisplay: document.getElementById('word-display'),
+    wordDisplay: document.getElementById('word-slot-current'), // Updated to use new slot
     wordDisplayUnit: document.getElementById('word-display-unit'),
     wordCell: document.getElementById('word-cell'),
     blacklistButton: document.getElementById('blacklist-word'),
