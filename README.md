@@ -13,6 +13,7 @@ Transform your freestyle rap practice with intelligent word prompts, real-time B
 - **Voice-Activated Word Matching**: Automatically advance when you speak the displayed word
 - **Voice Commands**: "Next word", "Show rhymes", "Show definition" - all hands-free
 - **Real-time Transcript**: See your spoken words as you freestyle
+- **Microphone Visualizer**: Real-time audio input visualization with animated volume bar
 
 ### 🎵 **Rhythm Engine & BPM Detection**
 - **Automatic BPM Detection**: Tap or speak to detect tempo from 60-200 BPM
@@ -100,6 +101,7 @@ BaseFlowArena/
 │   ├── wordApi.js         # Dictionary API integration
 │   ├── datamuse.js        # Word suggestions & synonyms
 │   ├── rng.js             # Random number generator
+│   ├── audioVisualizer.js # Real-time microphone input visualization
 │   └── dictionary.js      # Local dictionary data
 └── docs/                  # Documentation and examples
 ```

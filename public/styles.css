@@ -1595,6 +1595,65 @@ input[type="range"] {
     box-sizing: border-box;
 }
 
+/* Microphone Visualizer Styling */
+.mic-visualizer {
+    width: 100%;
+    max-width: 900px;
+    min-height: 80px;
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    padding: 15px; /* Match .panel padding */
+    box-sizing: border-box;
+}
+
+.mic-visualizer h2 {
+    font-family: var(--font-display);
+    color: var(--primary-accent);
+    margin-bottom: 10px; /* Match .panel h2 */
+    margin-top: 0;
+    text-shadow: 0 0 5px var(--primary-accent);
+    font-size: 1.3em;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 5px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+#mic-visualizer-canvas {
+    width: 100%;
+    height: 40px;
+    background-color: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    display: block;
+    margin: 0 auto;
+    box-sizing: border-box;
+}
+
+/* Responsive adjustments for microphone visualizer */
+@media (max-width: 900px) {
+    .mic-visualizer {
+        min-height: 70px;
+    }
+    
+    #mic-visualizer-canvas {
+        height: 35px;
+    }
+}
+
+@media (max-width: 900px) {
+    .mic-visualizer {
+        min-height: 60px;
+    }
+    
+    #mic-visualizer-canvas {
+        height: 30px;
+    }
+}
+
 .flow-meter h2 {
     font-family: var(--font-display);
     color: var(--primary-accent);

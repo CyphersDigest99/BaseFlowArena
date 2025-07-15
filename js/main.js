@@ -37,6 +37,7 @@ import * as datamuse from './datamuse.js'; // Import the Datamuse API module
 import * as wordApi from './wordApi.js'; // Import the new word API module
 import * as beatManager from './beatManagerEnhanced.js'; // Import the enhanced beat player module
 import { openRhymeFinderModalWithSort } from './rhyme.js';
+import * as audioVisualizer from './audioVisualizer.js'; // Import the audio visualizer module
 
 // Cached word data for tooltip display and performance optimization
 let lastWordData = { synonyms: '', definition: '', word: '' };
@@ -148,9 +149,13 @@ function setActivationMode(newMode) {
         speech.stopRecognition(true);
         console.log('Flow Meter Debug: Resetting Flow Meter due to voice mode deactivation');
         ui.resetFlowMeter(); // Reset Flow Meter when voice mode is deactivated
+        stopAudioVisualizer(); // Stop audio visualizer when voice mode is deactivated
     }
     if (state.activationMode === 'timed') startTimedCycleInternal();
-    else if (state.activationMode === 'voice') speech.startRecognition();
+    else if (state.activationMode === 'voice') {
+        speech.startRecognition();
+        startAudioVisualizer(); // Start audio visualizer when voice mode is activated
+    }
     ui.updateActivationUI();
 }
 
@@ -168,6 +173,71 @@ function startTimedCycleInternal() {
         else { clearInterval(state.timedInterval); state.timedInterval = null; ui.updateWordDisplayAnimation(); }
     }, state.cycleSpeed * 1000);
     ui.showFeedback("Timed Cycle Activated", false, 1500);
+}
+
+// --- Microphone Stream Management ---
+let microphoneStream = null;
+
+// Get or create microphone stream for visualizer
+async function getMicrophoneStream() {
+    if (microphoneStream) {
+        return microphoneStream;
+    }
+    
+    try {
+        microphoneStream = await navigator.mediaDevices.getUserMedia({ 
+            audio: {
+                echoCancellation: false,
+                noiseSuppression: false,
+                autoGainControl: false,
+                sampleRate: 44100
+            } 
+        });
+        console.log('Microphone stream obtained for visualizer');
+        return microphoneStream;
+    } catch (error) {
+        console.error('Error getting microphone stream for visualizer:', error);
+        
+        let errorMessage = 'Could not access microphone for visualizer';
+        if (error.name === 'NotAllowedError') {
+            errorMessage = 'Microphone access denied. Please allow microphone access for the visualizer.';
+        } else if (error.name === 'NotFoundError') {
+            errorMessage = 'No microphone found. Please connect a microphone for the visualizer.';
+        } else if (error.name === 'NotSupportedError') {
+            errorMessage = 'Audio visualizer not supported in this browser.';
+        }
+        
+        ui.showFeedback(errorMessage, true, 4000);
+        return null;
+    }
+}
+
+// Start audio visualizer when voice mode is activated
+async function startAudioVisualizer() {
+    if (state.activationMode === 'voice' && !audioVisualizer.isVisualizerActive()) {
+        const stream = await getMicrophoneStream();
+        if (stream) {
+            // Set higher sensitivity for better responsiveness
+            audioVisualizer.updateConfig({
+                baseSensitivity: 3.2,  // Increased from 3.0
+                powerCurve: 0.7,       // More sensitive to lower volumes
+                adaptiveSensitivity: true
+            });
+            
+            const success = await audioVisualizer.initAudioVisualizer(stream);
+            if (success) {
+                console.log('Audio visualizer started with enhanced sensitivity');
+            }
+        }
+    }
+}
+
+// Stop audio visualizer when voice mode is deactivated
+function stopAudioVisualizer() {
+    if (audioVisualizer.isVisualizerActive()) {
+        audioVisualizer.stopAudioVisualizer();
+        console.log('Audio visualizer stopped');
+    }
 }
 
 // --- Handle Detect BPM Click ---
@@ -542,7 +612,10 @@ function attachEventListeners() {
        if (event.target === ui.elements.rhymeFinderModal) modal.closeModal(ui.elements.rhymeFinderModal);
        if (event.target === ui.elements.settingsModal) modal.closeModal(ui.elements.settingsModal);
     });
-    window.addEventListener('beforeunload', storage.saveSettings);
+    window.addEventListener('beforeunload', () => {
+        storage.saveSettings();
+        stopAudioVisualizer(); // Clean up audio visualizer on page unload
+    });
 
     // Settings Modal
     ui.elements.settingsButton?.addEventListener('click', modal.showSettingsModal);
