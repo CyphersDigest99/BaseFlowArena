@@ -5,3 +5,21 @@
 - Flesh out word menu details (e.g., additional options, styling).
 - Add removal functionality for favorited and common words.
 - Add validation for word list edits (e.g., prevent empty words).
+
+## NEW FEATURES TO IMPLEMENT
+
+### Personal Rhyme Notebook Modal
+- Create editable notepad modal for saving best bars/rhymes
+- Page flip animation instead of scrolling (like a real notebook)
+- Separate storage from live transcript and word lists
+- Street/urban notepad aesthetic with themed styling
+- Save/load functionality with local storage
+- Quick access button in the interface
+- Export/import notebook functionality
+
+### Urban Street Corner Theme Enhancement
+- Change header font to graffiti-style, centered, urban/street feeling
+- Add static or animated background graphics suggesting street corner cipher session
+- Urban street culture aesthetic while maintaining app functionality
+- Consider adding subtle street corner elements (graffiti, street signs, etc.)
+- Maintain readability and usability while enhancing atmosphere

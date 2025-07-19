@@ -38,6 +38,7 @@ import * as wordApi from './wordApi.js'; // Import the new word API module
 import * as beatManager from './beatManagerEnhanced.js'; // Import the enhanced beat player module
 import { openRhymeFinderModalWithSort } from './rhyme.js';
 import * as audioVisualizer from './audioVisualizer.js'; // Import the audio visualizer module
+import * as wordSearch from './wordSearch.js'; // Import the word search module
 
 // Cached word data for tooltip display and performance optimization
 let lastWordData = { synonyms: '', definition: '', word: '' };
@@ -118,6 +119,9 @@ async function initializeApp() {
 
     // 7. Set up keyboard control system
     setupModalObserver();
+
+    // 8. Initialize word search functionality
+    wordSearch.initSearch();
 
     // Debug Flow Meter initialization
     console.log('Flow Meter Debug: Checking element after initialization');
@@ -679,6 +683,11 @@ function handleGlobalKeydown(event) {
     try {
         const target = event.target;
         const isInputField = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA';
+        
+        // Check if search mode is active - if so, let the search module handle everything
+        if (wordSearch.isSearchActive()) {
+            return; // Let search module handle all keyboard events
+        }
         
         // Allow browser shortcuts to work normally (Ctrl, Alt, Meta combinations)
         if (event.ctrlKey || event.altKey || event.metaKey) {

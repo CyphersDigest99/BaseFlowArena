@@ -2660,3 +2660,129 @@ body.screen-shaking {
     background: var(--primary-accent);
     color: #fff;
 }
+
+/* Search icon - lower-left corner of middle cell */
+.word-action-icon.search-icon { 
+    bottom: 8px;
+    left: 8px;
+    transform: none;
+    color: var(--secondary-accent);
+    opacity: 0.7;
+}
+
+.word-action-icon.search-icon:hover {
+    transform: scale(1.1);
+    color: var(--primary-accent);
+    opacity: 1;
+}
+
+/* Search mode styles */
+.word-display-cell.middle-cell.search-mode {
+    position: relative;
+}
+
+.word-display-cell.middle-cell.search-mode #word-display {
+    opacity: 0;
+    transform: scale(0.8);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.search-input-container {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+.search-input-container.active {
+    pointer-events: auto;
+}
+
+.search-input {
+    background: transparent;
+    border: none;
+    outline: none;
+    font-family: var(--font-display);
+    font-size: 3.2em !important; /* Halfway between large and small, favoring smaller */
+    font-weight: bold;
+    color: var(--text-bright);
+    text-shadow: 0 0 10px #fff, 0 0 15px var(--primary-accent);
+    transition: color 0.4s ease-out, opacity 0.4s ease-out, transform 0.4s ease-out, font-size 0.2s ease-out;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 150px;
+    line-height: 1;
+    margin: 0;
+    padding: 0;
+    text-align: center;
+    /* Prevent text wrapping - force single line */
+    white-space: nowrap;
+    word-break: keep-all;
+    overflow-wrap: normal;
+    /* Ensure text fits within cell bounds */
+    max-width: 100%;
+    max-height: 100%;
+    /* Ensure proper positioning relative to action buttons */
+    position: relative;
+    z-index: 6;
+    caret-color: var(--primary-accent);
+    width: 100%;
+}
+
+.search-input::placeholder {
+    color: rgba(255, 255, 255, 0.2);
+    font-size: 0.8em;
+    font-style: italic;
+    text-shadow: none;
+}
+
+.search-autocomplete {
+    position: absolute;
+    top: 0;
+    left: 0;
+    font-family: var(--font-display);
+    font-size: 3.2em !important; /* Halfway between large and small, favoring smaller */
+    font-weight: bold;
+    color: rgba(255, 255, 255, 0.4);
+    text-align: left;
+    pointer-events: none;
+    transition: font-size 0.2s ease-out;
+    z-index: 5;
+    width: auto;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.2), 0 0 15px rgba(0, 255, 255, 0.2);
+    /* Prevent text wrapping - force single line */
+    white-space: nowrap;
+    word-break: keep-all;
+    overflow-wrap: normal;
+    /* Ensure text fits within cell bounds */
+    max-width: 100%;
+    max-height: 100%;
+    /* Position will be set by JavaScript */
+}
+
+/* Search mode responsive adjustments */
+@media (max-width: 768px) {
+    .search-input,
+    .search-autocomplete {
+        font-size: 3em;
+    }
+}
+
+@media (max-width: 480px) {
+    .search-input,
+    .search-autocomplete {
+        font-size: 2.5em;
+    }
+}

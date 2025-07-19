@@ -58,6 +58,7 @@ export const elements = {
     wordCell: document.getElementById('word-cell'),
     blacklistButton: document.getElementById('blacklist-word'),
     favoriteButton: document.getElementById('favorite-word'),
+    searchButton: document.getElementById('search-word'),
     meansLikeButton: document.getElementById('means-like-button'),
     wordSubtext: document.getElementById('word-subtext'),
     wordDefinitionTooltip: document.getElementById('word-definition-tooltip'),
