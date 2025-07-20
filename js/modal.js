@@ -563,7 +563,7 @@ export function showSettingsModal() {
 /**
  * Updates the data summary section in the settings modal.
  */
-function updateDataSummary() {
+export function updateDataSummary() {
     const summaryElement = document.getElementById('data-summary');
     if (!summaryElement) return;
     
@@ -572,6 +572,10 @@ function updateDataSummary() {
             <div class="summary-item">
                 <span class="summary-label">Words in List:</span>
                 <span class="summary-value">${state.wordList.length}</span>
+            </div>
+            <div class="summary-item">
+                <span class="summary-label">Manual Words Added:</span>
+                <span class="summary-value">${state.manualWordsAdded}</span>
             </div>
             <div class="summary-item">
                 <span class="summary-label">Favorites:</span>

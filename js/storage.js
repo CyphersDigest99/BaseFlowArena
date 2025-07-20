@@ -86,6 +86,7 @@ export function saveSettings() {
             manualRhymes: serializeNestedSets(state.manualRhymes),
             slantRhymes: serializeNestedSets(state.slantRhymes),
             wordList: state.wordList, // NEW: Save the word list
+            manualWordsAdded: state.manualWordsAdded, // NEW: Save manual words counter
         };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(settingsToSave));
         // console.log('Settings saved.');
@@ -127,6 +128,9 @@ export function loadSettings() {
                  state.wordList = parsedData.wordList;
                  console.log(`Loaded ${state.wordList.length} words from storage.`);
              }
+             
+             // NEW: Load manual words counter
+             state.manualWordsAdded = parsedData.manualWordsAdded ?? 0;
 
              console.log('Settings loaded successfully.');
              applyLoadedSettingsToUI();
@@ -185,6 +189,7 @@ export function resetToDefaults(saveAfterReset = true) {
     state.rejectedRhymes = {};
     state.manualRhymes = {};
     state.slantRhymes = {};
+    state.manualWordsAdded = 0; // Reset manual words counter
     // Note: Don't reset wordList here - let wordManager handle that
 
     applyLoadedSettingsToUI();

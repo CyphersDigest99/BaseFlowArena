@@ -37,6 +37,7 @@ export const state = {
     rhymeData: null, // Loaded rhyme dictionary data
     rejectedRhymes: {}, // { baseWord: Set('rejected1', 'rejected2'), ... }
     manualRhymes: {},   // { baseWord: Set('manual1', 'manual2'), ... }
+    manualWordsAdded: 0, // Counter for words manually added via search interface
 
     // Activation & Modes - Voice recognition and interaction modes
     activationMode: 'manual', // 'manual', 'voice', 'timed'

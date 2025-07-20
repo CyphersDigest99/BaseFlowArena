@@ -23,6 +23,7 @@ import { state } from './state.js';
 import * as ui from './ui.js';
 import * as modal from './modal.js';
 import * as storage from './storage.js'; // Need saveSettings
+import * as wordManager from './wordManager.js'; // Need applyFiltersAndSort
 
 // --- Load Rhyme Data ---
 // Loads rhyme data from JSON file and updates state
@@ -924,16 +925,61 @@ export function addManualRhyme() {
     const suggestedWord = ui.elements.manualRhymeInput.value.trim();
     const baseWord = state.currentWord;
     const baseWordLower = baseWord?.toLowerCase();
+    
     if (!suggestedWord || !baseWordLower || baseWord === "NO WORDS!") { return; }
     if (suggestedWord.toLowerCase() === baseWordLower) { return; }
+    
     console.log(`Manually adding rhyme: "${suggestedWord}" for base word "${baseWord}"`);
+    
+    // Check if word already exists in the main word list
+    const wordExists = state.wordList.includes(suggestedWord);
+    
+    // If word doesn't exist, add it to the main word list
+    if (!wordExists) {
+        // Validate word format
+        if (suggestedWord.length < 2) {
+            ui.showFeedback('Word must be at least 2 characters long', true, 2000);
+            return;
+        }
+        
+        // Add word to the word list
+        state.wordList.push(suggestedWord);
+        
+        // Sort the word list alphabetically to maintain order
+        state.wordList.sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+        
+        // Update the filtered word list
+        wordManager.applyFiltersAndSort();
+        
+        // Increment manual words counter
+        state.manualWordsAdded++;
+        
+        console.log(`New word added via rhyme modal: "${suggestedWord}". Total words: ${state.wordList.length}, Manual words: ${state.manualWordsAdded}`);
+    }
+    
+    // Add to manual rhymes (regardless of whether it was new or existing)
     if (!state.manualRhymes[baseWordLower]) state.manualRhymes[baseWordLower] = new Set();
     if (state.manualRhymes[baseWordLower].has(suggestedWord)) { return; }
     state.manualRhymes[baseWordLower].add(suggestedWord);
+    
+    // Save settings
     storage.saveSettings();
+    
+    // Update data summary if settings modal is open
+    if (typeof modal.updateDataSummary === 'function') {
+        modal.updateDataSummary();
+    }
+    
     // Refresh the displayed list
     displayRhymeList(baseWordLower); // Re-render list
-    ui.showFeedback(`"${suggestedWord}" added to manual rhymes for "${baseWord}".`);
+    
+    // Show appropriate feedback
+    if (wordExists) {
+        ui.showFeedback(`"${suggestedWord}" added to manual rhymes for "${baseWord}".`);
+    } else {
+        ui.showFeedback(`"${suggestedWord}" added to word list and manual rhymes for "${baseWord}".`);
+    }
+    
     ui.elements.manualRhymeInput.value = '';
 }
 

@@ -11,6 +11,8 @@ import { state } from './state.js';
 import * as ui from './ui.js';
 import * as wordManager from './wordManager.js';
 import * as rhyme from './rhyme.js';
+import * as storage from './storage.js';
+import * as modal from './modal.js';
 
 // Search state
 let searchState = {
@@ -18,7 +20,8 @@ let searchState = {
     currentQuery: '',
     suggestions: [],
     selectedIndex: -1,
-    originalWord: ''
+    originalWord: '',
+    canAddWord: false
 };
 
 // DOM elements
@@ -69,12 +72,14 @@ function startSearch() {
     searchState.currentQuery = '';
     searchState.suggestions = [];
     searchState.selectedIndex = -1;
+    searchState.canAddWord = false;
 
     // Update UI
     searchElements.wordCell.classList.add('search-mode');
     searchElements.searchContainer.classList.add('active');
     searchElements.searchInput.value = '';
     searchElements.searchAutocomplete.textContent = '';
+    clearSearchBorder();
     
     // Show subtle instructions
     searchElements.searchInput.placeholder = 'Type to search...';
@@ -104,6 +109,7 @@ function handleSearchInput(event) {
 
     if (query.length === 0) {
         searchElements.searchAutocomplete.textContent = '';
+        searchElements.searchAutocomplete.classList.remove('add-word-prompt');
         searchState.suggestions = [];
         searchState.selectedIndex = -1;
         return;
@@ -121,13 +127,35 @@ function handleSearchInput(event) {
         const firstSuggestion = suggestions[0];
         const remainingPart = firstSuggestion.substring(query.length);
         searchElements.searchAutocomplete.textContent = remainingPart;
+        searchElements.searchAutocomplete.classList.remove('add-word-prompt');
         searchState.selectedIndex = 0;
+        
+        // Check if the exact word exists in the list
+        const exactMatch = state.wordList.includes(query);
+        updateSearchBorder(exactMatch);
+        
+        // Position autocomplete at the cursor position
+        positionAutocomplete();
+    } else if (query.length > 0) {
+        // No suggestions found - show "Add Word" option
+        searchElements.searchAutocomplete.textContent = ' (Press Enter to add)';
+        searchElements.searchAutocomplete.classList.add('add-word-prompt');
+        searchState.selectedIndex = -1;
+        searchState.canAddWord = true;
+        
+        // Word not found - show red border
+        updateSearchBorder(false);
         
         // Position autocomplete at the cursor position
         positionAutocomplete();
     } else {
         searchElements.searchAutocomplete.textContent = '';
+        searchElements.searchAutocomplete.classList.remove('add-word-prompt');
         searchState.selectedIndex = -1;
+        searchState.canAddWord = false;
+        
+        // Clear border when no input
+        clearSearchBorder();
     }
 
     // Adjust font size for the input to match word display behavior
@@ -142,6 +170,11 @@ function positionAutocomplete() {
     const autocomplete = searchElements.searchAutocomplete;
     
     if (!input || !autocomplete) return;
+    
+    // If this is the "Press Enter to add" message, don't position it (CSS handles it)
+    if (autocomplete.classList.contains('add-word-prompt')) {
+        return;
+    }
     
     // Create a temporary span to measure the input text width
     const tempSpan = document.createElement('span');
@@ -171,6 +204,34 @@ function positionAutocomplete() {
         centerPosition: centerPosition,
         leftPosition: leftPosition
     });
+}
+
+/**
+ * Update the search border based on word existence
+ */
+function updateSearchBorder(wordExists) {
+    const container = searchElements.searchContainer;
+    if (!container) return;
+    
+    // Remove existing border classes
+    container.classList.remove('word-found', 'word-not-found');
+    
+    // Add appropriate border class
+    if (wordExists) {
+        container.classList.add('word-found');
+    } else {
+        container.classList.add('word-not-found');
+    }
+}
+
+/**
+ * Clear the search border
+ */
+function clearSearchBorder() {
+    const container = searchElements.searchContainer;
+    if (!container) return;
+    
+    container.classList.remove('word-found', 'word-not-found');
 }
 
 /**
@@ -247,6 +308,12 @@ function confirmSearch() {
         selectedWord = searchState.suggestions[searchState.selectedIndex];
     }
 
+    // Check if we should add a new word
+    if (searchState.canAddWord && !state.wordList.includes(selectedWord)) {
+        addNewWord(selectedWord);
+        return;
+    }
+
     // Validate the word exists in our word list
     if (!state.wordList.includes(selectedWord)) {
         ui.showFeedback(`"${selectedWord}" not found in word list!`, true, 2000);
@@ -289,6 +356,79 @@ function confirmSearch() {
 }
 
 /**
+ * Add a new word to the word list
+ */
+function addNewWord(word) {
+    // Validate word format
+    const trimmedWord = word.trim().toLowerCase();
+    if (!trimmedWord || trimmedWord.length < 2) {
+        ui.showFeedback('Word must be at least 2 characters long', true, 2000);
+        return;
+    }
+
+    // Check if word already exists (case insensitive)
+    if (state.wordList.some(existingWord => existingWord.toLowerCase() === trimmedWord)) {
+        ui.showFeedback(`"${word}" already exists in the word list`, true, 2000);
+        return;
+    }
+
+    // Add word to the word list
+    state.wordList.push(word);
+    
+    // Sort the word list alphabetically to maintain order
+    state.wordList.sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+    
+    // Update the filtered word list
+    wordManager.applyFiltersAndSort();
+    
+    // Save the updated word list to storage
+    storage.saveSettings();
+    
+    // Find the newly added word and set it as current
+    const wordIndex = state.wordList.indexOf(word);
+    if (wordIndex !== -1) {
+        // Update state
+        state.currentWord = word;
+        state.currentWordIndex = wordIndex;
+        
+        // Clear rhyme state since we're changing the base word
+        state.currentRhymeList = [];
+        state.currentRhymeIndex = -1;
+
+        // Exit search mode first to restore normal display
+        exitSearchMode();
+        
+        // Update display after search mode is exited
+        ui.displayWord(word);
+        
+        // Load rhymes for the new word
+        state.currentRhymeList = rhyme.getValidRhymesForWord(word);
+        state.currentRhymeIndex = -1;
+        
+        // Force refresh rhyme navigation buttons
+        ui.updateRhymeNavButtons();
+        
+        // Update tooltips if they're active
+        if (typeof updateTooltipForDisplayedWord === 'function') {
+            updateTooltipForDisplayedWord();
+        }
+
+        ui.showFeedback(`Added and selected: "${word}"`, false, 2000);
+        
+        // Increment manual words counter
+        state.manualWordsAdded++;
+        
+        // Update data summary if settings modal is open
+        modal.updateDataSummary();
+        
+        console.log(`New word added: "${word}". Total words: ${state.wordList.length}, Manual words: ${state.manualWordsAdded}`);
+    } else {
+        exitSearchMode();
+        ui.showFeedback(`Error adding word: "${word}"`, true, 2000);
+    }
+}
+
+/**
  * Cancel search and return to original state
  */
 function cancelSearch() {
@@ -326,6 +466,7 @@ function exitSearchMode() {
     searchState.suggestions = [];
     searchState.selectedIndex = -1;
     searchState.originalWord = '';
+    searchState.canAddWord = false;
 
     // Update UI
     searchElements.wordCell.classList.remove('search-mode');
@@ -333,6 +474,8 @@ function exitSearchMode() {
     searchElements.searchInput.value = '';
     searchElements.searchInput.placeholder = ''; // Clear placeholder
     searchElements.searchAutocomplete.textContent = '';
+    searchElements.searchAutocomplete.classList.remove('add-word-prompt');
+    clearSearchBorder();
     searchElements.searchInput.blur();
 
     console.log('Search mode deactivated');
