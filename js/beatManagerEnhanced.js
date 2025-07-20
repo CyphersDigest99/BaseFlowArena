@@ -159,7 +159,8 @@ function updateMetadataDisplay() {
     const bpmDiv = document.getElementById('beat-bpm');
     if (bpmDiv && beat.bpm) {
         bpmDiv.textContent = `BPM: ${beat.bpm}`;
-        if (bpm && typeof bpm.setBpm === 'function') {
+        // Only set BPM if music is actually playing
+        if (bpm && typeof bpm.setBpm === 'function' && isPlaying) {
             bpm.setBpm(beat.bpm);
         }
     }
@@ -261,6 +262,10 @@ function loadCurrentBeat() {
         onend: () => {
             isPlaying = false;
             updatePlayPauseButton();
+            // Stop BPM when music ends naturally
+            if (bpm && typeof bpm.stopBpm === 'function') {
+                bpm.stopBpm();
+            }
         }
     });
 }
@@ -284,12 +289,21 @@ export function play() {
     }
     if (currentHowl && !isPlaying) {
         currentHowl.play();
+        // Set BPM when music starts playing
+        const beat = BEAT_PLAYLIST[currentBeatIndex];
+        if (beat && beat.bpm && bpm && typeof bpm.setBpm === 'function') {
+            bpm.setBpm(beat.bpm);
+        }
     }
 }
 
 export function pause() {
     if (currentHowl && isPlaying) {
         currentHowl.pause();
+        // Stop BPM when music is paused
+        if (bpm && typeof bpm.stopBpm === 'function') {
+            bpm.stopBpm();
+        }
     }
 }
 
@@ -298,6 +312,10 @@ export function stop() {
         currentHowl.stop();
         isPlaying = false;
         updatePlayPauseButton();
+        // Stop BPM when music is stopped
+        if (bpm && typeof bpm.stopBpm === 'function') {
+            bpm.stopBpm();
+        }
         ui.showFeedback('Beat stopped', false, 1000);
     }
 }

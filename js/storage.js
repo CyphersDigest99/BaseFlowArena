@@ -21,7 +21,7 @@
 import { state } from './state.js';
 import { updateBpmIndicator } from './ui-helpers.js';
 import * as ui from './ui.js';
-import { updateGrid } from './bpm.js'; // For updating grid visuals after load/reset
+import { updateGrid, stopBpm } from './bpm.js'; // For updating grid visuals and stopping BPM after load/reset
 
 const STORAGE_KEY = 'freestyleArenaSettings_v6'; // Increment version for word list persistence
 const BEAT_PLAYER_STORAGE_KEY = 'freestyleArenaBeatPlayerSettings_v1';
@@ -108,10 +108,11 @@ export function loadSettings() {
         if (savedSettings) {
              const parsedData = JSON.parse(savedSettings);
 
-             state.beatGridRows = parsedData.beatGridRows ?? 1;
-             state.beatGridCols = parsedData.beatGridCols ?? 4;
-             state.bpm = parsedData.bpm ?? 0;
-             state.bpmMultiplier = parsedData.bpmMultiplier ?? 1; // Default multiplier is 1x
+             // Reset BPM and grid settings on hard refresh (don't persist across sessions)
+             state.beatGridRows = 1;
+             state.beatGridCols = 4;
+             state.bpm = 0;
+             state.bpmMultiplier = 1; // Default multiplier is 1x
              state.wordOrderMode = parsedData.wordOrderMode || 'random';
              state.cycleSpeed = parsedData.cycleSpeed ?? 10;
              state.minSyllables = parsedData.minSyllables ?? 0;
@@ -157,6 +158,12 @@ function applyLoadedSettingsToUI() {
     ui.updateActivationUI();
     // Comment out updateBpmIndicator(state.bpm) in storage.js
     // updateBpmIndicator(state.bpm);
+    
+    // Stop any running BPM animations since we're resetting to 0
+    if (state.bpm === 0) {
+        stopBpm();
+    }
+    
     updateGrid(); // Rebuild beat grid (this is imported from bpm.js)
     ui.displayFrequencies(state.wordFrequencies);
 
