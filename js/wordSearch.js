@@ -63,7 +63,7 @@ export function initSearch() {
 /**
  * Start search mode
  */
-function startSearch() {
+export function startSearch() {
     if (searchState.isActive) return;
 
     // Store current word
@@ -116,9 +116,16 @@ function handleSearchInput(event) {
     }
 
     // Find matching words from the complete word list (ignores filters for search)
+    // Use the master wordList, not the filtered version, to get ALL possible words
     const suggestions = state.wordList.filter(word => 
         word.toLowerCase().startsWith(query)
-    ).slice(0, 10); // Limit to 10 suggestions for arrow navigation
+    ); // No limit - show all matching words for complete exploration
+    
+    // Debug logging to see what words are found
+    if (query === 'pi') {
+        console.log('PI words found:', suggestions.slice(0, 20)); // Show first 20 for debugging
+        console.log('Total PI words:', suggestions.length);
+    }
 
     searchState.suggestions = suggestions;
 
@@ -134,17 +141,29 @@ function handleSearchInput(event) {
         const exactMatch = state.wordList.includes(query);
         updateSearchBorder(exactMatch);
         
+        // If the typed word doesn't exist, show both options
+        if (!exactMatch) {
+            showDualSuggestion(query, firstSuggestion);
+        } else {
+            // Word exists, no need for suggestions
+            hideAllSuggestions();
+        }
+        
         // Position autocomplete at the cursor position
         positionAutocomplete();
     } else if (query.length > 0) {
-        // No suggestions found - show "Add Word" option
-        searchElements.searchAutocomplete.textContent = ' (Press Enter to add)';
-        searchElements.searchAutocomplete.classList.add('add-word-prompt');
+        // No suggestions found - clear autocomplete
+        searchElements.searchAutocomplete.textContent = '';
+        searchElements.searchAutocomplete.classList.remove('add-word-prompt');
         searchState.selectedIndex = -1;
         searchState.canAddWord = true;
         
         // Word not found - show red border
         updateSearchBorder(false);
+        
+        // Hide any existing dual suggestions and show single "Press Enter" dialog
+        hideAllSuggestions();
+        showEnterSuggestion(query);
         
         // Position autocomplete at the cursor position
         positionAutocomplete();
@@ -156,6 +175,9 @@ function handleSearchInput(event) {
         
         // Clear border when no input
         clearSearchBorder();
+        
+        // Hide all suggestions
+        hideAllSuggestions();
     }
 
     // Adjust font size for the input to match word display behavior
@@ -196,14 +218,6 @@ function positionAutocomplete() {
     
     autocomplete.style.left = leftPosition + 'px';
     autocomplete.style.transform = 'none';
-    
-    console.log('Positioning autocomplete:', {
-        inputText: input.value,
-        inputWidth: inputTextWidth,
-        containerWidth: containerWidth,
-        centerPosition: centerPosition,
-        leftPosition: leftPosition
-    });
 }
 
 /**
@@ -241,7 +255,13 @@ function handleSearchKeydown(event) {
     switch (event.key) {
         case 'Enter':
             event.preventDefault();
-            confirmSearch();
+            // If there's an autocomplete suggestion but user wants to submit what they typed
+            if (searchState.suggestions.length > 0 && searchState.currentQuery !== searchState.suggestions[0]) {
+                // Submit the typed word as a new word
+                addNewWord(searchState.currentQuery);
+            } else {
+                confirmSearch();
+            }
             break;
         case 'Escape':
             event.preventDefault();
@@ -255,13 +275,53 @@ function handleSearchKeydown(event) {
             event.preventDefault();
             navigateSuggestions(-1);
             break;
+        case 'ArrowLeft':
+            event.preventDefault();
+            navigateLetterBackward();
+            break;
+        case 'ArrowRight':
+            event.preventDefault();
+            navigateLetterForward();
+            break;
         case 'Tab':
             event.preventDefault();
             if (searchState.suggestions.length > 0) {
-                // Complete with first suggestion
-                searchElements.searchInput.value = searchState.suggestions[0];
-                searchState.currentQuery = searchState.suggestions[0];
-                searchElements.searchAutocomplete.textContent = '';
+                // Select the suggested word as the current word
+                const selectedSuggestion = searchState.suggestions[0];
+                
+                // Find the word in the word list and set it as current
+                const wordIndex = state.wordList.indexOf(selectedSuggestion);
+                if (wordIndex !== -1) {
+                    // Update state
+                    state.currentWord = selectedSuggestion;
+                    state.currentWordIndex = wordIndex;
+                    
+                    // Clear rhyme state since we're changing the base word
+                    state.currentRhymeList = [];
+                    state.currentRhymeIndex = -1;
+
+                    // Exit search mode first to restore normal display
+                    exitSearchMode();
+                    
+                    // Update display after search mode is exited
+                    ui.displayWord(selectedSuggestion);
+                    
+                    // Load rhymes for the new word
+                    state.currentRhymeList = rhyme.getValidRhymesForWord(selectedSuggestion);
+                    state.currentRhymeIndex = -1;
+                    
+                    // Force refresh rhyme navigation buttons
+                    ui.updateRhymeNavButtons();
+                    
+                    // Update tooltips if they're active
+                    if (typeof updateTooltipForDisplayedWord === 'function') {
+                        updateTooltipForDisplayedWord();
+                    }
+
+                    ui.showFeedback(`Selected: "${selectedSuggestion}"`, false, 1500);
+                } else {
+                    exitSearchMode();
+                }
             }
             break;
     }
@@ -273,15 +333,67 @@ function handleSearchKeydown(event) {
 function navigateSuggestions(direction) {
     if (searchState.suggestions.length === 0) return;
 
-    const newIndex = searchState.selectedIndex + direction;
-    if (newIndex >= 0 && newIndex < searchState.suggestions.length) {
-        searchState.selectedIndex = newIndex;
-        const selectedSuggestion = searchState.suggestions[newIndex];
-        const remainingPart = selectedSuggestion.substring(searchState.currentQuery.length);
-        searchElements.searchAutocomplete.textContent = remainingPart;
+    let newIndex = searchState.selectedIndex + direction;
+    
+    // Cycle continuously through the suggestions
+    if (newIndex < 0) {
+        // Wrap to the bottom when going up past the top
+        newIndex = searchState.suggestions.length - 1;
+    } else if (newIndex >= searchState.suggestions.length) {
+        // Wrap to the top when going down past the bottom
+        newIndex = 0;
+    }
+    
+    searchState.selectedIndex = newIndex;
+    const selectedSuggestion = searchState.suggestions[newIndex];
+    const remainingPart = selectedSuggestion.substring(searchState.currentQuery.length);
+    searchElements.searchAutocomplete.textContent = remainingPart;
+    
+    // Reposition autocomplete
+    positionAutocomplete();
+}
+
+/**
+ * Navigate forward by adding the next letter from the current suggestion
+ */
+function navigateLetterForward() {
+    if (searchState.suggestions.length === 0) return;
+    
+    const currentSuggestion = searchState.suggestions[searchState.selectedIndex >= 0 ? searchState.selectedIndex : 0];
+    const currentQuery = searchState.currentQuery;
+    
+    // Check if we can add another letter
+    if (currentQuery.length < currentSuggestion.length) {
+        const nextLetter = currentSuggestion[currentQuery.length];
+        const newQuery = currentQuery + nextLetter;
         
-        // Reposition autocomplete
-        positionAutocomplete();
+        // Update the input value
+        searchElements.searchInput.value = newQuery;
+        searchState.currentQuery = newQuery;
+        
+        // Trigger input event to update suggestions
+        const inputEvent = new Event('input', { bubbles: true });
+        searchElements.searchInput.dispatchEvent(inputEvent);
+    }
+}
+
+/**
+ * Navigate backward by removing the last letter
+ */
+function navigateLetterBackward() {
+    const currentQuery = searchState.currentQuery;
+    
+    // Only allow going back if we have at least one character
+    if (currentQuery.length > 0) {
+        const newQuery = currentQuery.slice(0, -1);
+        
+        // Update the input value
+        searchElements.searchInput.value = newQuery;
+        searchState.currentQuery = newQuery;
+        
+        // Trigger input event to update suggestions
+        const inputEvent = new Event('input', { bubbles: true });
+        searchElements.searchInput.dispatchEvent(inputEvent);
     }
 }
 
@@ -429,6 +541,73 @@ function addNewWord(word) {
 }
 
 /**
+ * Show the "Press Enter for [word]" message
+ */
+function showEnterSuggestion(word) {
+    // Create or update the enter suggestion element
+    let enterSuggestion = document.getElementById('enter-suggestion');
+    if (!enterSuggestion) {
+        enterSuggestion = document.createElement('div');
+        enterSuggestion.id = 'enter-suggestion';
+        enterSuggestion.className = 'enter-suggestion';
+        searchElements.searchContainer.appendChild(enterSuggestion);
+    } else {
+        // Ensure it's not using dual positioning when shown alone
+        enterSuggestion.className = 'enter-suggestion';
+    }
+    
+    enterSuggestion.textContent = `Press Enter for "${word}"`;
+    enterSuggestion.style.display = 'block';
+}
+
+/**
+ * Show dual suggestions - "Press Enter for [word]" and "Press Tab for [suggestion]"
+ */
+function showDualSuggestion(word, suggestion) {
+    // Create or update the enter suggestion element (left)
+    let enterSuggestion = document.getElementById('enter-suggestion');
+    if (!enterSuggestion) {
+        enterSuggestion = document.createElement('div');
+        enterSuggestion.id = 'enter-suggestion';
+        enterSuggestion.className = 'enter-suggestion dual-left';
+        searchElements.searchContainer.appendChild(enterSuggestion);
+    } else {
+        enterSuggestion.className = 'enter-suggestion dual-left';
+    }
+    
+    // Create or update the tab suggestion element (right)
+    let tabSuggestion = document.getElementById('tab-suggestion');
+    if (!tabSuggestion) {
+        tabSuggestion = document.createElement('div');
+        tabSuggestion.id = 'tab-suggestion';
+        tabSuggestion.className = 'tab-suggestion dual-right';
+        searchElements.searchContainer.appendChild(tabSuggestion);
+    } else {
+        tabSuggestion.className = 'tab-suggestion dual-right';
+    }
+    
+    enterSuggestion.textContent = `Press Enter for "${word}"`;
+    tabSuggestion.textContent = `Press Tab for "${suggestion}"`;
+    enterSuggestion.style.display = 'block';
+    tabSuggestion.style.display = 'block';
+}
+
+/**
+ * Hide all suggestion messages
+ */
+function hideAllSuggestions() {
+    const enterSuggestion = document.getElementById('enter-suggestion');
+    const tabSuggestion = document.getElementById('tab-suggestion');
+    
+    if (enterSuggestion) {
+        enterSuggestion.style.display = 'none';
+    }
+    if (tabSuggestion) {
+        tabSuggestion.style.display = 'none';
+    }
+}
+
+/**
  * Cancel search and return to original state
  */
 function cancelSearch() {
@@ -476,6 +655,7 @@ function exitSearchMode() {
     searchElements.searchAutocomplete.textContent = '';
     searchElements.searchAutocomplete.classList.remove('add-word-prompt');
     clearSearchBorder();
+    hideAllSuggestions(); // Hide all suggestions when exiting
     searchElements.searchInput.blur();
 
     console.log('Search mode deactivated');

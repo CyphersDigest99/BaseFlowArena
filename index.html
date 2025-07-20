@@ -190,6 +190,10 @@
                 <button id="favorites-button" class="icon-button" title="View Favorites">
                     <i class="fas fa-star"></i><span class="btn-text">Favs</span>
                 </button>
+                <!-- Ignored words button - shows user's ignored words -->
+                <button id="ignored-words-button" class="icon-button" title="View Ignored Words">
+                    <i class="fas fa-eye-slash"></i><span class="btn-text">Ignored</span>
+                </button>
                 <!-- Settings button - comprehensive data management -->
                 <button id="settings-button" class="icon-button" title="Settings & Data Management">
                     <i class="fas fa-cog"></i><span class="btn-text">Settings</span>
@@ -439,6 +443,17 @@
             <!-- List of user's favorited words -->
             <ul id="favorites-list"></ul>
             <button id="clear-favorites-button" class="icon-button red-button"><i class="fas fa-trash"></i> Clear All Favorites</button>
+        </div>
+    </div>
+
+    <!-- Ignored Words Modal -->
+    <div id="ignored-words-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" id="close-ignored-words-modal">×</span>
+            <h2><i class="fas fa-eye-slash"></i> Ignored Words</h2>
+            <!-- List of user's ignored words -->
+            <ul id="ignored-words-list"></ul>
+            <button id="clear-ignored-words-button" class="icon-button red-button"><i class="fas fa-trash"></i> Clear All Ignored Words</button>
         </div>
     </div>
 

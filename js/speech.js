@@ -192,7 +192,7 @@ export function stopRecognition(isModeChange = false) { // `isModeChange` suppre
         state.recognition.stop();
          // onend will set isMicActive = false and update UI
         if (!isModeChange) {
-             ui.showFeedback("Voice Mode Deactivated", false, 1500);
+             ui.showFeedback("Voice Mode Deactivated", true, 1500);
         }
     } catch (e) {
         console.warn("Error during recognition.stop(): ", e);

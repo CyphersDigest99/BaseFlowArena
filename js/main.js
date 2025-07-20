@@ -150,7 +150,8 @@ function setActivationMode(newMode) {
     console.log(`Activation mode changed from ${previousMode} to ${state.activationMode}`);
     if (previousMode === 'timed' && state.timedInterval) { clearInterval(state.timedInterval); state.timedInterval = null; ui.updateWordDisplayAnimation(); }
     if (previousMode === 'voice') {
-        speech.stopRecognition(true);
+        // Show notification when manually deactivating voice mode
+        speech.stopRecognition(false);
         console.log('Flow Meter Debug: Resetting Flow Meter due to voice mode deactivation');
         ui.resetFlowMeter(); // Reset Flow Meter when voice mode is deactivated
         stopAudioVisualizer(); // Stop audio visualizer when voice mode is deactivated
@@ -594,6 +595,9 @@ function attachEventListeners() {
     ui.elements.favoritesButton?.addEventListener('click', modal.showFavoritesModal);
     ui.elements.closeFavoritesModal?.addEventListener('click', () => modal.closeModal(ui.elements.favoritesModal));
     ui.elements.clearFavoritesButton?.addEventListener('click', modal.clearAllFavorites);
+    ui.elements.ignoredWordsButton?.addEventListener('click', modal.showIgnoredWordsModal);
+    ui.elements.closeIgnoredWordsModal?.addEventListener('click', () => modal.closeModal(ui.elements.ignoredWordsModal));
+    ui.elements.clearIgnoredWordsButton?.addEventListener('click', modal.clearAllIgnoredWords);
     ui.elements.editWordListButton?.addEventListener('click', modal.showWordListEditor);
     ui.elements.closeWordListEditor?.addEventListener('click', () => modal.closeModal(ui.elements.wordListEditorModal));
     ui.elements.saveWordListButton?.addEventListener('click', modal.saveWordListChanges);
@@ -612,6 +616,7 @@ function attachEventListeners() {
     // Global Listeners
     window.addEventListener('click', (event) => {
        if (event.target === ui.elements.favoritesModal) modal.closeModal(ui.elements.favoritesModal);
+       if (event.target === ui.elements.ignoredWordsModal) modal.closeModal(ui.elements.ignoredWordsModal);
        if (event.target === ui.elements.wordListEditorModal) modal.closeModal(ui.elements.wordListEditorModal);
        if (event.target === ui.elements.rhymeFinderModal) modal.closeModal(ui.elements.rhymeFinderModal);
        if (event.target === ui.elements.settingsModal) modal.closeModal(ui.elements.settingsModal);
@@ -780,6 +785,11 @@ function handleMainPageKeydown(event) {
         case 'arrowright':
             event.preventDefault();
             wordManager.nextWord();
+            break;
+            
+        case 's':
+            event.preventDefault();
+            wordSearch.startSearch();
             break;
     }
 }

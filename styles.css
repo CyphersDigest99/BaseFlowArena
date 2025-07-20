@@ -1867,10 +1867,31 @@ input[type="range"] {
     font-size: 0.9em; 
     border: 1px solid transparent; 
     transition: transform 0.2s ease; 
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+}
+
+.freq-word::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: -100%;
+    width: 100%;
+    height: 2px;
+    background-color: var(--red-color);
+    transform: translateY(-50%) rotate(-45deg);
+    transition: left 0.2s ease;
+    z-index: 1;
+}
+
+.freq-word:hover::before {
+    left: 0;
 }
 
 .freq-word:hover { 
-    transform: translateY(-2px); 
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 0 8px rgba(255, 69, 0, 0.3);
 }
 
 .freq-5 { background-color: #c82333; border-color: #bd2130; }
@@ -2812,4 +2833,47 @@ body.screen-shaking {
     .search-autocomplete {
         font-size: 2.5em;
     }
+}
+
+/* Suggestion dialog styling */
+.enter-suggestion,
+.tab-suggestion {
+    position: absolute;
+    top: 100%;
+    font-size: 0.8em;
+    margin-top: 5px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
+    z-index: 10;
+    display: none;
+    font-family: var(--font-display);
+    font-weight: normal;
+}
+
+/* Single suggestion (centered) */
+.enter-suggestion:not(.dual-left) {
+    left: 50%;
+    transform: translateX(-50%);
+    color: var(--green-color);
+    background-color: rgba(0, 255, 0, 0.1);
+    border: 1px solid var(--green-color);
+}
+
+/* Dual suggestion layout */
+.enter-suggestion.dual-left {
+    left: 0;
+    transform: none;
+    color: var(--green-color);
+    background-color: rgba(0, 255, 0, 0.1);
+    border: 1px solid var(--green-color);
+}
+
+.tab-suggestion.dual-right {
+    right: 0;
+    left: auto;
+    transform: none;
+    color: var(--highlight-color);
+    background-color: rgba(249, 168, 38, 0.1);
+    border: 1px solid var(--highlight-color);
 }

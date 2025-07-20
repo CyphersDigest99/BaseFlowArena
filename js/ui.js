@@ -26,6 +26,7 @@
 
 import { state } from './state.js';
 import { updateBpmIndicator } from './ui-helpers.js';
+import * as storage from './storage.js';
 
 // Callback for when displayed word changes (for tooltip updates)
 let onDisplayedWordChangeCallback = null;
@@ -132,6 +133,12 @@ export const elements = {
     closeFavoritesModal: document.getElementById('close-favorites-modal'),
     favoritesListUl: document.getElementById('favorites-list'),
     clearFavoritesButton: document.getElementById('clear-favorites-button'),
+    
+    ignoredWordsModal: document.getElementById('ignored-words-modal'),
+    closeIgnoredWordsModal: document.getElementById('close-ignored-words-modal'),
+    ignoredWordsListUl: document.getElementById('ignored-words-list'),
+    clearIgnoredWordsButton: document.getElementById('clear-ignored-words-button'),
+    ignoredWordsButton: document.getElementById('ignored-words-button'),
 
     wordListEditorModal: document.getElementById('word-list-editor-modal'),
     closeWordListEditor: document.getElementById('close-word-list-editor'),
@@ -668,7 +675,7 @@ export function resetFlowMeter() {
 export function displayFrequencies(wordFreqMap) {
     if(!elements.frequentWordsContainer) return;
     const sortedFrequencies = Object.entries(wordFreqMap)
-        .filter(([word, count]) => count >= 2 && !state.blacklist.has(word))
+        .filter(([word, count]) => count >= 2 && !state.blacklist.has(word) && !state.ignoredWords.has(word))
         .sort(([, countA], [, countB]) => countB - countA);
     elements.frequentWordsContainer.innerHTML = sortedFrequencies.length === 0
         ? '<p style="opacity: 0.5;">Speak more to track common words...</p>' : '';
@@ -676,12 +683,36 @@ export function displayFrequencies(wordFreqMap) {
         const span = document.createElement('span');
         span.textContent = `${word} (${count})`;
         span.classList.add('freq-word');
+        span.dataset.word = word; // Add data attribute for click handling
         if (count >= 5) span.classList.add('freq-5');
         else if (count >= 4) span.classList.add('freq-4');
         else if (count >= 3) span.classList.add('freq-3');
         else span.classList.add('freq-2');
+        
+        // Add click handler to remove word from tracking
+        span.addEventListener('click', () => removeWordFromTracking(word));
+        
         elements.frequentWordsContainer.appendChild(span);
     });
+}
+
+// Removes a word from frequency tracking
+export function removeWordFromTracking(word) {
+    if (!word) return;
+    
+    // Add to ignored words set
+    state.ignoredWords.add(word);
+    
+    // Save settings
+    storage.saveSettings();
+    
+    // Refresh the frequency display
+    displayFrequencies(state.wordFrequencies);
+    
+    // Show feedback
+    showFeedback(`"${word}" removed from tracking`, false, 2000);
+    
+    console.log(`Word "${word}" added to ignored words. Total ignored: ${state.ignoredWords.size}`);
 }
 
 // Displays RNG results with animated spinning slot machine effect

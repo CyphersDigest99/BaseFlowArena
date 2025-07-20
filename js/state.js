@@ -33,6 +33,7 @@ export const state = {
     // Lists & Data - User preferences and word relationships
     blacklist: new Set(), // Words user has chosen to exclude
     favorites: new Set(), // Words user has marked as favorites
+    ignoredWords: new Set(), // Words user has chosen to ignore from frequency tracking
     wordFrequencies: {}, // Tracks how often each word has been used
     rhymeData: null, // Loaded rhyme dictionary data
     rejectedRhymes: {}, // { baseWord: Set('rejected1', 'rejected2'), ... }

@@ -126,6 +126,74 @@ function clearFavoritesListDisplay() {
     }
 }
 
+// --- Ignored Words Modal ---
+/**
+ * Shows the ignored words modal, displaying all ignored words with remove buttons.
+ */
+export function showIgnoredWordsModal() {
+    if(!ui.elements.ignoredWordsModal || !ui.elements.ignoredWordsListUl) return;
+
+    clearIgnoredWordsListDisplay(); // Clear first
+    const sortedIgnoredWords = Array.from(state.ignoredWords).sort((a, b) => a.localeCompare(b)); // Sort alphabetically
+
+    if (sortedIgnoredWords.length === 0) {
+         ui.elements.ignoredWordsListUl.innerHTML = '<li>No ignored words yet.</li>';
+    } else {
+        sortedIgnoredWords.forEach(word => {
+            const li = document.createElement('li');
+            li.textContent = word;
+            const removeBtn = document.createElement('button');
+            removeBtn.innerHTML = '<i class="fas fa-times"></i>';
+            removeBtn.title="Remove from Ignored";
+            removeBtn.classList.add("icon-button", "tiny-button", "red-button");
+            // Attach listener to internal handler
+            removeBtn.onclick = () => handleRemoveIgnoredWord(word);
+            li.appendChild(removeBtn);
+            ui.elements.ignoredWordsListUl.appendChild(li);
+        });
+    }
+    openModal(ui.elements.ignoredWordsModal);
+}
+
+// Internal handler for removing a word from ignored list
+function handleRemoveIgnoredWord(word) {
+    state.ignoredWords.delete(word);
+    storage.saveSettings(); // Save the change
+    showIgnoredWordsModal(); // Refresh the modal list itself
+    
+    // Refresh the frequency display to show the word again
+    ui.displayFrequencies(state.wordFrequencies);
+    
+    ui.showFeedback(`"${word}" removed from ignored list.`);
+}
+
+/**
+ * Clears all ignored words after user confirmation.
+ */
+export function clearAllIgnoredWords() {
+    if (state.ignoredWords.size === 0) {
+        ui.showFeedback("No ignored words to clear.", true, 1500);
+        return;
+    }
+    if (confirm('Are you sure you want to remove ALL ignored words?')) {
+        state.ignoredWords.clear();
+        storage.saveSettings(); // Save the change
+        showIgnoredWordsModal(); // Refresh modal list (will show empty)
+        
+        // Refresh the frequency display to show all words again
+        ui.displayFrequencies(state.wordFrequencies);
+        
+        ui.showFeedback("All ignored words cleared!", false, 1500);
+    }
+}
+
+// Internal helper to clear ignored words list display
+function clearIgnoredWordsListDisplay() {
+    if (ui.elements.ignoredWordsListUl) {
+        ui.elements.ignoredWordsListUl.innerHTML = '';
+    }
+}
+
 // --- Word List Editor Modal ---
 /**
  * Shows the word list editor modal, populating it with the current word list and scrolling to the current word.
@@ -584,6 +652,10 @@ export function updateDataSummary() {
             <div class="summary-item">
                 <span class="summary-label">Blacklisted:</span>
                 <span class="summary-value">${state.blacklist.size}</span>
+            </div>
+            <div class="summary-item">
+                <span class="summary-label">Ignored Words:</span>
+                <span class="summary-value">${state.ignoredWords.size}</span>
             </div>
             <div class="summary-item">
                 <span class="summary-label">Tracked Words:</span>

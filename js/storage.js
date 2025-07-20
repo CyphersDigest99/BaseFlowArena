@@ -82,6 +82,7 @@ export function saveSettings() {
             wordFrequencies: state.wordFrequencies,
             blacklist: Array.from(state.blacklist),
             favorites: Array.from(state.favorites),
+            ignoredWords: Array.from(state.ignoredWords), // NEW: Save ignored words
             rejectedRhymes: serializeNestedSets(state.rejectedRhymes),
             manualRhymes: serializeNestedSets(state.manualRhymes),
             slantRhymes: serializeNestedSets(state.slantRhymes),
@@ -119,6 +120,7 @@ export function loadSettings() {
              state.wordFrequencies = parsedData.wordFrequencies || {};
              state.blacklist = Array.isArray(parsedData.blacklist) ? new Set(parsedData.blacklist) : new Set();
              state.favorites = Array.isArray(parsedData.favorites) ? new Set(parsedData.favorites) : new Set();
+             state.ignoredWords = Array.isArray(parsedData.ignoredWords) ? new Set(parsedData.ignoredWords) : new Set();
              state.rejectedRhymes = parsedData.rejectedRhymes ? deserializeNestedSets(parsedData.rejectedRhymes) : {};
              state.manualRhymes = parsedData.manualRhymes ? deserializeNestedSets(parsedData.manualRhymes) : {};
              state.slantRhymes = parsedData.slantRhymes ? deserializeNestedSets(parsedData.slantRhymes) : {};
@@ -175,6 +177,7 @@ export function resetToDefaults(saveAfterReset = true) {
     console.log("Resetting settings to defaults.");
     state.blacklist = new Set();
     state.favorites = new Set();
+    state.ignoredWords = new Set();
     state.wordFrequencies = {};
     state.beatGridRows = 1;
     state.beatGridCols = 4;
