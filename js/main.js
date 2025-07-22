@@ -39,6 +39,7 @@ import * as beatManager from './beatManagerEnhanced.js'; // Import the enhanced 
 import { openRhymeFinderModalWithSort } from './rhyme.js';
 import * as audioVisualizer from './audioVisualizer.js'; // Import the audio visualizer module
 import * as wordSearch from './wordSearch.js'; // Import the word search module
+import * as reverseSearch from './reverseSearch.js'; // Import the reverse search module
 
 // Cached word data for tooltip display and performance optimization
 let lastWordData = { synonyms: '', definition: '', word: '' };
@@ -122,6 +123,9 @@ async function initializeApp() {
 
     // 8. Initialize word search functionality
     wordSearch.initSearch();
+    
+    // 9. Initialize reverse search functionality
+    reverseSearch.initReverseSearch();
 
     // Debug Flow Meter initialization
     console.log('Flow Meter Debug: Checking element after initialization');

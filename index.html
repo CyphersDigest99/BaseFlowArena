@@ -268,7 +268,8 @@
                     <div id="word-display">LOADING...</div>
                     <!-- Search input container (hidden by default) -->
                     <div id="search-input-container" class="search-input-container">
-                        <input type="text" id="search-input" class="search-input" autocomplete="off" spellcheck="false">
+                        <span id="search-prefix-span" style="display:none;"></span>
+                        <input type="text" id="search-input" class="search-input" autocomplete="off" spellcheck="false" placeholder="Type to search...">
                         <div id="search-autocomplete" class="search-autocomplete"></div>
                     </div>
                     <!-- Word action buttons positioned absolutely around the word -->
@@ -280,6 +281,9 @@
                     </button>
                     <button id="search-word" class="word-action-icon search-icon" title="Search Word">
                         <i class="fas fa-search"></i>
+                    </button>
+                    <button id="reverse-search-word" class="word-action-icon reverse-search-icon" title="Reverse Search (Find words ending with...)">
+                        <i class="fas fa-arrow-left"></i>
                     </button>
                     <button id="means-like-button" class="word-action-icon means-like-icon" title="Show Synonyms & Definition">
                         <i class="fas fa-book"></i>
