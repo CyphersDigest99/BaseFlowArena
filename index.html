@@ -299,6 +299,30 @@
             </div>
             <!-- END Word Display Wrapper -->
 
+            <!-- --- ACTIVATION PANEL (New) --- -->
+            <div class="activation-panel">
+                <div class="activation-buttons-container">
+                    <!-- Voice Match Button -->
+                    <button id="voice-mode-button" class="activation-panel-button" title="Activate Voice Matching">
+                        <span class="light"></span>
+                        <i class="fas fa-microphone"></i> Voice Match
+                    </button>
+                    
+                    <!-- Timed Cycle Slider (hidden by default) -->
+                    <div id="timed-cycle-slider-container" class="timed-cycle-slider-container">
+                        <label for="cycle-speed-slider"><i class="fas fa-clock"></i></label>
+                        <input type="range" id="cycle-speed-slider" min="3" max="30" value="10" step="1">
+                        <input type="number" id="cycle-speed" min="3" max="30" value="10">s
+                    </div>
+                    
+                    <!-- Timed Cycle Button -->
+                    <button id="timed-mode-button" class="activation-panel-button" title="Activate Timed Cycle">
+                        <i class="fas fa-stopwatch"></i> Timed Cycle
+                    </button>
+                </div>
+            </div>
+            <!-- END Activation Panel -->
+
             <!-- Rhyme finder trigger button -->
             <button id="find-rhymes-button" class="icon-button rhyme-find-trigger" title="Find Rhymes">
                 <i class="fas fa-music"></i> Find Rhymes
@@ -331,30 +355,7 @@
             <!-- END Microphone Visualizer -->
 
             <!-- --- ACTIVATION CONTROLS (Moved here) --- -->
-            <div class="activation-controls panel">
-                <h2><i class="fas fa-power-off"></i> Activation Mode</h2>
-                <!-- Main activation buttons for different modes -->
-                <div class="control-group activation-buttons">
-                    <!-- Voice mode button with status light indicator -->
-                    <button id="voice-mode-button" class="icon-button large-button activation-button" title="Activate Voice Matching">
-                        <span class="light"></span> <!-- Status light for voice activity -->
-                        <i class="fas fa-microphone"></i> Voice Match
-                    </button>
-                    <!-- Timed mode button for automatic word cycling -->
-                    <button id="timed-mode-button" class="icon-button large-button activation-button" title="Activate Timed Cycle">
-                        <i class="fas fa-stopwatch"></i> Timed Cycle
-                    </button>
-                </div>
-                <!-- Timed cycle speed controls (hidden by default) -->
-                <div id="timed-cycle-options" class="control-group" style="display: none;">
-                    <label for="cycle-speed"><i class="fas fa-clock"></i> Speed:</label>
-                    <!-- Range slider for visual speed adjustment -->
-                    <input type="range" id="cycle-speed-slider" min="3" max="30" value="10" step="1" style="flex-grow: 1; margin: 0 10px;">
-                    <!-- Numeric input for precise speed control -->
-                    <input type="number" id="cycle-speed" min="3" max="30" value="10" style="width: 55px;">s
-                </div>
-            </div>
-            <!-- END Activation Controls -->
+            <!-- The old activation-controls panel is removed -->
         </section>
 
         <!-- --- RIGHT PANEL: BPM & FREQUENCY CONTROLS --- -->

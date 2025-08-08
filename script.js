@@ -44,7 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Center Stage Controls (Activation)
     const voiceModeButton = document.getElementById('voice-mode-button');
     const timedModeButton = document.getElementById('timed-mode-button');
-    const timedCycleOptionsDiv = document.getElementById('timed-cycle-options');
+    const timedCycleSliderContainer = document.getElementById('timed-cycle-slider-container');
     const cycleSpeedInput = document.getElementById('cycle-speed');
     const cycleSpeedSlider = document.getElementById('cycle-speed-slider');
     const transcriptContainer = document.getElementById('new-transcript');
@@ -592,12 +592,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function updateActivationUI() {
-        if (!voiceModeButton || !timedModeButton || !timedCycleOptionsDiv) return;
+        if (!voiceModeButton || !timedModeButton || !timedCycleSliderContainer) return;
 
         voiceModeButton.classList.toggle('active', activationMode === 'voice' && isMicActive); // Reflect actual mic state too
         timedModeButton.classList.toggle('active', activationMode === 'timed');
 
-        timedCycleOptionsDiv.style.display = (activationMode === 'timed') ? 'flex' : 'none';
+        timedCycleSliderContainer.style.display = (activationMode === 'timed') ? 'flex' : 'none';
     }
 
     // --- Speech Recognition Integration ---
