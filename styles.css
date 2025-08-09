@@ -2606,6 +2606,9 @@ body.screen-shaking {
 }
 
 .word-action-icon.reverse-search-icon { 
+    bottom: 8px;
+    left: 60px;
+    transform: none;
     color: var(--secondary-accent);
     text-shadow: 0 0 5px var(--secondary-accent);
 }
