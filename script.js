@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const nextWordButton = document.getElementById('next-word'); // Arrow Button
     const blacklistButton = document.getElementById('blacklist-word'); // Icon Button
     const favoriteButton = document.getElementById('favorite-word'); // Icon Button
-    const findRhymesButton = document.getElementById('find-rhymes-button'); // Rhyme Button << NEW
+    const findRhymesButton = document.getElementById('find-rhymes-button'); // Rhyme Button inside middle cell
 
     // Left Panel Controls (Word Settings)
     const wordOrderSelect = document.getElementById('word-order');

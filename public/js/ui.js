@@ -52,17 +52,19 @@ export const elements = {
     copyCssButton: document.getElementById('copy-css'),
 
     // Word Display Area - Main word display and associated controls
-    wordDisplay: document.getElementById('word-slot-current'), // Updated to use new slot
+    wordDisplay: document.getElementById('word-display'), // Updated to use correct ID
     wordDisplayUnit: document.getElementById('word-display-unit'),
     wordCell: document.getElementById('word-cell'),
     blacklistButton: document.getElementById('blacklist-word'),
     favoriteButton: document.getElementById('favorite-word'),
+    searchButton: document.getElementById('search-word'),
+    reverseSearchButton: document.getElementById('reverse-search-word'),
     meansLikeButton: document.getElementById('means-like-button'),
     wordSubtext: document.getElementById('word-subtext'),
     wordDefinitionTooltip: document.getElementById('word-definition-tooltip'),
     tooltipSynonyms: document.getElementById('tooltip-synonyms'),
     tooltipDefinition: document.getElementById('tooltip-definition'),
-    findRhymesButton: document.getElementById('find-rhymes-button'), // Button below word box
+    findRhymesButton: document.getElementById('find-rhymes-button'), // Button inside middle cell at bottom
 
     // Word Display Area Arrows - Navigation controls for words and rhymes
     upWordButton: document.getElementById('up-word'), // NEW

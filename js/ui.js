@@ -65,7 +65,7 @@ export const elements = {
     wordDefinitionTooltip: document.getElementById('word-definition-tooltip'),
     tooltipSynonyms: document.getElementById('tooltip-synonyms'),
     tooltipDefinition: document.getElementById('tooltip-definition'),
-    findRhymesButton: document.getElementById('find-rhymes-button'), // Button below word box
+    findRhymesButton: document.getElementById('find-rhymes-button'), // Button inside middle cell at bottom
 
     // Word Display Area Arrows - Navigation controls for words and rhymes
     upWordButton: document.getElementById('up-word'), // NEW

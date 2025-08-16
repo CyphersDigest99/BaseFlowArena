@@ -14,7 +14,7 @@
     <title>Freestyle Flow Arena</title>
     
     <!-- --- STYLESHEETS --- -->
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="public/styles.css">
     <!-- Font Awesome for icons - provides comprehensive icon library for UI elements -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     
@@ -279,16 +279,26 @@
                     <button id="favorite-word" class="word-action-icon favorite-icon" title="Favorite Word">
                         <i class="far fa-star"></i> <i class="fas fa-star solid-star"></i>
                     </button>
-                    <button id="search-word" class="word-action-icon search-icon" title="Search Word">
-                        <i class="fas fa-search"></i>
-                    </button>
-                    <button id="reverse-search-word" class="word-action-icon reverse-search-icon" title="Reverse Search (Find words ending with...)">
-                        <i class="fas fa-arrow-left"></i>
-                    </button>
+
                     <button id="means-like-button" class="word-action-icon means-like-icon" title="Show Synonyms & Definition">
                         <i class="fas fa-book"></i>
                     </button>
                     <div id="word-subtext" class="word-subtext"></div>
+                    
+                                            <!-- Search buttons row at bottom left of middle cell -->
+                        <div class="search-buttons-row">
+                            <button id="search-word" class="word-action-icon search-icon" title="Search Word">
+                                <i class="fas fa-search"></i>
+                            </button>
+                            <button id="reverse-search-word" class="word-action-icon reverse-search-icon" title="Reverse Search (Find words ending with...)">
+                                <i class="fas fa-arrow-left"></i>
+                            </button>
+                        </div>
+                        
+                        <!-- Rhyme finder trigger button positioned below word display -->
+                        <button id="find-rhymes-button" class="icon-button rhyme-find-trigger" title="Find Rhymes">
+                            <i class="fas fa-music"></i> Rhymes
+                        </button>
                 </div>
                 <!-- Bottom Cell: Definition -->
                 <div id="definition-cell" class="word-display-cell bottom-cell">
@@ -322,11 +332,6 @@
                 </div>
             </div>
             <!-- END Activation Panel -->
-
-            <!-- Rhyme finder trigger button -->
-            <button id="find-rhymes-button" class="icon-button rhyme-find-trigger" title="Find Rhymes">
-                <i class="fas fa-music"></i> Find Rhymes
-            </button>
 
             <!-- --- TRANSCRIPT AREA (Moved here) --- -->
             <div class="transcript-area panel">
@@ -577,7 +582,7 @@
 
     <!-- --- JAVASCRIPT MODULES --- -->
     <!-- Main game script loaded as ES6 module with defer attribute -->
-    <script type="module" src="js/main.js" defer></script>
+    <script type="module" src="public/js/main.js" defer></script>
 
     <!-- --- BEAT PLAYER BAR (FIXED BOTTOM) --- -->
     <div id="beat-player-bar">

@@ -122,10 +122,40 @@ async function initializeApp() {
     setupModalObserver();
 
     // 8. Initialize word search functionality
-    wordSearch.initSearch();
+    console.log('Initializing word search...');
+    setTimeout(() => {
+        wordSearch.initSearch();
+        
+        // Test if search button exists and add a temporary test listener
+        const testSearchBtn = document.getElementById('search-word');
+        if (testSearchBtn) {
+            console.log('Search button found, adding test listener');
+            testSearchBtn.addEventListener('click', () => {
+                console.log('Search button clicked!');
+                wordSearch.startSearch();
+            });
+        } else {
+            console.error('Search button not found during test');
+        }
+    }, 100);
     
     // 9. Initialize reverse search functionality
-    reverseSearch.initReverseSearch();
+    console.log('Initializing reverse search...');
+    setTimeout(() => {
+        reverseSearch.initReverseSearch();
+        
+        // Test if reverse search button exists and add a temporary test listener
+        const testReverseSearchBtn = document.getElementById('reverse-search-word');
+        if (testReverseSearchBtn) {
+            console.log('Reverse search button found, adding test listener');
+            testReverseSearchBtn.addEventListener('click', () => {
+                console.log('Reverse search button clicked!');
+                reverseSearch.startSearch();
+            });
+        } else {
+            console.error('Reverse search button not found during test');
+        }
+    }, 100);
 
     // Debug Flow Meter initialization
     console.log('Flow Meter Debug: Checking element after initialization');
@@ -689,12 +719,14 @@ let keyboardState = {
 
 // Main keyboard event handler
 function handleGlobalKeydown(event) {
+    console.log('Keyboard event:', event.key, 'Alt:', event.altKey);
     try {
         const target = event.target;
         const isInputField = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA';
         
         // Check if search mode is active - if so, let the search module handle everything
         if (wordSearch.isSearchActive()) {
+            console.log('Search mode active, letting search module handle');
             return; // Let search module handle all keyboard events
         }
         
@@ -741,6 +773,7 @@ function handleEscapeKey(event) {
 
 // Handle main page keyboard shortcuts
 function handleMainPageKeydown(event) {
+    console.log('Main page keyboard handler called for key:', event.key);
     switch (event.key.toLowerCase()) {
         case 'r':
             event.preventDefault();
@@ -792,8 +825,16 @@ function handleMainPageKeydown(event) {
             break;
             
         case 's':
-            event.preventDefault();
-            wordSearch.startSearch();
+            console.log('S key pressed, Alt:', event.altKey);
+            if (event.altKey) {
+                event.preventDefault();
+                console.log('Starting reverse search...');
+                reverseSearch.startSearch();
+            } else {
+                event.preventDefault();
+                console.log('Starting regular search...');
+                wordSearch.startSearch();
+            }
             break;
     }
 }

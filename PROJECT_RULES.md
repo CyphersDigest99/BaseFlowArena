@@ -1,5 +1,11 @@
 # BaseFlowArena Project Rules
 
+## 0. Project Structure and Development
+- **All development work should be done within the `public/` folder structure**
+- The `public/` folder contains the complete, deployable web application
+- Root directory files are for project management, testing, and build scripts only
+- When adding new features or making changes, always work in the appropriate `public/` subdirectory
+
 ## 1. File Naming and Case Consistency
 - All references to BPM in filenames, variables, and imports must use all caps: `autoBPM.js`, `autoBPM`, etc.
 - Enforce case-sensitive imports and file names, even on Windows, to avoid deployment issues on case-sensitive systems.

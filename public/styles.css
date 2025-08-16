@@ -529,7 +529,7 @@ input[type="range"] {
 #word-display-unit {
     display: grid;
     grid-template-columns: auto 1fr auto;
-    grid-template-rows: 32px 1fr 2fr 1fr 24px 32px; /* 32px for up, 24px for toggle, 32px for down */
+    grid-template-rows: 32px 1fr 3fr 1fr 24px 32px; /* Increased middle cell from 2fr to 3fr for more space */
     grid-template-areas:
         ". up ."
         ". synonyms ."
@@ -545,8 +545,8 @@ input[type="range"] {
     margin-bottom: 0;
     box-shadow: 0 0 20px rgba(0, 255, 255, 0.3), inset 0 0 15px rgba(0, 0, 0, 0.5);
     width: 100%;
-    max-width: 700px;
-    height: 320px;
+    max-width: 900px; /* Increased from 700px to allow wider display like Vercel deployment */
+    height: 400px; /* Increased from 320px to accommodate larger middle cell */
     box-sizing: border-box;
 }
 
@@ -668,7 +668,56 @@ input[type="range"] {
     background: rgba(0, 0, 0, 0.3);
     border: 1px solid rgba(0, 255, 255, 0.5);
     border-radius: 12px;
+    position: relative; /* Add position relative for absolute positioning of child elements */
 }
+
+/* Search buttons row at bottom left of middle cell */
+.search-buttons-row {
+    position: absolute;
+    bottom: 8px;
+    left: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    z-index: 10;
+}
+
+/* Override absolute positioning for search buttons in the row */
+.search-buttons-row .word-action-icon,
+.search-buttons-row .word-action-icon.search-icon,
+.search-buttons-row .word-action-icon.reverse-search-icon {
+    position: static !important;
+    transform: none !important;
+    opacity: 1;
+    padding: 8px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    bottom: auto !important;
+    left: auto !important;
+    right: auto !important;
+    top: auto !important;
+}
+
+.search-buttons-row .word-action-icon:hover {
+    transform: scale(1.1);
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Position rhyme button centered below word display */
+#find-rhymes-button {
+    position: absolute;
+    top: 60%;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+}
+
+/* Hide rhymes button during search modes */
+.word-display-cell.middle-cell.search-mode #find-rhymes-button,
+.word-display-cell.middle-cell.reverse-search-mode #find-rhymes-button {
+    display: none;
+}
+
 .word-display-cell.bottom-cell {
     grid-area: definition;
     min-height: 44px;
@@ -1231,12 +1280,12 @@ input[type="range"] {
     }
     
     #word-display-unit { 
-        height: 280px; 
+        height: 350px; /* Increased from 280px to maintain proportions */
     }
     
     .word-display-cell.middle-cell {
-        min-height: 100px;
-        max-height: 140px;
+        min-height: 120px; /* Increased from 100px */
+        max-height: 180px; /* Increased from 140px to give more space */
     }
 }
 
@@ -1296,13 +1345,14 @@ input[type="range"] {
     }
     
     #word-display-unit { 
-        height: 240px; 
-        padding: 15px 60px; 
+        padding: 15px 60px;
+        height: 300px; /* Increased from 240px to maintain proportions */
+        max-width: 600px;
     }
     
     .word-display-cell.middle-cell {
-        min-height: 80px;
-        max-height: 120px;
+        min-height: 100px; /* Increased from 80px */
+        max-height: 160px; /* Increased from 120px to give more space */
     }
     
     .icon-button .btn-text { 
@@ -1346,6 +1396,15 @@ input[type="range"] {
         font-size: 0.9em;
         padding: 8px 10px;
     }
+    
+    .word {
+        font-size: 2.5rem;
+        line-height: 1.2;
+    }
+    
+    .synonyms, .definition {
+        font-size: 0.9rem;
+    }
 }
 
 @media (max-width: 480px) {
@@ -1367,13 +1426,13 @@ input[type="range"] {
     }
     
     #word-display-unit { 
-        height: 200px; 
+        height: 250px; /* Increased from 200px to maintain proportions */
         padding: 10px 40px; 
     }
     
     .word-display-cell.middle-cell {
-        min-height: 60px;
-        max-height: 100px;
+        min-height: 80px; /* Increased from 60px */
+        max-height: 140px; /* Increased from 100px to give more space */
     }
     
     .word-nav-arrow.side-arrow { 
@@ -2664,6 +2723,117 @@ body.screen-shaking {
     animation: rhyme-x-pulse 0.25s cubic-bezier(.4,1.6,.6,1) 1;
     color: var(--highlight-color);
     text-shadow: 0 0 6px var(--highlight-color);
+}
+
+/* Search icon - lower-left corner of middle cell */
+.word-action-icon.search-icon { 
+    bottom: 8px;
+    left: 8px;
+    transform: none;
+    color: var(--secondary-accent);
+    opacity: 0.7;
+}
+
+.word-action-icon.search-icon:hover {
+    transform: scale(1.1);
+    color: var(--primary-accent);
+    opacity: 1;
+}
+
+.word-action-icon.reverse-search-icon { 
+    bottom: 8px;
+    left: 60px;
+    transform: none;
+    color: var(--secondary-accent);
+    text-shadow: 0 0 5px var(--secondary-accent);
+}
+
+.word-action-icon.reverse-search-icon:hover {
+    color: var(--secondary-accent);
+    text-shadow: 0 0 8px var(--secondary-accent);
+    transform: scale(1.1);
+}
+
+/* Search mode styles */
+.word-display-cell.middle-cell.search-mode {
+    position: relative;
+}
+
+.word-display-cell.middle-cell.search-mode #word-display,
+.word-display-cell.middle-cell.reverse-search-mode #word-display {
+    opacity: 0;
+    transform: scale(0.8);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+/* Search input container */
+.search-input-container {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.search-input-container.active {
+    pointer-events: auto;
+    opacity: 1;
+    visibility: visible;
+}
+
+.search-input {
+    background: transparent;
+    border: none;
+    outline: none;
+    font-family: var(--font-display);
+    font-size: 4em !important;
+    font-weight: bold;
+    color: var(--text-bright);
+    text-shadow: 0 0 10px #fff, 0 0 15px var(--primary-accent);
+    transition: color 0.4s ease-out, opacity 0.4s ease-out, transform 0.4s ease-out, font-size 0.2s ease-out;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 150px;
+    line-height: 2.5;
+    margin: 0;
+    padding: 0;
+    text-align: center;
+    pointer-events: auto;
+}
+
+.search-input::placeholder {
+    color: rgba(255, 255, 255, 0.6);
+    text-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
+}
+
+.search-autocomplete {
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.9);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 20;
+    min-width: 200px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    display: none;
+}
+
+.search-autocomplete.active {
+    display: block;
 }
 
 .rhyme-tag:hover {

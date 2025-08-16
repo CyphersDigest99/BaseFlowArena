@@ -14,7 +14,7 @@
     <title>Freestyle Flow Arena</title>
     
     <!-- --- STYLESHEETS --- -->
-    <link rel="stylesheet" href="/styles.css">
+    <link rel="stylesheet" href="styles.css">
     <!-- Font Awesome for icons - provides comprehensive icon library for UI elements -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     
@@ -261,9 +261,12 @@
                 </div>
                 <!-- Middle Cell: Main Word Display -->
                 <div id="word-cell" class="word-display-cell middle-cell">
-                    <div id="animation-stage">
-                        <div id="word-slot-current" class="word-slot">LOADING...</div>
-                        <div id="word-slot-next" class="word-slot"></div>
+                    <div id="word-display">LOADING...</div>
+                    <!-- Search input container (hidden by default) -->
+                    <div id="search-input-container" class="search-input-container">
+                        <span id="search-prefix-span" style="display:none;"></span>
+                        <input type="text" id="search-input" class="search-input" autocomplete="off" spellcheck="false" placeholder="Type to search...">
+                        <div id="search-autocomplete" class="search-autocomplete"></div>
                     </div>
                     <!-- Word action buttons positioned absolutely around the word -->
                     <button id="blacklist-word" class="word-action-icon blacklist-icon" title="Blacklist Word">
@@ -276,6 +279,21 @@
                         <i class="fas fa-book"></i>
                     </button>
                     <div id="word-subtext" class="word-subtext"></div>
+                    
+                                            <!-- Search buttons row at bottom left of middle cell -->
+                        <div class="search-buttons-row">
+                            <button id="search-word" class="word-action-icon search-icon" title="Search Word">
+                                <i class="fas fa-search"></i>
+                            </button>
+                            <button id="reverse-search-word" class="word-action-icon reverse-search-icon" title="Reverse Search (Find words ending with...)">
+                                <i class="fas fa-arrow-left"></i>
+                            </button>
+                        </div>
+                        
+                        <!-- Rhyme finder trigger button positioned below word display -->
+                        <button id="find-rhymes-button" class="icon-button rhyme-find-trigger" title="Find Rhymes">
+                            <i class="fas fa-music"></i> Rhymes
+                        </button>
                 </div>
                 <!-- Bottom Cell: Definition -->
                 <div id="definition-cell" class="word-display-cell bottom-cell">
@@ -285,11 +303,6 @@
             <!-- END Word Display Unit -->
             </div>
             <!-- END Word Display Wrapper -->
-
-            <!-- Rhyme finder trigger button -->
-            <button id="find-rhymes-button" class="icon-button rhyme-find-trigger" title="Find Rhymes">
-                <i class="fas fa-music"></i> Find Rhymes
-            </button>
 
             <!-- --- TRANSCRIPT AREA (Moved here) --- -->
             <div class="transcript-area panel">

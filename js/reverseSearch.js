@@ -41,6 +41,11 @@ export function initReverseSearch() {
     reverseSearchElements.reverseSearchButton = document.getElementById('reverse-search-word');
     reverseSearchElements.wordCell = document.getElementById('word-cell');
     
+    console.log('Reverse search elements found:', {
+        reverseSearchButton: !!reverseSearchElements.reverseSearchButton,
+        wordCell: !!reverseSearchElements.wordCell
+    });
+    
     // Create suggestion container if it doesn't exist
     if (!document.getElementById('reverse-suggestion-container')) {
         reverseSearchElements.suggestionContainer = document.createElement('div');
@@ -67,6 +72,7 @@ export function initReverseSearch() {
  * Start reverse search mode
  */
 export function startReverseSearch() {
+    console.log('startReverseSearch called!');
     if (reverseSearchState.isActive) return;
 
     // Store current word and state

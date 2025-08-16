@@ -44,6 +44,14 @@ export function initSearch() {
     searchElements.searchContainer = document.getElementById('search-input-container');
     searchElements.wordCell = document.getElementById('word-cell');
 
+    console.log('Search elements found:', {
+        searchButton: !!searchElements.searchButton,
+        searchInput: !!searchElements.searchInput,
+        searchAutocomplete: !!searchElements.searchAutocomplete,
+        searchContainer: !!searchElements.searchContainer,
+        wordCell: !!searchElements.wordCell
+    });
+
     if (!searchElements.searchButton || !searchElements.searchInput || 
         !searchElements.searchAutocomplete || !searchElements.searchContainer || 
         !searchElements.wordCell) {
@@ -64,6 +72,7 @@ export function initSearch() {
  * Start search mode
  */
 export function startSearch() {
+    console.log('startSearch called!');
     if (searchState.isActive) return;
 
     // Store current word

@@ -38,6 +38,8 @@ import * as wordApi from './wordApi.js'; // Import the new word API module
 import * as beatManager from './beatManager.js'; // Import the beat player module
 import { openRhymeFinderModalWithSort } from './rhyme.js';
 import { getPlaylist, initializeBeatPlayer } from './beatManager.js';
+import * as wordSearch from './wordSearch.js'; // Import the word search module
+import * as reverseSearch from './reverseSearch.js'; // Import the reverse search module
 
 // Cached word data for tooltip display and performance optimization
 let lastWordData = { synonyms: '', definition: '', word: '' };
@@ -129,6 +131,14 @@ async function initializeApp() {
     } else {
         console.error('Flow Meter Debug: Element not found during initialization!');
     }
+    
+    // 8. Initialize word search functionality
+    console.log('Initializing word search...');
+    wordSearch.initSearch();
+    
+    // 9. Initialize reverse search functionality
+    console.log('Initializing reverse search...');
+    reverseSearch.initReverseSearch();
     
     console.log("--- Initialization Complete ---");
 }
@@ -680,6 +690,16 @@ function handleMainPageKeydown(event) {
         case 'arrowright':
             event.preventDefault();
             wordManager.nextWord();
+            break;
+            
+        case 's':
+            if (event.altKey) {
+                event.preventDefault();
+                reverseSearch.startSearch();
+            } else {
+                event.preventDefault();
+                wordSearch.startSearch();
+            }
             break;
     }
 }
