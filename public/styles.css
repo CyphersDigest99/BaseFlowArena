@@ -661,7 +661,7 @@ input[type="range"] {
 }
 .word-display-cell.middle-cell {
     grid-area: word;
-    min-height: 100px;
+    min-height: 200px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -703,10 +703,10 @@ input[type="range"] {
     background-color: rgba(255, 255, 255, 0.1);
 }
 
-/* Position rhyme button centered below word display */
+/* Position rhyme button in the same row as search buttons */
 #find-rhymes-button {
     position: absolute;
-    top: 60%;
+    bottom: 8px;
     left: 50%;
     transform: translateX(-50%);
     z-index: 10;
@@ -2795,7 +2795,7 @@ body.screen-shaking {
     border: none;
     outline: none;
     font-family: var(--font-display);
-    font-size: 4em !important;
+    font-size: 2em !important;
     font-weight: bold;
     color: var(--text-bright);
     text-shadow: 0 0 10px #fff, 0 0 15px var(--primary-accent);
