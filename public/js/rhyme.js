@@ -881,25 +881,108 @@ function sortByRhymeSimilarity(words, baseWord) {
 // Updates the modal header based on current sort mode
 function updateModalHeader() {
     if (!ui.elements.rhymeModalDynamicHeading) return;
-    
+
     const baseWord = state.currentWord;
     if (!baseWord || baseWord === "NO WORDS!") return;
-    
+
     const headingHTML = createModalHeaderHTML(baseWord, rhymeSortMode);
     ui.elements.rhymeModalDynamicHeading.innerHTML = headingHTML;
+
+    // Attach click handlers to nav buttons
+    attachHeaderNavHandlers();
+}
+
+// --- Attach Header Nav Button Handlers ---
+// Wires up the prev/next buttons in the modal header
+function attachHeaderNavHandlers() {
+    const prevBtn = document.getElementById('rhyme-header-prev');
+    const nextBtn = document.getElementById('rhyme-header-next');
+
+    if (prevBtn) {
+        prevBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            navigateWordInModal('previous');
+        });
+    }
+
+    if (nextBtn) {
+        nextBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            navigateWordInModal('next');
+        });
+    }
+}
+
+// --- Navigate Word In Modal ---
+// Changes to prev/next word and refreshes the modal
+function navigateWordInModal(direction) {
+    // Get current word index in filtered list
+    const currentIndex = state.filteredWordList.indexOf(state.currentWord);
+    if (currentIndex === -1) return;
+
+    // Calculate new index
+    let newIndex;
+    if (direction === 'previous') {
+        newIndex = (currentIndex - 1 + state.filteredWordList.length) % state.filteredWordList.length;
+    } else {
+        newIndex = (currentIndex + 1) % state.filteredWordList.length;
+    }
+
+    // Update state
+    const newWord = state.filteredWordList[newIndex];
+    state.currentWord = newWord;
+    state.currentWordIndex = newIndex;
+    state.currentRhymeIndex = -1;
+    state.currentRhymeList = getValidRhymesForWord(newWord);
+
+    // Update the main display behind the modal
+    ui.displayWord(newWord);
+
+    // Refresh modal content
+    updateModalHeader();
+    displayRhymeList(newWord.toLowerCase());
+}
+
+// --- Get Currently Displayed Word ---
+// Returns the word currently being displayed (could be base word or a rhyme)
+function getDisplayedWord() {
+    // If we're viewing a rhyme (navigated up/down), use that rhyme word
+    if (state.currentRhymeIndex >= 0 &&
+        state.currentRhymeList &&
+        state.currentRhymeList.length > 0 &&
+        state.currentRhymeList[state.currentRhymeIndex]) {
+        return state.currentRhymeList[state.currentRhymeIndex];
+    }
+    // Otherwise use the base word
+    return state.currentWord;
 }
 
 // --- Show Rhyme Finder Modal ---
 // Opens the rhyme finder modal and populates it with rhymes for the current word
 export function showRhymeFinder() {
-    if (!state.rhymeData) { 
+    if (!state.rhymeData) {
         ui.showFeedback("Rhyme data not loaded. Please wait or refresh the page.", true);
-        return; 
+        return;
     }
+
+    // Get the currently displayed word (could be a rhyme if navigating up/down)
+    const displayedWord = getDisplayedWord();
+
+    // Update state.currentWord to the displayed word so modal shows correct rhymes
+    // Also reset rhyme navigation since we're now treating this as the new base word
+    if (displayedWord !== state.currentWord) {
+        state.currentWord = displayedWord;
+        state.currentRhymeIndex = -1;
+        // Populate rhyme list for the new base word
+        state.currentRhymeList = getValidRhymesForWord(displayedWord);
+    }
+
     const baseWord = state.currentWord;
-    if (!baseWord || baseWord === "NO WORDS!") { 
+    if (!baseWord || baseWord === "NO WORDS!") {
         ui.showFeedback("No word selected for rhyme finding.", true);
-        return; 
+        return;
     }
     const baseWordLower = baseWord.toLowerCase();
 

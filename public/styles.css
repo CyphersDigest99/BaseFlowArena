@@ -804,7 +804,7 @@ input[type="range"] {
     font-size: 4em; /* Base font size - will be dynamically adjusted by JavaScript */
     font-weight: bold;
     color: var(--text-bright);
-    text-shadow: 0 0 10px #fff, 0 0 15px var(--primary-accent);
+    text-shadow: 0 0 4px rgba(255, 255, 255, 0.6);
     transition: color 0.4s ease-out, opacity 0.4s ease-out, transform 0.4s ease-out, font-size 0.2s ease-out;
     display: flex;
     align-items: center;
@@ -1532,6 +1532,48 @@ input[type="range"] {
     margin-bottom: 15px;
 }
 
+/* Activation Panel Layout */
+.activation-panel {
+    margin-bottom: 15px;
+}
+
+.activation-buttons-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    align-items: flex-start;
+}
+
+/* Slider container takes full width to appear below buttons */
+.timed-cycle-slider-container {
+    width: 100%;
+    display: none; /* Hidden by default to prevent FOUC */
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 10px;
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+    margin-top: 5px;
+}
+
+.timed-cycle-slider-container label {
+    color: var(--secondary-accent);
+    font-size: 1.2em;
+}
+
+.timed-cycle-slider-container input[type="range"] {
+    flex: 1;
+    max-width: 200px;
+}
+
+.timed-cycle-slider-container input[type="number"] {
+    width: 60px;
+    text-align: center;
+}
+
 .activation-button {
     flex-basis: 45%;
     justify-content: center;
@@ -1582,10 +1624,66 @@ input[type="range"] {
     box-shadow: 0 0 8px #fff, 0 0 12px var(--red-color);
 }
 
-@keyframes pulse-on-air-glow { 
-    0% { box-shadow: 0 0 10px var(--red-color); } 
-    50% { box-shadow: 0 0 20px var(--red-color); } 
-    100% { box-shadow: 0 0 10px var(--red-color); } 
+@keyframes pulse-on-air-glow {
+    0% { box-shadow: 0 0 10px var(--red-color); }
+    50% { box-shadow: 0 0 20px var(--red-color); }
+    100% { box-shadow: 0 0 10px var(--red-color); }
+}
+
+/* Activation Panel Button Styles (same as activation-button) */
+.activation-panel-button {
+    flex: 0 0 auto;
+    min-width: 160px;
+    padding: 12px 20px;
+    justify-content: center;
+    border-width: 2px;
+    background-color: #333;
+    color: #999;
+    border-color: #555;
+    position: relative;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    white-space: nowrap;
+}
+
+.activation-panel-button .light {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    background-color: #555;
+    border-radius: 50%;
+    margin-right: 8px;
+    transition: all 0.3s ease;
+    box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.5);
+    vertical-align: middle;
+}
+
+.activation-panel-button i {
+    margin-right: 8px;
+}
+
+.activation-panel-button.active {
+    background-color: var(--primary-accent) !important;
+    color: var(--panel-bg-opaque) !important;
+    border-color: var(--primary-accent) !important;
+    box-shadow: 0 0 12px var(--primary-accent), inset 0 3px 8px rgba(0, 0, 0, 0.4) !important;
+    font-weight: bold !important;
+    transform: translateY(2px) !important;
+}
+
+.activation-panel-button#voice-mode-button.active {
+    background-color: var(--red-color) !important;
+    border-color: var(--red-color) !important;
+    color: #fff !important;
+    box-shadow: 0 0 15px var(--red-color), inset 0 3px 8px rgba(0, 0, 0, 0.4) !important;
+    animation: pulse-on-air-glow 1.5s infinite ease-in-out !important;
+    transform: translateY(2px) !important;
+}
+
+.activation-panel-button#voice-mode-button.active .light {
+    background-color: var(--green-color) !important;
+    box-shadow: 0 0 8px var(--green-color), 0 0 12px var(--green-color) !important;
 }
 
 #timed-cycle-options {
@@ -2755,7 +2853,8 @@ body.screen-shaking {
 }
 
 /* Search mode styles */
-.word-display-cell.middle-cell.search-mode {
+.word-display-cell.middle-cell.search-mode,
+.word-display-cell.middle-cell.reverse-search-mode {
     position: relative;
 }
 
@@ -2781,7 +2880,9 @@ body.screen-shaking {
     pointer-events: none;
     opacity: 0;
     visibility: hidden;
-    transition: opacity 0.3s ease, visibility 0.3s ease;
+    transition: opacity 0.3s ease, visibility 0.3s ease, border 0.3s ease, box-shadow 0.3s ease;
+    border: 2px solid transparent;
+    border-radius: 12px;
 }
 
 .search-input-container.active {
@@ -2798,7 +2899,7 @@ body.screen-shaking {
     font-size: 2em !important;
     font-weight: bold;
     color: var(--text-bright);
-    text-shadow: 0 0 10px #fff, 0 0 15px var(--primary-accent);
+    text-shadow: 0 0 4px rgba(255, 255, 255, 0.6);
     transition: color 0.4s ease-out, opacity 0.4s ease-out, transform 0.4s ease-out, font-size 0.2s ease-out;
     display: flex;
     align-items: center;
@@ -2816,24 +2917,240 @@ body.screen-shaking {
     text-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
 }
 
+/* Reverse Search Input Styling */
+.reverse-search-input {
+    background: transparent;
+    border: none;
+    outline: none;
+    font-family: var(--font-display);
+    font-size: 2em !important;
+    font-weight: bold;
+    color: var(--text-bright);
+    text-shadow: 0 0 4px rgba(255, 255, 255, 0.6);
+    transition: color 0.4s ease-out, opacity 0.4s ease-out, transform 0.4s ease-out, font-size 0.2s ease-out;
+    line-height: 1.2;
+    margin: 0;
+    padding: 0;
+    text-align: center;
+    pointer-events: auto;
+    min-width: 150px;
+    caret-color: var(--text-bright);
+}
+
+/* When typing (has content), shrink to fit */
+.reverse-search-input.has-content {
+    text-align: left;
+    min-width: 20px;
+    width: auto;
+}
+
+.reverse-search-input::placeholder {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.6em;
+    font-style: italic;
+    text-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
+}
+
+/* Reverse search container - mirrors search-input-container */
+.reverse-search-container {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease, border 0.3s ease, box-shadow 0.3s ease;
+    border: 2px solid transparent;
+    border-radius: 12px;
+}
+
+.reverse-search-container.active {
+    pointer-events: auto;
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Border color coding for reverse search */
+.reverse-search-container.word-found {
+    box-shadow: 0 0 15px var(--green-color), 0 0 5px var(--green-color);
+    border: 2px solid var(--green-color);
+}
+
+.reverse-search-container.word-not-found {
+    box-shadow: 0 0 15px var(--red-color), 0 0 5px var(--red-color);
+    border: 2px solid var(--red-color);
+}
+
+/* Reverse search autocomplete - shows prefix before typed suffix */
+.reverse-search-autocomplete {
+    color: rgba(255, 255, 255, 0.3);
+    font-family: var(--font-display);
+    font-size: 2em !important;
+    font-weight: bold;
+    pointer-events: none;
+    white-space: nowrap;
+    line-height: 1.2;
+}
+
+/* Hide autocomplete when empty so it doesn't affect centering */
+.reverse-search-autocomplete:empty {
+    display: none;
+}
+
 .search-autocomplete {
     position: absolute;
-    top: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(0, 0, 0, 0.9);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    max-height: 200px;
-    overflow-y: auto;
-    z-index: 20;
-    min-width: 200px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-    display: none;
+    top: 50%;
+    transform: translateY(-50%);
+    left: 0; /* Will be positioned dynamically by JS */
+    color: rgba(255, 255, 255, 0.3);
+    font-family: var(--font-display);
+    font-size: inherit !important;
+    pointer-events: none;
+    white-space: nowrap;
+    z-index: 1;
+}
+
+/* Ensure autocomplete matches search input size exactly */
+.search-input-container .search-autocomplete {
+    font-size: 2em !important;
 }
 
 .search-autocomplete.active {
     display: block;
+}
+
+/* Border color coding for word existence */
+.search-input-container.word-found {
+    box-shadow: 0 0 15px var(--green-color), 0 0 5px var(--green-color);
+    border: 2px solid var(--green-color);
+}
+
+.search-input-container.word-not-found {
+    box-shadow: 0 0 15px var(--red-color), 0 0 5px var(--red-color);
+    border: 2px solid var(--red-color);
+}
+
+/* Search Suggestion Boxes (Enter/Tab prompts) */
+.enter-suggestion,
+.tab-suggestion {
+    position: absolute;
+    top: 100%;
+    font-size: 0.8em;
+    margin-top: 5px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    white-space: nowrap;
+    z-index: 10;
+    display: none;
+    font-family: var(--font-main);
+    font-weight: 500;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Single suggestion (centered) */
+.enter-suggestion:not(.dual-right):not(.dual-left),
+.tab-suggestion:not(.dual-right):not(.dual-left) {
+    left: 50%;
+    transform: translateX(-50%);
+    color: var(--green-color);
+    background-color: rgba(0, 255, 0, 0.15);
+    border: 2px solid var(--green-color);
+}
+
+/* Dual suggestion layout - Green box on left (Tab) */
+.tab-suggestion.dual-left {
+    left: 0;
+    transform: none;
+    color: var(--green-color);
+    background-color: rgba(0, 255, 0, 0.15);
+    border: 2px solid var(--green-color);
+}
+
+/* Dual suggestion layout - Orange box on right (Enter) */
+.enter-suggestion.dual-right {
+    right: 0;
+    left: auto;
+    transform: none;
+    color: var(--highlight-color);
+    background-color: rgba(249, 168, 38, 0.15);
+    border: 2px solid var(--highlight-color);
+}
+
+/* Suggestion List - Vertical list with fade effect */
+.suggestion-list {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.15em;
+    pointer-events: none;
+    z-index: 5;
+    overflow: visible;
+}
+
+.suggestion-item {
+    font-family: var(--font-display);
+    font-size: 1.8em;
+    font-weight: bold;
+    white-space: nowrap;
+    transition: opacity 0.15s ease;
+    text-align: center;
+}
+
+/* Selected item - full visibility with subtle glow */
+.suggestion-item.selected {
+    opacity: 1;
+    text-shadow: 0 0 8px rgba(255, 255, 255, 0.8), 0 0 12px var(--primary-accent);
+}
+
+/* First level fade (1 step from center) */
+.suggestion-item.fade-1 {
+    opacity: 0.4;
+    text-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
+}
+
+/* Second level fade (2 steps from center - edges) */
+.suggestion-item.fade-2 {
+    opacity: 0.15;
+    text-shadow: none;
+}
+
+/* Typed portion styling */
+.suggestion-item .typed-part {
+    color: var(--text-bright);
+}
+
+/* Autocomplete portion styling */
+.suggestion-item .autocomplete-part {
+    color: rgba(255, 255, 255, 0.4);
+}
+
+/* Reverse search suggestion list - use secondary accent */
+.suggestion-list.reverse .suggestion-item.selected {
+    text-shadow: 0 0 8px rgba(255, 255, 255, 0.8), 0 0 12px var(--secondary-accent);
+}
+
+/* List seam indicator - shows where the list wraps around */
+.suggestion-item.list-seam {
+    margin-top: 0.5em;
+    padding-top: 0.5em;
+    border-top: 2px solid var(--primary-accent);
+}
+
+/* Reverse search uses secondary accent for seam */
+.suggestion-list.reverse .suggestion-item.list-seam {
+    border-top-color: var(--secondary-accent);
 }
 
 .rhyme-tag:hover {
@@ -3019,3 +3336,18 @@ body.screen-shaking {
 }
 
 /* Remove old triplet-pulse animation and container styles */
+
+/* Reverse Search Responsive Styles */
+@media (max-width: 768px) {
+    .reverse-search-input,
+    .reverse-search-autocomplete {
+        font-size: 1.5em !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .reverse-search-input,
+    .reverse-search-autocomplete {
+        font-size: 1.2em !important;
+    }
+}

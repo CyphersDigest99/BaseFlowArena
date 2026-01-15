@@ -30,7 +30,8 @@ let searchElements = {
     searchInput: null,
     searchAutocomplete: null,
     searchContainer: null,
-    wordCell: null
+    wordCell: null,
+    suggestionList: null
 };
 
 /**
@@ -44,12 +45,18 @@ export function initSearch() {
     searchElements.searchContainer = document.getElementById('search-input-container');
     searchElements.wordCell = document.getElementById('word-cell');
 
-    if (!searchElements.searchButton || !searchElements.searchInput || 
-        !searchElements.searchAutocomplete || !searchElements.searchContainer || 
+    if (!searchElements.searchButton || !searchElements.searchInput ||
+        !searchElements.searchAutocomplete || !searchElements.searchContainer ||
         !searchElements.wordCell) {
         console.error('Search elements not found');
         return;
     }
+
+    // Create suggestion list container
+    searchElements.suggestionList = document.createElement('div');
+    searchElements.suggestionList.className = 'suggestion-list';
+    searchElements.suggestionList.id = 'search-suggestion-list';
+    searchElements.searchContainer.appendChild(searchElements.suggestionList);
 
     // Attach event listeners
     searchElements.searchButton.addEventListener('click', startSearch);
@@ -112,6 +119,7 @@ function handleSearchInput(event) {
         searchElements.searchAutocomplete.classList.remove('add-word-prompt');
         searchState.suggestions = [];
         searchState.selectedIndex = -1;
+        hideSuggestionList();
         return;
     }
 
@@ -136,11 +144,14 @@ function handleSearchInput(event) {
         searchElements.searchAutocomplete.textContent = remainingPart;
         searchElements.searchAutocomplete.classList.remove('add-word-prompt');
         searchState.selectedIndex = 0;
-        
+
+        // Render the visible suggestion list
+        renderSuggestionList();
+
         // Check if the exact word exists in the list
         const exactMatch = state.wordList.includes(query);
         updateSearchBorder(exactMatch);
-        
+
         // If the typed word doesn't exist, show both options
         if (!exactMatch) {
             showDualSuggestion(query, firstSuggestion);
@@ -148,7 +159,7 @@ function handleSearchInput(event) {
             // Word exists, no need for suggestions
             hideAllSuggestions();
         }
-        
+
         // Position autocomplete at the cursor position
         positionAutocomplete();
     } else if (query.length > 0) {
@@ -157,14 +168,17 @@ function handleSearchInput(event) {
         searchElements.searchAutocomplete.classList.remove('add-word-prompt');
         searchState.selectedIndex = -1;
         searchState.canAddWord = true;
-        
+
+        // Hide suggestion list
+        hideSuggestionList();
+
         // Word not found - show red border
         updateSearchBorder(false);
-        
+
         // Hide any existing dual suggestions and show single "Press Enter" dialog
         hideAllSuggestions();
         showEnterSuggestion(query);
-        
+
         // Position autocomplete at the cursor position
         positionAutocomplete();
     } else {
@@ -172,10 +186,13 @@ function handleSearchInput(event) {
         searchElements.searchAutocomplete.classList.remove('add-word-prompt');
         searchState.selectedIndex = -1;
         searchState.canAddWord = false;
-        
+
+        // Hide suggestion list
+        hideSuggestionList();
+
         // Clear border when no input
         clearSearchBorder();
-        
+
         // Hide all suggestions
         hideAllSuggestions();
     }
@@ -190,34 +207,44 @@ function handleSearchInput(event) {
 function positionAutocomplete() {
     const input = searchElements.searchInput;
     const autocomplete = searchElements.searchAutocomplete;
-    
+
     if (!input || !autocomplete) return;
-    
+
     // If this is the "Press Enter to add" message, don't position it (CSS handles it)
     if (autocomplete.classList.contains('add-word-prompt')) {
         return;
     }
-    
+
     // Create a temporary span to measure the input text width
     const tempSpan = document.createElement('span');
-    tempSpan.style.font = window.getComputedStyle(input).font;
+    tempSpan.style.fontSize = window.getComputedStyle(input).fontSize;
+    tempSpan.style.fontFamily = window.getComputedStyle(input).fontFamily;
+    tempSpan.style.fontWeight = window.getComputedStyle(input).fontWeight;
+    tempSpan.style.letterSpacing = window.getComputedStyle(input).letterSpacing;
     tempSpan.style.visibility = 'hidden';
     tempSpan.style.position = 'absolute';
-    tempSpan.style.whiteSpace = 'nowrap';
+    tempSpan.style.whiteSpace = 'pre';
     tempSpan.textContent = input.value;
     document.body.appendChild(tempSpan);
-    
+
     // Calculate the width of the input text
     const inputTextWidth = tempSpan.offsetWidth;
     document.body.removeChild(tempSpan);
-    
-    // Position autocomplete to the right of the cursor (center of input)
-    const containerWidth = searchElements.wordCell.offsetWidth;
-    const centerPosition = containerWidth / 2;
-    const leftPosition = centerPosition + (inputTextWidth / 2);
-    
+
+    // Get the input's position within the container
+    const inputRect = input.getBoundingClientRect();
+    const containerRect = searchElements.searchContainer.getBoundingClientRect();
+
+    // Calculate where the input text starts (accounting for text-align center)
+    const inputCenterX = inputRect.left + (inputRect.width / 2);
+    const textStartX = inputCenterX - (inputTextWidth / 2);
+    const textEndX = textStartX + inputTextWidth;
+
+    // Position autocomplete right after the typed text (relative to container)
+    const leftPosition = textEndX - containerRect.left;
+
     autocomplete.style.left = leftPosition + 'px';
-    autocomplete.style.transform = 'none';
+    autocomplete.style.transform = 'translateY(-50%)';
 }
 
 /**
@@ -253,13 +280,55 @@ function clearSearchBorder() {
  */
 function handleSearchKeydown(event) {
     switch (event.key) {
+        case 'Tab':
+            event.preventDefault();
+            // Tab accepts the autocomplete suggestion (full word)
+            if (searchState.suggestions.length > 0) {
+                const selectedSuggestion = searchState.suggestions[searchState.selectedIndex >= 0 ? searchState.selectedIndex : 0];
+                const wordIndex = state.wordList.indexOf(selectedSuggestion);
+                if (wordIndex !== -1) {
+                    state.currentWord = selectedSuggestion;
+                    state.currentWordIndex = wordIndex;
+                    state.currentRhymeList = [];
+                    state.currentRhymeIndex = -1;
+                    exitSearchMode();
+                    ui.displayWord(selectedSuggestion);
+                    state.currentRhymeList = rhyme.getValidRhymesForWord(selectedSuggestion);
+                    state.currentRhymeIndex = -1;
+                    ui.updateRhymeNavButtons();
+                    if (typeof updateTooltipForDisplayedWord === 'function') {
+                        updateTooltipForDisplayedWord();
+                    }
+                    ui.showFeedback(`Selected: "${selectedSuggestion}"`, false, 1500);
+                } else {
+                    exitSearchMode();
+                }
+            }
+            break;
         case 'Enter':
             event.preventDefault();
-            // If there's an autocomplete suggestion but user wants to submit what they typed
-            if (searchState.suggestions.length > 0 && searchState.currentQuery !== searchState.suggestions[0]) {
-                // Submit the typed word as a new word
-                addNewWord(searchState.currentQuery);
-            } else {
+            // Enter submits what you typed (partial word, adds if new)
+            const typedWord = searchState.currentQuery.trim();
+            if (typedWord.length >= 2) {
+                if (state.wordList.includes(typedWord)) {
+                    // Word exists, select it
+                    const wordIndex = state.wordList.indexOf(typedWord);
+                    state.currentWord = typedWord;
+                    state.currentWordIndex = wordIndex;
+                    state.currentRhymeList = [];
+                    state.currentRhymeIndex = -1;
+                    exitSearchMode();
+                    ui.displayWord(typedWord);
+                    state.currentRhymeList = rhyme.getValidRhymesForWord(typedWord);
+                    state.currentRhymeIndex = -1;
+                    ui.updateRhymeNavButtons();
+                    ui.showFeedback(`Selected: "${typedWord}"`, false, 1500);
+                } else {
+                    // Word doesn't exist, add it
+                    addNewWord(typedWord);
+                }
+            } else if (searchState.suggestions.length > 0) {
+                // Fallback: if typed word too short but suggestions exist, treat as confirm
                 confirmSearch();
             }
             break;
@@ -283,47 +352,6 @@ function handleSearchKeydown(event) {
             event.preventDefault();
             navigateLetterForward();
             break;
-        case 'Tab':
-            event.preventDefault();
-            if (searchState.suggestions.length > 0) {
-                // Select the suggested word as the current word
-                const selectedSuggestion = searchState.suggestions[0];
-                
-                // Find the word in the word list and set it as current
-                const wordIndex = state.wordList.indexOf(selectedSuggestion);
-                if (wordIndex !== -1) {
-                    // Update state
-                    state.currentWord = selectedSuggestion;
-                    state.currentWordIndex = wordIndex;
-                    
-                    // Clear rhyme state since we're changing the base word
-                    state.currentRhymeList = [];
-                    state.currentRhymeIndex = -1;
-
-                    // Exit search mode first to restore normal display
-                    exitSearchMode();
-                    
-                    // Update display after search mode is exited
-                    ui.displayWord(selectedSuggestion);
-                    
-                    // Load rhymes for the new word
-                    state.currentRhymeList = rhyme.getValidRhymesForWord(selectedSuggestion);
-                    state.currentRhymeIndex = -1;
-                    
-                    // Force refresh rhyme navigation buttons
-                    ui.updateRhymeNavButtons();
-                    
-                    // Update tooltips if they're active
-                    if (typeof updateTooltipForDisplayedWord === 'function') {
-                        updateTooltipForDisplayedWord();
-                    }
-
-                    ui.showFeedback(`Selected: "${selectedSuggestion}"`, false, 1500);
-                } else {
-                    exitSearchMode();
-                }
-            }
-            break;
     }
 }
 
@@ -334,7 +362,7 @@ function navigateSuggestions(direction) {
     if (searchState.suggestions.length === 0) return;
 
     let newIndex = searchState.selectedIndex + direction;
-    
+
     // Cycle continuously through the suggestions
     if (newIndex < 0) {
         // Wrap to the bottom when going up past the top
@@ -343,14 +371,105 @@ function navigateSuggestions(direction) {
         // Wrap to the top when going down past the bottom
         newIndex = 0;
     }
-    
+
     searchState.selectedIndex = newIndex;
     const selectedSuggestion = searchState.suggestions[newIndex];
     const remainingPart = selectedSuggestion.substring(searchState.currentQuery.length);
     searchElements.searchAutocomplete.textContent = remainingPart;
-    
+
+    // Render the visible suggestion list
+    renderSuggestionList();
+
     // Reposition autocomplete
     positionAutocomplete();
+}
+
+/**
+ * Render the visible suggestion list with fade effect
+ * Shows 2 items above, selected item, and 2 items below
+ */
+function renderSuggestionList() {
+    const list = searchElements.suggestionList;
+    if (!list) return;
+
+    const suggestions = searchState.suggestions;
+    const selectedIndex = searchState.selectedIndex;
+    const query = searchState.currentQuery;
+
+    // Clear existing items
+    list.innerHTML = '';
+
+    if (suggestions.length === 0 || selectedIndex < 0) {
+        list.style.display = 'none';
+        return;
+    }
+
+    list.style.display = 'flex';
+
+    // Hide the single-word autocomplete and input text since the list shows full words
+    searchElements.searchAutocomplete.style.visibility = 'hidden';
+    searchElements.searchInput.style.color = 'transparent';
+    searchElements.searchInput.style.caretColor = 'transparent';
+    searchElements.searchInput.style.textShadow = 'none';
+
+    // Build visible items: 2 above, selected, 2 below (5 total)
+    const visibleCount = 5;
+    const halfVisible = Math.floor(visibleCount / 2);
+
+    let prevIdx = null;
+    for (let offset = -halfVisible; offset <= halfVisible; offset++) {
+        // Calculate wrapped index
+        let idx = selectedIndex + offset;
+        const len = suggestions.length;
+        idx = ((idx % len) + len) % len; // proper modulo for negative numbers
+
+        const word = suggestions[idx];
+        const item = document.createElement('div');
+        item.className = 'suggestion-item';
+
+        // Detect wrap-around: if index jumps backward, we've wrapped from end to start
+        if (prevIdx !== null && idx < prevIdx) {
+            item.classList.add('list-seam');
+        }
+        prevIdx = idx;
+
+        // Highlight the typed portion vs autocomplete portion
+        const typedPart = word.substring(0, query.length);
+        const autocompletePart = word.substring(query.length);
+
+        item.innerHTML = `<span class="typed-part">${typedPart}</span><span class="autocomplete-part">${autocompletePart}</span>`;
+
+        // Apply fade based on distance from center
+        const distance = Math.abs(offset);
+        if (distance === 0) {
+            item.classList.add('selected');
+        } else if (distance === 1) {
+            item.classList.add('fade-1');
+        } else {
+            item.classList.add('fade-2');
+        }
+
+        list.appendChild(item);
+    }
+}
+
+/**
+ * Hide the suggestion list
+ */
+function hideSuggestionList() {
+    if (searchElements.suggestionList) {
+        searchElements.suggestionList.style.display = 'none';
+        searchElements.suggestionList.innerHTML = '';
+    }
+    // Restore autocomplete and input visibility
+    if (searchElements.searchAutocomplete) {
+        searchElements.searchAutocomplete.style.visibility = 'visible';
+    }
+    if (searchElements.searchInput) {
+        searchElements.searchInput.style.color = '';
+        searchElements.searchInput.style.caretColor = '';
+        searchElements.searchInput.style.textShadow = '';
+    }
 }
 
 /**
@@ -561,35 +680,36 @@ function showEnterSuggestion(word) {
 }
 
 /**
- * Show dual suggestions - "Press Enter for [word]" and "Press Tab for [suggestion]"
+ * Show dual suggestions - "Press Tab for [suggestion]" and "Press Enter for [word]"
  */
 function showDualSuggestion(word, suggestion) {
-    // Create or update the enter suggestion element (left)
-    let enterSuggestion = document.getElementById('enter-suggestion');
-    if (!enterSuggestion) {
-        enterSuggestion = document.createElement('div');
-        enterSuggestion.id = 'enter-suggestion';
-        enterSuggestion.className = 'enter-suggestion dual-left';
-        searchElements.searchContainer.appendChild(enterSuggestion);
-    } else {
-        enterSuggestion.className = 'enter-suggestion dual-left';
-    }
-    
-    // Create or update the tab suggestion element (right)
+    // Create or update the tab suggestion element (left) - GREEN BOX
     let tabSuggestion = document.getElementById('tab-suggestion');
     if (!tabSuggestion) {
         tabSuggestion = document.createElement('div');
         tabSuggestion.id = 'tab-suggestion';
-        tabSuggestion.className = 'tab-suggestion dual-right';
+        tabSuggestion.className = 'tab-suggestion dual-left';
         searchElements.searchContainer.appendChild(tabSuggestion);
     } else {
-        tabSuggestion.className = 'tab-suggestion dual-right';
+        tabSuggestion.className = 'tab-suggestion dual-left';
     }
-    
-    enterSuggestion.textContent = `Press Enter for "${word}"`;
+
+    // Create or update the enter suggestion element (right) - ORANGE BOX
+    let enterSuggestion = document.getElementById('enter-suggestion');
+    if (!enterSuggestion) {
+        enterSuggestion = document.createElement('div');
+        enterSuggestion.id = 'enter-suggestion';
+        enterSuggestion.className = 'enter-suggestion dual-right';
+        searchElements.searchContainer.appendChild(enterSuggestion);
+    } else {
+        enterSuggestion.className = 'enter-suggestion dual-right';
+    }
+
+    // CORRECTED: Tab accepts autocomplete (suggestion), Enter accepts typed word
     tabSuggestion.textContent = `Press Tab for "${suggestion}"`;
-    enterSuggestion.style.display = 'block';
+    enterSuggestion.textContent = `Press Enter for "${word}"`;
     tabSuggestion.style.display = 'block';
+    enterSuggestion.style.display = 'block';
 }
 
 /**
@@ -656,6 +776,7 @@ function exitSearchMode() {
     searchElements.searchAutocomplete.classList.remove('add-word-prompt');
     clearSearchBorder();
     hideAllSuggestions(); // Hide all suggestions when exiting
+    hideSuggestionList(); // Hide the suggestion list
     searchElements.searchInput.blur();
 
     console.log('Search mode deactivated');

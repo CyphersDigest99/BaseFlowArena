@@ -446,8 +446,23 @@ function attachEventListeners() {
     });
 
     // Activation Mode Buttons
-    ui.elements.voiceModeButton?.addEventListener('click', () => setActivationMode('voice'));
-    ui.elements.timedModeButton?.addEventListener('click', () => setActivationMode('timed'));
+    // Debounced handlers to prevent double-click issues
+    let voiceModeDebounce = false;
+    let timedModeDebounce = false;
+
+    ui.elements.voiceModeButton?.addEventListener('click', () => {
+        if (voiceModeDebounce) return;
+        voiceModeDebounce = true;
+        setTimeout(() => voiceModeDebounce = false, 300);
+        setActivationMode('voice');
+    });
+
+    ui.elements.timedModeButton?.addEventListener('click', () => {
+        if (timedModeDebounce) return;
+        timedModeDebounce = true;
+        setTimeout(() => timedModeDebounce = false, 300);
+        setActivationMode('timed');
+    });
 
     // Timed Mode Speed Controls - Manages automatic word cycling speed
     const handleCycleSpeedChange = () => {
@@ -663,6 +678,10 @@ function handleMainPageKeydown(event) {
             break;
             
         case ' ':
+            // Don't handle spacebar if a button is focused (it will trigger the button's click event)
+            if (document.activeElement && document.activeElement.tagName === 'BUTTON') {
+                return; // Let the button handle it
+            }
             event.preventDefault();
             // Toggle voice activation state
             if (state.activationMode === 'voice') {
@@ -693,13 +712,13 @@ function handleMainPageKeydown(event) {
             break;
             
         case 's':
-            if (event.altKey) {
-                event.preventDefault();
-                reverseSearch.startSearch();
-            } else {
-                event.preventDefault();
-                wordSearch.startSearch();
-            }
+            event.preventDefault();
+            wordSearch.startSearch();
+            break;
+
+        case 'd':
+            event.preventDefault();
+            reverseSearch.startSearch();
             break;
     }
 }
@@ -844,7 +863,8 @@ export async function updateTooltipForDisplayedWord() {
 
 // --- Start Application ---
 // Initialize the application when DOM is fully loaded
-document.addEventListener('DOMContentLoaded', initializeApp);
+// NOTE: Initialization is handled below in the beat player initialization (line ~1177)
+// document.addEventListener('DOMContentLoaded', initializeApp); // REMOVED - duplicate initialization
 
 // Ensure .rhyme-modal-header is focusable
 const headerEl = document.querySelector('.rhyme-modal-header');
@@ -879,17 +899,29 @@ function attachRhymeHeaderArrowHandlers() {
 
 function handleRhymeModalKeydown(event) {
     console.log('handleRhymeModalKeydown fired:', event.key, 'section:', keyboardState.focusedSection);
+
+    // 'R' key toggles the modal closed
+    if (event.key.toLowerCase() === 'r') {
+        event.preventDefault();
+        modal.closeModal(ui.elements.rhymeFinderModal);
+        keyboardState.isRhymeModalOpen = false;
+        keyboardState.focusedSection = 'main';
+        keyboardState.focusedRhymeIndex = -1;
+        keyboardState.focusedSortIndex = -1;
+        return;
+    }
+
     if (!keyboardState.focusedSection) return;
     if (keyboardState.focusedSection === 'header') {
         if (event.key === 'ArrowLeft') {
             if (keyboardState.headerSubFocus === 0) {
-                // Trigger previous word
+                // Trigger previous word - click the button to use its handler
                 const leftArrow = document.getElementById('rhyme-header-prev');
                 if (leftArrow) {
                     leftArrow.classList.add('pulse');
                     setTimeout(() => leftArrow.classList.remove('pulse'), 300);
+                    leftArrow.click();
                 }
-                wordManager.changeWord('previous', false, false);
                 setTimeout(() => updateRhymeModalFocus(), 100);
             } else {
                 keyboardState.headerSubFocus = (keyboardState.headerSubFocus + 2) % 3;
@@ -897,13 +929,13 @@ function handleRhymeModalKeydown(event) {
             }
         } else if (event.key === 'ArrowRight') {
             if (keyboardState.headerSubFocus === 2) {
-                // Trigger next word
+                // Trigger next word - click the button to use its handler
                 const rightArrow = document.getElementById('rhyme-header-next');
                 if (rightArrow) {
                     rightArrow.classList.add('pulse');
                     setTimeout(() => rightArrow.classList.remove('pulse'), 300);
+                    rightArrow.click();
                 }
-                wordManager.changeWord('next', false, false);
                 setTimeout(() => updateRhymeModalFocus(), 100);
             } else {
                 keyboardState.headerSubFocus = (keyboardState.headerSubFocus + 1) % 3;
@@ -932,16 +964,16 @@ function handleRhymeModalKeydown(event) {
                 if (leftArrow) {
                     leftArrow.classList.add('pulse');
                     setTimeout(() => leftArrow.classList.remove('pulse'), 300);
+                    leftArrow.click();
                 }
-                wordManager.changeWord('previous', false, false);
                 setTimeout(() => updateRhymeModalFocus(), 100);
             } else if (keyboardState.headerSubFocus === 2) {
                 const rightArrow = document.getElementById('rhyme-header-next');
                 if (rightArrow) {
                     rightArrow.classList.add('pulse');
                     setTimeout(() => rightArrow.classList.remove('pulse'), 300);
+                    rightArrow.click();
                 }
-                wordManager.changeWord('next', false, false);
                 setTimeout(() => updateRhymeModalFocus(), 100);
             }
         }

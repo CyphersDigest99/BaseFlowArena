@@ -1,12 +1,11 @@
 /**
  * @fileoverview Reverse Search Module for BaseFlowArena
- * 
+ *
  * This module handles reverse search functionality, allowing users to find words
- * that end with a specific suffix. It's particularly useful for freestyle rap
- * when you want to explore different words that rhyme or end with the same pattern.
- * 
- * Example: If you're typing "BARK" and cursor is at "B", it finds words ending in "ARK"
- * like "SPARK" (shows "SP"), "DARK" (shows "D"), "SHARK" (shows "SH")
+ * that end with a specific suffix. Works like the normal search but in reverse -
+ * user types a suffix and sees autocomplete for the prefix.
+ *
+ * Example: User types "ice" → autocomplete shows "pr" → full word is "price"
  */
 
 import { state } from './state.js';
@@ -21,16 +20,17 @@ let reverseSearchState = {
     currentSuffix: '',
     suggestions: [],
     selectedIndex: -1,
-    originalWord: '',
-    cursorPosition: 0,
-    inputElement: null
+    originalWord: ''
 };
 
 // DOM elements
 let reverseSearchElements = {
     reverseSearchButton: null,
+    reverseSearchInput: null,
+    reverseSearchAutocomplete: null,
+    reverseSearchContainer: null,
     wordCell: null,
-    suggestionContainer: null
+    suggestionList: null
 };
 
 /**
@@ -39,26 +39,29 @@ let reverseSearchElements = {
 export function initReverseSearch() {
     // Get DOM elements
     reverseSearchElements.reverseSearchButton = document.getElementById('reverse-search-word');
+    reverseSearchElements.reverseSearchInput = document.getElementById('reverse-search-input');
+    reverseSearchElements.reverseSearchAutocomplete = document.getElementById('reverse-search-autocomplete');
+    reverseSearchElements.reverseSearchContainer = document.getElementById('reverse-search-container');
     reverseSearchElements.wordCell = document.getElementById('word-cell');
-    
-    // Create suggestion container if it doesn't exist
-    if (!document.getElementById('reverse-suggestion-container')) {
-        reverseSearchElements.suggestionContainer = document.createElement('div');
-        reverseSearchElements.suggestionContainer.id = 'reverse-suggestion-container';
-        reverseSearchElements.suggestionContainer.className = 'reverse-suggestion-container';
-        reverseSearchElements.wordCell.appendChild(reverseSearchElements.suggestionContainer);
-    } else {
-        reverseSearchElements.suggestionContainer = document.getElementById('reverse-suggestion-container');
-    }
 
-    if (!reverseSearchElements.reverseSearchButton || !reverseSearchElements.wordCell || 
-        !reverseSearchElements.suggestionContainer) {
+    if (!reverseSearchElements.reverseSearchButton || !reverseSearchElements.reverseSearchInput ||
+        !reverseSearchElements.reverseSearchAutocomplete || !reverseSearchElements.reverseSearchContainer ||
+        !reverseSearchElements.wordCell) {
         console.error('Reverse search elements not found');
         return;
     }
 
+    // Create suggestion list container
+    reverseSearchElements.suggestionList = document.createElement('div');
+    reverseSearchElements.suggestionList.className = 'suggestion-list reverse';
+    reverseSearchElements.suggestionList.id = 'reverse-search-suggestion-list';
+    reverseSearchElements.reverseSearchContainer.appendChild(reverseSearchElements.suggestionList);
+
     // Attach event listeners
     reverseSearchElements.reverseSearchButton.addEventListener('click', startReverseSearch);
+    reverseSearchElements.reverseSearchInput.addEventListener('input', handleReverseSearchInput);
+    reverseSearchElements.reverseSearchInput.addEventListener('keydown', handleReverseSearchKeydown);
+    reverseSearchElements.reverseSearchInput.addEventListener('blur', handleReverseSearchBlur);
 
     console.log('Reverse search initialized');
 }
@@ -69,45 +72,33 @@ export function initReverseSearch() {
 export function startReverseSearch() {
     if (reverseSearchState.isActive) return;
 
-    // Store current word and state
+    // Store current word
     reverseSearchState.originalWord = state.currentWord;
     reverseSearchState.isActive = true;
     reverseSearchState.currentSuffix = '';
     reverseSearchState.suggestions = [];
     reverseSearchState.selectedIndex = -1;
-    reverseSearchState.cursorPosition = 0;
-
-    // Create or get input element
-    let inputElement = document.getElementById('reverse-search-input');
-    if (!inputElement) {
-        inputElement = document.createElement('input');
-        inputElement.id = 'reverse-search-input';
-        inputElement.className = 'reverse-search-input';
-        inputElement.type = 'text';
-        inputElement.autocomplete = 'off';
-        inputElement.spellcheck = 'false';
-        inputElement.placeholder = 'Type to search suffixes...';
-        reverseSearchElements.wordCell.appendChild(inputElement);
-    }
-    
-    reverseSearchState.inputElement = inputElement;
-
-    // Set up input event listeners
-    inputElement.addEventListener('input', handleReverseSearchInput);
-    inputElement.addEventListener('keydown', handleReverseSearchKeydown);
-    inputElement.addEventListener('blur', handleReverseSearchBlur);
 
     // Update UI
     reverseSearchElements.wordCell.classList.add('reverse-search-mode');
-    reverseSearchElements.suggestionContainer.classList.add('active');
-    
-    // Clear any existing content
-    inputElement.value = '';
-    clearReverseSuggestions();
-    
+    reverseSearchElements.reverseSearchContainer.classList.add('active');
+    reverseSearchElements.reverseSearchInput.value = '';
+    reverseSearchElements.reverseSearchInput.classList.remove('has-content');
+    reverseSearchElements.reverseSearchAutocomplete.textContent = '';
+    clearReverseSearchBorder();
+
+    // Show subtle instructions
+    reverseSearchElements.reverseSearchInput.placeholder = 'Type suffix...';
+
+    // Hide any existing suggestions
+    hideAllReverseSuggestions();
+
+    // Set initial input width
+    positionReverseAutocomplete();
+
     // Focus the input
     setTimeout(() => {
-        inputElement.focus();
+        reverseSearchElements.reverseSearchInput.focus();
     }, 100);
 
     console.log('Reverse search mode activated');
@@ -120,103 +111,169 @@ function handleReverseSearchInput(event) {
     const suffix = event.target.value.toLowerCase().trim();
     reverseSearchState.currentSuffix = suffix;
 
+    // Toggle has-content class for styling
+    if (suffix.length > 0) {
+        reverseSearchElements.reverseSearchInput.classList.add('has-content');
+        reverseSearchElements.reverseSearchInput.placeholder = '';
+    } else {
+        reverseSearchElements.reverseSearchInput.classList.remove('has-content');
+    }
+
     if (suffix.length === 0) {
-        clearReverseSuggestions();
+        reverseSearchElements.reverseSearchAutocomplete.textContent = '';
+        reverseSearchState.suggestions = [];
+        reverseSearchState.selectedIndex = -1;
+        clearReverseSearchBorder();
+        hideAllReverseSuggestions();
+        hideReverseSuggestionList();
+        positionReverseAutocomplete();
         return;
     }
 
     // Find words that end with the suffix
-    const suggestions = state.wordList.filter(word => 
+    const suggestions = state.wordList.filter(word =>
         word.toLowerCase().endsWith(suffix) && word.toLowerCase() !== suffix
     );
 
     reverseSearchState.suggestions = suggestions;
 
     if (suggestions.length > 0) {
-        displayReverseSuggestions(suffix, suggestions);
+        // Show first suggestion's prefix as autocomplete
+        const firstSuggestion = suggestions[0];
+        const prefix = firstSuggestion.substring(0, firstSuggestion.length - suffix.length);
+        reverseSearchElements.reverseSearchAutocomplete.textContent = prefix;
         reverseSearchState.selectedIndex = 0;
-    } else {
-        clearReverseSuggestions();
-        reverseSearchState.selectedIndex = -1;
-    }
-}
 
-/**
- * Display reverse search suggestions
- */
-function displayReverseSuggestions(suffix, suggestions) {
-    const container = reverseSearchElements.suggestionContainer;
-    container.innerHTML = '';
+        // Render the visible suggestion list
+        renderReverseSuggestionList();
 
-    suggestions.forEach((word, index) => {
-        const prefix = word.substring(0, word.length - suffix.length);
-        const suffixPart = word.substring(word.length - suffix.length);
-        
-        const suggestionElement = document.createElement('div');
-        suggestionElement.className = 'reverse-suggestion';
-        suggestionElement.dataset.index = index;
-        suggestionElement.dataset.word = word;
-        
-        // Create prefix span (what would be inserted)
-        const prefixSpan = document.createElement('span');
-        prefixSpan.className = 'reverse-prefix';
-        prefixSpan.textContent = prefix;
-        
-        // Create suffix span (what you're searching for)
-        const suffixSpan = document.createElement('span');
-        suffixSpan.className = 'reverse-suffix';
-        suffixSpan.textContent = suffixPart;
-        
-        suggestionElement.appendChild(prefixSpan);
-        suggestionElement.appendChild(suffixSpan);
-        
-        // Add click handler
-        suggestionElement.addEventListener('click', () => {
-            selectReverseSuggestion(word);
-        });
-        
-        container.appendChild(suggestionElement);
-    });
+        // Check if the exact suffix exists as a word in the list
+        const exactMatch = state.wordList.some(w => w.toLowerCase() === suffix);
+        updateReverseSearchBorder(exactMatch);
 
-    // Highlight first suggestion
-    if (suggestions.length > 0) {
-        highlightReverseSuggestion(0);
-    }
-}
-
-/**
- * Clear reverse search suggestions
- */
-function clearReverseSuggestions() {
-    const container = reverseSearchElements.suggestionContainer;
-    container.innerHTML = '';
-}
-
-/**
- * Highlight a specific suggestion
- */
-function highlightReverseSuggestion(index) {
-    const suggestions = reverseSearchElements.suggestionContainer.querySelectorAll('.reverse-suggestion');
-    
-    suggestions.forEach((suggestion, i) => {
-        if (i === index) {
-            suggestion.classList.add('selected');
+        // If the typed suffix doesn't exist as a word, show dual suggestions
+        if (!exactMatch) {
+            showDualReverseSuggestion(suffix, firstSuggestion);
         } else {
-            suggestion.classList.remove('selected');
+            // Suffix exists as a word, show that it can be selected
+            hideAllReverseSuggestions();
         }
-    });
+
+        // Position autocomplete
+        positionReverseAutocomplete();
+    } else if (suffix.length > 0) {
+        // No suggestions found - clear autocomplete
+        reverseSearchElements.reverseSearchAutocomplete.textContent = '';
+        reverseSearchState.selectedIndex = -1;
+
+        // Hide suggestion list
+        hideReverseSuggestionList();
+
+        // Check if the suffix itself exists as a word
+        const exactMatch = state.wordList.some(w => w.toLowerCase() === suffix);
+        updateReverseSearchBorder(exactMatch);
+
+        if (exactMatch) {
+            hideAllReverseSuggestions();
+        } else {
+            // Show option to add as new word
+            hideAllReverseSuggestions();
+            showReverseEnterSuggestion(suffix);
+        }
+
+        positionReverseAutocomplete();
+    }
 }
 
 /**
- * Handle reverse search keyboard navigation
+ * Position the autocomplete text before the input
+ * Now handled by CSS flexbox - this function just adjusts input width
+ */
+function positionReverseAutocomplete() {
+    const input = reverseSearchElements.reverseSearchInput;
+    if (!input) return;
+
+    // Auto-size the input based on content
+    // Create a temporary span to measure text width
+    const tempSpan = document.createElement('span');
+    tempSpan.style.fontSize = window.getComputedStyle(input).fontSize;
+    tempSpan.style.fontFamily = window.getComputedStyle(input).fontFamily;
+    tempSpan.style.fontWeight = window.getComputedStyle(input).fontWeight;
+    tempSpan.style.visibility = 'hidden';
+    tempSpan.style.position = 'absolute';
+    tempSpan.style.whiteSpace = 'pre';
+    tempSpan.textContent = input.value || input.placeholder || 'W';
+    document.body.appendChild(tempSpan);
+
+    const textWidth = tempSpan.offsetWidth;
+    document.body.removeChild(tempSpan);
+
+    // Set input width to match content (with small padding)
+    input.style.width = Math.max(textWidth + 5, 20) + 'px';
+}
+
+/**
+ * Update the reverse search border based on word existence
+ */
+function updateReverseSearchBorder(wordExists) {
+    const container = reverseSearchElements.reverseSearchContainer;
+    if (!container) return;
+
+    // Remove existing border classes
+    container.classList.remove('word-found', 'word-not-found');
+
+    // Add appropriate border class
+    if (wordExists) {
+        container.classList.add('word-found');
+    } else {
+        container.classList.add('word-not-found');
+    }
+}
+
+/**
+ * Clear the reverse search border
+ */
+function clearReverseSearchBorder() {
+    const container = reverseSearchElements.reverseSearchContainer;
+    if (!container) return;
+
+    container.classList.remove('word-found', 'word-not-found');
+}
+
+/**
+ * Handle keyboard navigation in reverse search
  */
 function handleReverseSearchKeydown(event) {
     switch (event.key) {
+        case 'Tab':
+            event.preventDefault();
+            // Tab accepts the autocomplete suggestion (full word with prefix)
+            if (reverseSearchState.suggestions.length > 0) {
+                const selectedSuggestion = reverseSearchState.suggestions[reverseSearchState.selectedIndex >= 0 ? reverseSearchState.selectedIndex : 0];
+                selectReverseWord(selectedSuggestion);
+            }
+            break;
         case 'Enter':
             event.preventDefault();
-            if (reverseSearchState.suggestions.length > 0 && reverseSearchState.selectedIndex >= 0) {
-                const selectedWord = reverseSearchState.suggestions[reverseSearchState.selectedIndex];
-                selectReverseSuggestion(selectedWord);
+            // Enter submits what you typed (the suffix, or adds as new word)
+            const typedSuffix = reverseSearchState.currentSuffix.trim();
+            if (typedSuffix.length >= 2) {
+                // Check if typed suffix exists as a word
+                const existingWord = state.wordList.find(w => w.toLowerCase() === typedSuffix);
+                if (existingWord) {
+                    selectReverseWord(existingWord);
+                } else if (reverseSearchState.suggestions.length > 0) {
+                    // Select first suggestion if suffix doesn't exist as word
+                    const selectedSuggestion = reverseSearchState.suggestions[reverseSearchState.selectedIndex >= 0 ? reverseSearchState.selectedIndex : 0];
+                    selectReverseWord(selectedSuggestion);
+                } else {
+                    // No matches - could add as new word
+                    addNewWordFromReverse(typedSuffix);
+                }
+            } else if (reverseSearchState.suggestions.length > 0) {
+                // Fallback: if typed suffix too short but suggestions exist
+                const selectedSuggestion = reverseSearchState.suggestions[reverseSearchState.selectedIndex >= 0 ? reverseSearchState.selectedIndex : 0];
+                selectReverseWord(selectedSuggestion);
             }
             break;
         case 'Escape':
@@ -231,63 +288,217 @@ function handleReverseSearchKeydown(event) {
             event.preventDefault();
             navigateReverseSuggestions(-1);
             break;
-        case 'Tab':
+        case 'ArrowLeft':
             event.preventDefault();
-            if (reverseSearchState.suggestions.length > 0) {
-                const selectedWord = reverseSearchState.suggestions[0];
-                selectReverseSuggestion(selectedWord);
-            }
+            navigateSuffixExpand();
+            break;
+        case 'ArrowRight':
+            event.preventDefault();
+            navigateSuffixShrink();
             break;
     }
 }
 
 /**
- * Navigate through reverse suggestions
+ * Navigate through suggestions with arrow keys
  */
 function navigateReverseSuggestions(direction) {
     if (reverseSearchState.suggestions.length === 0) return;
 
     let newIndex = reverseSearchState.selectedIndex + direction;
-    
-    // Cycle through suggestions
+
+    // Cycle continuously through the suggestions
     if (newIndex < 0) {
         newIndex = reverseSearchState.suggestions.length - 1;
     } else if (newIndex >= reverseSearchState.suggestions.length) {
         newIndex = 0;
     }
-    
+
     reverseSearchState.selectedIndex = newIndex;
-    highlightReverseSuggestion(newIndex);
+    const selectedSuggestion = reverseSearchState.suggestions[newIndex];
+    const suffix = reverseSearchState.currentSuffix;
+    const prefix = selectedSuggestion.substring(0, selectedSuggestion.length - suffix.length);
+    reverseSearchElements.reverseSearchAutocomplete.textContent = prefix;
+
+    // Render the visible suggestion list
+    renderReverseSuggestionList();
+
+    // Update the dual suggestion to show new word
+    const exactMatch = state.wordList.some(w => w.toLowerCase() === suffix);
+    if (!exactMatch) {
+        showDualReverseSuggestion(suffix, selectedSuggestion);
+    }
+
+    // Reposition autocomplete
+    positionReverseAutocomplete();
 }
 
 /**
- * Select a reverse search suggestion
+ * Render the visible suggestion list with fade effect for reverse search
+ * Shows 2 items above, selected item, and 2 items below
  */
-function selectReverseSuggestion(word) {
-    // Find the word in the word list and set it as current
+function renderReverseSuggestionList() {
+    const list = reverseSearchElements.suggestionList;
+    if (!list) return;
+
+    const suggestions = reverseSearchState.suggestions;
+    const selectedIndex = reverseSearchState.selectedIndex;
+    const suffix = reverseSearchState.currentSuffix;
+
+    // Clear existing items
+    list.innerHTML = '';
+
+    if (suggestions.length === 0 || selectedIndex < 0) {
+        list.style.display = 'none';
+        return;
+    }
+
+    list.style.display = 'flex';
+
+    // Hide the single-word autocomplete and input text since the list shows full words
+    reverseSearchElements.reverseSearchAutocomplete.style.visibility = 'hidden';
+    reverseSearchElements.reverseSearchInput.style.color = 'transparent';
+    reverseSearchElements.reverseSearchInput.style.caretColor = 'transparent';
+    reverseSearchElements.reverseSearchInput.style.textShadow = 'none';
+
+    // Build visible items: 2 above, selected, 2 below (5 total)
+    const visibleCount = 5;
+    const halfVisible = Math.floor(visibleCount / 2);
+
+    let prevIdx = null;
+    for (let offset = -halfVisible; offset <= halfVisible; offset++) {
+        // Calculate wrapped index
+        let idx = selectedIndex + offset;
+        const len = suggestions.length;
+        idx = ((idx % len) + len) % len; // proper modulo for negative numbers
+
+        const word = suggestions[idx];
+        const item = document.createElement('div');
+        item.className = 'suggestion-item';
+
+        // Detect wrap-around: if index jumps backward, we've wrapped from end to start
+        if (prevIdx !== null && idx < prevIdx) {
+            item.classList.add('list-seam');
+        }
+        prevIdx = idx;
+
+        // For reverse search: prefix is autocomplete, suffix is typed
+        const prefix = word.substring(0, word.length - suffix.length);
+        const suffixPart = word.substring(word.length - suffix.length);
+
+        item.innerHTML = `<span class="autocomplete-part">${prefix}</span><span class="typed-part">${suffixPart}</span>`;
+
+        // Apply fade based on distance from center
+        const distance = Math.abs(offset);
+        if (distance === 0) {
+            item.classList.add('selected');
+        } else if (distance === 1) {
+            item.classList.add('fade-1');
+        } else {
+            item.classList.add('fade-2');
+        }
+
+        list.appendChild(item);
+    }
+}
+
+/**
+ * Hide the reverse suggestion list
+ */
+function hideReverseSuggestionList() {
+    if (reverseSearchElements.suggestionList) {
+        reverseSearchElements.suggestionList.style.display = 'none';
+        reverseSearchElements.suggestionList.innerHTML = '';
+    }
+    // Restore autocomplete and input visibility
+    if (reverseSearchElements.reverseSearchAutocomplete) {
+        reverseSearchElements.reverseSearchAutocomplete.style.visibility = 'visible';
+    }
+    if (reverseSearchElements.reverseSearchInput) {
+        reverseSearchElements.reverseSearchInput.style.color = '';
+        reverseSearchElements.reverseSearchInput.style.caretColor = '';
+        reverseSearchElements.reverseSearchInput.style.textShadow = '';
+    }
+}
+
+/**
+ * Expand suffix by taking the last letter from the prefix (Arrow Left)
+ * Example: suffix "ice", prefix "adv" (advice) → suffix "vice", prefix "ad"
+ */
+function navigateSuffixExpand() {
+    if (reverseSearchState.suggestions.length === 0) return;
+
+    const currentSuggestion = reverseSearchState.suggestions[reverseSearchState.selectedIndex >= 0 ? reverseSearchState.selectedIndex : 0];
+    const currentSuffix = reverseSearchState.currentSuffix;
+
+    // Get the prefix for the current suggestion
+    const prefix = currentSuggestion.substring(0, currentSuggestion.length - currentSuffix.length);
+
+    // Check if we can expand (prefix has at least one letter)
+    if (prefix.length > 0) {
+        // Take the last letter of the prefix and prepend it to the suffix
+        const lastPrefixLetter = prefix[prefix.length - 1];
+        const newSuffix = lastPrefixLetter + currentSuffix;
+
+        // Update the input value
+        reverseSearchElements.reverseSearchInput.value = newSuffix;
+        reverseSearchState.currentSuffix = newSuffix;
+
+        // Trigger input event to update suggestions
+        const inputEvent = new Event('input', { bubbles: true });
+        reverseSearchElements.reverseSearchInput.dispatchEvent(inputEvent);
+    }
+}
+
+/**
+ * Shrink suffix by removing the first letter (Arrow Right)
+ * Example: suffix "ice" → suffix "ce"
+ */
+function navigateSuffixShrink() {
+    const currentSuffix = reverseSearchState.currentSuffix;
+
+    // Only allow shrinking if we have more than one character
+    if (currentSuffix.length > 1) {
+        // Remove the first letter
+        const newSuffix = currentSuffix.slice(1);
+
+        // Update the input value
+        reverseSearchElements.reverseSearchInput.value = newSuffix;
+        reverseSearchState.currentSuffix = newSuffix;
+
+        // Trigger input event to update suggestions
+        const inputEvent = new Event('input', { bubbles: true });
+        reverseSearchElements.reverseSearchInput.dispatchEvent(inputEvent);
+    }
+}
+
+/**
+ * Select a word from reverse search
+ */
+function selectReverseWord(word) {
     const wordIndex = state.wordList.indexOf(word);
     if (wordIndex !== -1) {
         // Update state
         state.currentWord = word;
         state.currentWordIndex = wordIndex;
-        
+
         // Clear rhyme state since we're changing the base word
         state.currentRhymeList = [];
         state.currentRhymeIndex = -1;
 
         // Exit reverse search mode first
         exitReverseSearchMode();
-        
+
         // Update display
         ui.displayWord(word);
-        
+
         // Load rhymes for the new word
         state.currentRhymeList = rhyme.getValidRhymesForWord(word);
         state.currentRhymeIndex = -1;
-        
+
         // Force refresh rhyme navigation buttons
         ui.updateRhymeNavButtons();
-        
+
         // Update tooltips if they're active
         if (typeof updateTooltipForDisplayedWord === 'function') {
             updateTooltipForDisplayedWord();
@@ -300,14 +511,126 @@ function selectReverseSuggestion(word) {
 }
 
 /**
+ * Add a new word from reverse search
+ */
+function addNewWordFromReverse(word) {
+    const trimmedWord = word.trim().toLowerCase();
+    if (!trimmedWord || trimmedWord.length < 2) {
+        ui.showFeedback('Word must be at least 2 characters long', true, 2000);
+        return;
+    }
+
+    // Check if word already exists
+    if (state.wordList.some(existingWord => existingWord.toLowerCase() === trimmedWord)) {
+        ui.showFeedback(`"${word}" already exists in the word list`, true, 2000);
+        return;
+    }
+
+    // Add word to the word list
+    state.wordList.push(word);
+    state.wordList.sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+    wordManager.applyFiltersAndSort();
+    storage.saveSettings();
+
+    // Find and select the newly added word
+    const wordIndex = state.wordList.indexOf(word);
+    if (wordIndex !== -1) {
+        state.currentWord = word;
+        state.currentWordIndex = wordIndex;
+        state.currentRhymeList = [];
+        state.currentRhymeIndex = -1;
+
+        exitReverseSearchMode();
+        ui.displayWord(word);
+        state.currentRhymeList = rhyme.getValidRhymesForWord(word);
+        state.currentRhymeIndex = -1;
+        ui.updateRhymeNavButtons();
+
+        ui.showFeedback(`Added and selected: "${word}"`, false, 2000);
+        state.manualWordsAdded++;
+
+        console.log(`New word added: "${word}". Total words: ${state.wordList.length}`);
+    } else {
+        exitReverseSearchMode();
+        ui.showFeedback(`Error adding word: "${word}"`, true, 2000);
+    }
+}
+
+/**
+ * Show the "Press Enter for [word]" message for reverse search
+ */
+function showReverseEnterSuggestion(word) {
+    let enterSuggestion = document.getElementById('reverse-enter-suggestion');
+    if (!enterSuggestion) {
+        enterSuggestion = document.createElement('div');
+        enterSuggestion.id = 'reverse-enter-suggestion';
+        enterSuggestion.className = 'enter-suggestion';
+        reverseSearchElements.reverseSearchContainer.appendChild(enterSuggestion);
+    } else {
+        enterSuggestion.className = 'enter-suggestion';
+    }
+
+    enterSuggestion.textContent = `Press Enter to add "${word}"`;
+    enterSuggestion.style.display = 'block';
+}
+
+/**
+ * Show dual suggestions for reverse search
+ */
+function showDualReverseSuggestion(suffix, suggestion) {
+    // Create or update the tab suggestion element (left) - GREEN BOX
+    let tabSuggestion = document.getElementById('reverse-tab-suggestion');
+    if (!tabSuggestion) {
+        tabSuggestion = document.createElement('div');
+        tabSuggestion.id = 'reverse-tab-suggestion';
+        tabSuggestion.className = 'tab-suggestion dual-left';
+        reverseSearchElements.reverseSearchContainer.appendChild(tabSuggestion);
+    } else {
+        tabSuggestion.className = 'tab-suggestion dual-left';
+    }
+
+    // Create or update the enter suggestion element (right) - ORANGE BOX
+    let enterSuggestion = document.getElementById('reverse-enter-suggestion');
+    if (!enterSuggestion) {
+        enterSuggestion = document.createElement('div');
+        enterSuggestion.id = 'reverse-enter-suggestion';
+        enterSuggestion.className = 'enter-suggestion dual-right';
+        reverseSearchElements.reverseSearchContainer.appendChild(enterSuggestion);
+    } else {
+        enterSuggestion.className = 'enter-suggestion dual-right';
+    }
+
+    // Tab accepts the full word (suggestion), Enter would add suffix as new word
+    tabSuggestion.textContent = `Tab for "${suggestion}"`;
+    enterSuggestion.textContent = `Enter to add "${suffix}"`;
+    tabSuggestion.style.display = 'block';
+    enterSuggestion.style.display = 'block';
+}
+
+/**
+ * Hide all reverse suggestion messages
+ */
+function hideAllReverseSuggestions() {
+    const enterSuggestion = document.getElementById('reverse-enter-suggestion');
+    const tabSuggestion = document.getElementById('reverse-tab-suggestion');
+
+    if (enterSuggestion) {
+        enterSuggestion.style.display = 'none';
+    }
+    if (tabSuggestion) {
+        tabSuggestion.style.display = 'none';
+    }
+}
+
+/**
  * Handle reverse search input blur
  */
 function handleReverseSearchBlur() {
     setTimeout(() => {
-        if (!reverseSearchState.inputElement.matches(':focus')) {
+        if (!reverseSearchElements.reverseSearchInput.matches(':focus')) {
             cancelReverseSearch();
         }
-    }, 100);
+    }, 150);
 }
 
 /**
@@ -315,19 +638,14 @@ function handleReverseSearchBlur() {
  */
 function cancelReverseSearch() {
     if (reverseSearchState.originalWord && reverseSearchState.originalWord !== state.currentWord) {
-        // Restore original word if it's different
         const originalIndex = state.filteredWordList.indexOf(reverseSearchState.originalWord);
         if (originalIndex !== -1) {
             state.currentWord = reverseSearchState.originalWord;
             state.currentWordIndex = originalIndex;
-            
-            // Exit reverse search mode first
+
             exitReverseSearchMode();
-            
-            // Update display
             ui.displayWord(reverseSearchState.originalWord);
-            
-            // Force refresh rhyme navigation buttons
+
             setTimeout(() => {
                 ui.updateRhymeNavButtons();
             }, 50);
@@ -348,19 +666,17 @@ function exitReverseSearchMode() {
     reverseSearchState.suggestions = [];
     reverseSearchState.selectedIndex = -1;
     reverseSearchState.originalWord = '';
-    reverseSearchState.cursorPosition = 0;
 
     // Update UI
     reverseSearchElements.wordCell.classList.remove('reverse-search-mode');
-    reverseSearchElements.suggestionContainer.classList.remove('active');
-    
-    // Remove input element
-    if (reverseSearchState.inputElement) {
-        reverseSearchState.inputElement.remove();
-        reverseSearchState.inputElement = null;
-    }
-    
-    clearReverseSuggestions();
+    reverseSearchElements.reverseSearchContainer.classList.remove('active');
+    reverseSearchElements.reverseSearchInput.value = '';
+    reverseSearchElements.reverseSearchInput.placeholder = '';
+    reverseSearchElements.reverseSearchAutocomplete.textContent = '';
+    clearReverseSearchBorder();
+    hideAllReverseSuggestions();
+    hideReverseSuggestionList(); // Hide the suggestion list
+    reverseSearchElements.reverseSearchInput.blur();
 
     console.log('Reverse search mode deactivated');
 }
@@ -380,3 +696,8 @@ export function forceExitReverseSearch() {
         exitReverseSearchMode();
     }
 }
+
+/**
+ * Alias for startReverseSearch (for backwards compatibility with main.js)
+ */
+export const startSearch = startReverseSearch;
