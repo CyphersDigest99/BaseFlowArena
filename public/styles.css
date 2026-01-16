@@ -3,29 +3,36 @@
  * @description Main stylesheet for the BaseFlowArena application. Defines the visual appearance, layout, and responsive behavior for all UI components, including the background, panels, word display, tooltips, modals, beat player, and more. Utilizes CSS variables for theme consistency and supports advanced features such as animations, flexbox/grid layouts, and responsive design. Dependencies include Google Fonts (Orbitron, Roboto) and FontAwesome for icons. This file is critical for the application's modern, interactive, and accessible look and feel.
  */
 
-/* Import a Google Font (optional, e.g., Orbitron for a techy feel) */
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto:wght@400;700&display=swap');
+/* Import Google Fonts - Retro terminal + original fonts */
+@import url('https://fonts.googleapis.com/css2?family=VT323&family=Press+Start+2P&family=Share+Tech+Mono&family=Orbitron:wght@400;700&family=Roboto:wght@400;700&display=swap');
 
 /* --- Base & Variables --- */
+/* Underground 90s Hip-Hop / CRT Terminal Theme */
 :root {
-    --bg-color: transparent; /* Make base transparent to see canvas */
-    --panel-bg: rgba(31, 31, 56, 0.92); /* Slightly transparent panel */
-    --panel-bg-opaque: rgb(31, 31, 56); /* Opaque version for modals etc. */
-    --border-color: rgba(74, 78, 105, 0.7); /* Semi-transparent border */
-    --primary-accent: #00ffff; /* Cyan */
-    --secondary-accent: #ff00ff; /* Magenta */
-    --text-color: #e0e0e0;
-    --text-bright: #ffffff;
-    --highlight-color: #f9a826; /* Yellow/Gold for highlight */
-    --red-color: #ff4500;
-    --green-color: #00ff00;
-    --disabled-color: #6c757d;
+    --bg-color: #0a0a0a; /* Deep black */
+    --panel-bg: rgba(10, 15, 10, 0.95); /* Dark with slight green tint */
+    --panel-bg-opaque: rgb(10, 15, 10);
+    --border-color: rgba(51, 255, 51, 0.3); /* Phosphor green border */
+    --primary-accent: #33ff33; /* Terminal green */
+    --secondary-accent: #00ffcc; /* Cyan accent */
+    --text-color: #33ff33; /* Phosphor green */
+    --text-bright: #66ff66; /* Bright phosphor */
+    --highlight-color: #ffff00; /* Graffiti yellow */
+    --red-color: #ff3333;
+    --green-color: #33ff33;
+    --disabled-color: #1a3a1a;
 
     --beat-interval: 0.5s; /* Updated by JS */
     --cycle-duration: 10s; /* Updated by JS */
 
-    --font-main: 'Roboto', sans-serif;
-    --font-display: 'Orbitron', sans-serif; /* More distinct font */
+    --font-main: 'VT323', 'Share Tech Mono', monospace;
+    --font-display: 'VT323', monospace; /* Retro terminal font */
+    --font-pixel: 'Press Start 2P', monospace; /* For small UI elements */
+
+    /* CRT Effect Variables */
+    --scanline-opacity: 0.08;
+    --phosphor-glow: 0 0 10px rgba(51, 255, 51, 0.8), 0 0 20px rgba(51, 255, 51, 0.4), 0 0 30px rgba(51, 255, 51, 0.2);
+    --crt-curvature: 3px;
 }
 
 /* --- Theme Variables --- */
@@ -96,9 +103,10 @@
 
 /* --- Main Layout & Structure --- */
 body {
-    /* Ensure body allows background canvas to show */
-    background: linear-gradient(to bottom, rgba(16, 16, 32, 0.8), rgba(5, 5, 16, 0.9)); /* Semi-transparent gradient overlay */
+    /* Dark background with subtle green tint */
+    background: linear-gradient(to bottom, rgba(5, 10, 5, 0.95), rgba(0, 5, 0, 0.98));
     font-family: var(--font-main);
+    font-size: 18px; /* Larger base size for VT323 */
     color: var(--text-color);
     display: flex;
     flex-direction: column;
@@ -107,6 +115,58 @@ body {
     overflow-x: hidden; /* Prevent horizontal scroll */
     position: relative; /* Needed for z-index context */
     z-index: 1; /* Keep body content above background canvas */
+}
+
+/* --- CRT Scanline Overlay --- */
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: repeating-linear-gradient(
+        0deg,
+        rgba(0, 0, 0, var(--scanline-opacity)) 0px,
+        rgba(0, 0, 0, var(--scanline-opacity)) 1px,
+        transparent 1px,
+        transparent 3px
+    );
+    pointer-events: none;
+    z-index: 9999;
+}
+
+/* --- CRT Vignette Effect --- */
+body::after {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(
+        ellipse at center,
+        transparent 0%,
+        transparent 60%,
+        rgba(0, 0, 0, 0.4) 100%
+    );
+    pointer-events: none;
+    z-index: 9998;
+}
+
+/* --- CRT Screen Flicker Animation --- */
+@keyframes crt-flicker {
+    0% { opacity: 1; }
+    92% { opacity: 1; }
+    93% { opacity: 0.9; }
+    94% { opacity: 1; }
+    97% { opacity: 0.95; }
+    100% { opacity: 1; }
+}
+
+/* Apply subtle flicker to main content */
+.main-content-area {
+    animation: crt-flicker 8s infinite;
 }
 
 .game-header {
@@ -804,7 +864,9 @@ input[type="range"] {
     font-size: 4em; /* Base font size - will be dynamically adjusted by JavaScript */
     font-weight: bold;
     color: var(--text-bright);
-    text-shadow: 0 0 4px rgba(255, 255, 255, 0.6);
+    text-shadow: var(--phosphor-glow);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
     transition: color 0.4s ease-out, opacity 0.4s ease-out, transform 0.4s ease-out, font-size 0.2s ease-out;
     display: flex;
     align-items: center;
@@ -2899,7 +2961,9 @@ body.screen-shaking {
     font-size: 2em !important;
     font-weight: bold;
     color: var(--text-bright);
-    text-shadow: 0 0 4px rgba(255, 255, 255, 0.6);
+    text-shadow: var(--phosphor-glow);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
     transition: color 0.4s ease-out, opacity 0.4s ease-out, transform 0.4s ease-out, font-size 0.2s ease-out;
     display: flex;
     align-items: center;
@@ -2926,7 +2990,9 @@ body.screen-shaking {
     font-size: 2em !important;
     font-weight: bold;
     color: var(--text-bright);
-    text-shadow: 0 0 4px rgba(255, 255, 255, 0.6);
+    text-shadow: var(--phosphor-glow);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
     transition: color 0.4s ease-out, opacity 0.4s ease-out, transform 0.4s ease-out, font-size 0.2s ease-out;
     line-height: 1.2;
     margin: 0;
@@ -3106,12 +3172,14 @@ body.screen-shaking {
     white-space: nowrap;
     transition: opacity 0.15s ease;
     text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
 }
 
-/* Selected item - full visibility with subtle glow */
+/* Selected item - full visibility with phosphor glow */
 .suggestion-item.selected {
     opacity: 1;
-    text-shadow: 0 0 8px rgba(255, 255, 255, 0.8), 0 0 12px var(--primary-accent);
+    text-shadow: var(--phosphor-glow);
 }
 
 /* First level fade (1 step from center) */
@@ -3133,12 +3201,12 @@ body.screen-shaking {
 
 /* Autocomplete portion styling */
 .suggestion-item .autocomplete-part {
-    color: rgba(255, 255, 255, 0.4);
+    color: rgba(51, 255, 51, 0.4);
 }
 
 /* Reverse search suggestion list - use secondary accent */
 .suggestion-list.reverse .suggestion-item.selected {
-    text-shadow: 0 0 8px rgba(255, 255, 255, 0.8), 0 0 12px var(--secondary-accent);
+    text-shadow: 0 0 10px rgba(0, 255, 204, 0.8), 0 0 20px rgba(0, 255, 204, 0.4), 0 0 30px rgba(0, 255, 204, 0.2);
 }
 
 /* List seam indicator - shows where the list wraps around */
