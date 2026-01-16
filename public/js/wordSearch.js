@@ -21,7 +21,8 @@ let searchState = {
     suggestions: [],
     selectedIndex: -1,
     originalWord: '',
-    canAddWord: false
+    canAddWord: false,
+    lastDirection: 'top' // Track navigation direction for flip animation
 };
 
 // DOM elements
@@ -148,8 +149,8 @@ function handleSearchInput(event) {
         // Render the visible suggestion list
         renderSuggestionList();
 
-        // Check if the exact word exists in the list
-        const exactMatch = state.wordList.includes(query);
+        // Check if the exact word exists in the list (case-insensitive)
+        const exactMatch = state.wordList.some(word => word.toLowerCase() === query);
         updateSearchBorder(exactMatch);
 
         // If the typed word doesn't exist, show both options
@@ -336,6 +337,13 @@ function handleSearchKeydown(event) {
             event.preventDefault();
             cancelSearch();
             break;
+        case 'Backspace':
+            // Close search if no letters typed
+            if (searchState.currentQuery.length === 0) {
+                event.preventDefault();
+                cancelSearch();
+            }
+            break;
         case 'ArrowDown':
             event.preventDefault();
             navigateSuggestions(1);
@@ -360,6 +368,9 @@ function handleSearchKeydown(event) {
  */
 function navigateSuggestions(direction) {
     if (searchState.suggestions.length === 0) return;
+
+    // Track direction for flip animation (direction: 1 = down, -1 = up)
+    searchState.lastDirection = direction > 0 ? 'top' : 'bottom';
 
     let newIndex = searchState.selectedIndex + direction;
 
@@ -433,20 +444,32 @@ function renderSuggestionList() {
         }
         prevIdx = idx;
 
-        // Highlight the typed portion vs autocomplete portion
-        const typedPart = word.substring(0, query.length);
-        const autocompletePart = word.substring(query.length);
-
-        item.innerHTML = `<span class="typed-part">${typedPart}</span><span class="autocomplete-part">${autocompletePart}</span>`;
-
         // Apply fade based on distance from center
         const distance = Math.abs(offset);
-        if (distance === 0) {
+        const isSelected = distance === 0;
+
+        if (isSelected) {
             item.classList.add('selected');
-        } else if (distance === 1) {
-            item.classList.add('fade-1');
+            // Add direction class for flip animation
+            item.classList.add(searchState.lastDirection === 'top' ? 'flip-from-top' : 'flip-from-bottom');
+            // Apply split-flap animation to selected item
+            const letters = word.split('').map((letter, i) => {
+                const isTyped = i < query.length;
+                const partClass = isTyped ? 'typed-part' : 'autocomplete-part';
+                return `<span class="flip-letter ${partClass}">${letter}</span>`;
+            }).join('');
+            item.innerHTML = letters;
         } else {
-            item.classList.add('fade-2');
+            // Non-selected items show normally (no animation)
+            const typedPart = word.substring(0, query.length);
+            const autocompletePart = word.substring(query.length);
+            item.innerHTML = `<span class="typed-part">${typedPart}</span><span class="autocomplete-part">${autocompletePart}</span>`;
+
+            if (distance === 1) {
+                item.classList.add('fade-1');
+            } else {
+                item.classList.add('fade-2');
+            }
         }
 
         list.appendChild(item);

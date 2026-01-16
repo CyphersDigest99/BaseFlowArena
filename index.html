@@ -14,7 +14,7 @@
     <title>Freestyle Flow Arena</title>
     
     <!-- --- STYLESHEETS --- -->
-    <link rel="stylesheet" href="public/styles.css">
+    <link rel="stylesheet" href="public/styles.css?v=7">
     <!-- Font Awesome for icons - provides comprehensive icon library for UI elements -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     
@@ -130,6 +130,15 @@
         <aside class="control-panel panel-left">
             <!-- Word Settings Section -->
             <h2><i class="fas fa-cog"></i> Word Settings</h2>
+            <!-- Word list file selection -->
+            <div class="control-group">
+                <label for="word-list-select"><i class="fas fa-book"></i> Source:</label>
+                <select id="word-list-select">
+                    <option value="word-list.txt">Default (19K)</option>
+                    <option value="scrabble-nwl2023.txt">Scrabble NWL2023 (196K)</option>
+                </select>
+            </div>
+
             <!-- Word order selection - controls how words are presented to user -->
             <div class="control-group">
                 <label for="word-order"><i class="fas fa-random"></i> Order:</label>
@@ -272,6 +281,11 @@
                         <input type="text" id="search-input" class="search-input" autocomplete="off" spellcheck="false" placeholder="Type to search...">
                         <div id="search-autocomplete" class="search-autocomplete"></div>
                     </div>
+                    <!-- Reverse search input container (hidden by default) -->
+                    <div id="reverse-search-container" class="reverse-search-container">
+                        <div id="reverse-search-autocomplete" class="reverse-search-autocomplete"></div>
+                        <input type="text" id="reverse-search-input" class="reverse-search-input" autocomplete="off" spellcheck="false" placeholder="Type suffix...">
+                    </div>
                     <!-- Word action buttons positioned absolutely around the word -->
                     <button id="blacklist-word" class="word-action-icon blacklist-icon" title="Blacklist Word">
                         <i class="fas fa-ban"></i>
@@ -317,18 +331,18 @@
                         <span class="light"></span>
                         <i class="fas fa-microphone"></i> Voice Match
                     </button>
-                    
-                    <!-- Timed Cycle Slider (hidden by default) -->
-                    <div id="timed-cycle-slider-container" class="timed-cycle-slider-container">
-                        <label for="cycle-speed-slider"><i class="fas fa-clock"></i></label>
-                        <input type="range" id="cycle-speed-slider" min="3" max="30" value="10" step="1">
-                        <input type="number" id="cycle-speed" min="3" max="30" value="10">s
-                    </div>
-                    
+
                     <!-- Timed Cycle Button -->
                     <button id="timed-mode-button" class="activation-panel-button" title="Activate Timed Cycle">
                         <i class="fas fa-stopwatch"></i> Timed Cycle
                     </button>
+
+                    <!-- Timed Cycle Slider (hidden by default, appears below buttons) -->
+                    <div id="timed-cycle-slider-container" class="timed-cycle-slider-container" style="display: none;">
+                        <label for="cycle-speed-slider"><i class="fas fa-clock"></i></label>
+                        <input type="range" id="cycle-speed-slider" min="3" max="30" value="10" step="1">
+                        <input type="number" id="cycle-speed" min="3" max="30" value="10">s
+                    </div>
                 </div>
             </div>
             <!-- END Activation Panel -->

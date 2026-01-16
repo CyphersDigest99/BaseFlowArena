@@ -36,36 +36,44 @@
 }
 
 /* --- Theme Variables --- */
-/* Classic Theme (Original Dark) */
+/* Classic Theme - Now Underground 90s CRT */
 [data-theme="classic"] {
-    --bg-color: transparent;
-    --panel-bg: rgba(31, 31, 56, 0.92);
-    --panel-bg-opaque: rgb(31, 31, 56);
-    --border-color: rgba(74, 78, 105, 0.7);
-    --primary-accent: #00ffff;
-    --secondary-accent: #ff00ff;
-    --text-color: #e0e0e0;
-    --text-bright: #ffffff;
-    --highlight-color: #f9a826;
-    --red-color: #ff4500;
-    --green-color: #00ff00;
-    --disabled-color: #6c757d;
+    --bg-color: #0a0a0a;
+    --panel-bg: rgba(10, 15, 10, 0.95);
+    --panel-bg-opaque: rgb(10, 15, 10);
+    --border-color: rgba(51, 255, 51, 0.3);
+    --primary-accent: #33ff33;
+    --secondary-accent: #00ffcc;
+    --text-color: #33ff33;
+    --text-bright: #66ff66;
+    --highlight-color: #ffff00;
+    --red-color: #ff3333;
+    --green-color: #33ff33;
+    --disabled-color: #1a3a1a;
+    --font-main: 'VT323', 'Share Tech Mono', monospace;
+    --font-display: 'VT323', monospace;
+    --scanline-opacity: 0.08;
+    --phosphor-glow: 0 0 10px rgba(51, 255, 51, 0.8), 0 0 20px rgba(51, 255, 51, 0.4), 0 0 30px rgba(51, 255, 51, 0.2);
 }
 
-/* Dark Theme (Modern, Studio) */
+/* Dark Theme (Amber Phosphor CRT) */
 [data-theme="dark"] {
-    --bg-color: #181A1B;
-    --panel-bg: rgba(35, 37, 38, 0.95);
-    --panel-bg-opaque: #232526;
-    --border-color: #313436;
-    --primary-accent: #26A69A;
-    --secondary-accent: #FFB300;
-    --text-color: #ECEFF1;
-    --text-bright: #FFFFFF;
-    --highlight-color: #FF7043;
-    --red-color: #EF5350;
-    --green-color: #66BB6A;
-    --disabled-color: #424242;
+    --bg-color: #0a0808;
+    --panel-bg: rgba(15, 10, 8, 0.95);
+    --panel-bg-opaque: rgb(15, 10, 8);
+    --border-color: rgba(255, 176, 0, 0.3);
+    --primary-accent: #ffb000;
+    --secondary-accent: #ff6600;
+    --text-color: #ffb000;
+    --text-bright: #ffcc33;
+    --highlight-color: #ff3300;
+    --red-color: #ff4444;
+    --green-color: #44ff44;
+    --disabled-color: #3a2a1a;
+    --font-main: 'VT323', 'Share Tech Mono', monospace;
+    --font-display: 'VT323', monospace;
+    --scanline-opacity: 0.08;
+    --phosphor-glow: 0 0 10px rgba(255, 176, 0, 0.8), 0 0 20px rgba(255, 176, 0, 0.4), 0 0 30px rgba(255, 176, 0, 0.2);
 }
 
 /* Light Theme (Modern, Minimalist, Engaging) */
@@ -167,6 +175,130 @@ body::after {
 /* Apply subtle flicker to main content */
 .main-content-area {
     animation: crt-flicker 8s infinite;
+}
+
+/* --- Chromatic Aberration Effect --- */
+@keyframes chromatic-shift {
+    0%, 100% {
+        text-shadow: var(--phosphor-glow);
+    }
+    25% {
+        text-shadow:
+            -1px 0 0 rgba(255, 0, 0, 0.4),
+            1px 0 0 rgba(0, 255, 255, 0.4),
+            var(--phosphor-glow);
+    }
+    75% {
+        text-shadow:
+            1px 0 0 rgba(255, 0, 0, 0.3),
+            -1px 0 0 rgba(0, 255, 255, 0.3),
+            var(--phosphor-glow);
+    }
+}
+
+/* --- Glitch Effect for Word Transitions --- */
+@keyframes text-glitch {
+    0% {
+        transform: translate(0);
+        clip-path: inset(0 0 0 0);
+    }
+    10% {
+        transform: translate(-2px, 1px);
+        clip-path: inset(20% 0 60% 0);
+    }
+    20% {
+        transform: translate(2px, -1px);
+        clip-path: inset(60% 0 20% 0);
+    }
+    30% {
+        transform: translate(-1px, 2px);
+        clip-path: inset(40% 0 40% 0);
+    }
+    40%, 100% {
+        transform: translate(0);
+        clip-path: inset(0 0 0 0);
+    }
+}
+
+.glitch-active {
+    animation: text-glitch 0.3s ease-out;
+}
+
+/* --- Graffiti Drip Effect --- */
+@keyframes paint-drip {
+    0% {
+        clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+        transform: scaleY(1);
+    }
+    50% {
+        clip-path: polygon(0 0, 100% 0, 100% 105%, 0 100%);
+    }
+    100% {
+        clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+        transform: scaleY(1);
+    }
+}
+
+/* --- Urban Accent Classes --- */
+.accent-yellow { color: #ffff00 !important; }
+.accent-magenta { color: #ff00ff !important; }
+.accent-cyan { color: #00ffcc !important; }
+.accent-orange { color: #ff6600 !important; }
+
+/* --- Graffiti Tag Style for Headers --- */
+.graffiti-tag {
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    position: relative;
+    display: inline-block;
+}
+
+.graffiti-tag::after {
+    content: '';
+    position: absolute;
+    bottom: -4px;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: linear-gradient(90deg,
+        var(--primary-accent) 0%,
+        var(--highlight-color) 50%,
+        var(--secondary-accent) 100%
+    );
+    transform: skewX(-15deg);
+}
+
+/* --- VHS Noise Overlay (subtle) --- */
+@keyframes vhs-noise {
+    0%, 100% { background-position: 0 0; }
+    10% { background-position: -5% -10%; }
+    20% { background-position: -15% 5%; }
+    30% { background-position: 7% -25%; }
+    40% { background-position: -5% 25%; }
+    50% { background-position: -15% 10%; }
+    60% { background-position: 15% 0%; }
+    70% { background-position: 0% 15%; }
+    80% { background-position: 3% 35%; }
+    90% { background-position: -10% 10%; }
+}
+
+/* --- Retro Border Style --- */
+.retro-border {
+    border: 2px solid var(--primary-accent);
+    box-shadow:
+        0 0 5px var(--primary-accent),
+        inset 0 0 5px rgba(51, 255, 51, 0.1);
+}
+
+/* --- Spray Paint Glow on Hover --- */
+.spray-glow:hover {
+    text-shadow:
+        0 0 10px var(--highlight-color),
+        0 0 20px var(--highlight-color),
+        0 0 30px var(--highlight-color),
+        0 0 40px var(--highlight-color);
+    transition: text-shadow 0.2s ease;
 }
 
 .game-header {
@@ -868,6 +1000,7 @@ input[type="range"] {
     text-transform: uppercase;
     letter-spacing: 0.05em;
     transition: color 0.4s ease-out, opacity 0.4s ease-out, transform 0.4s ease-out, font-size 0.2s ease-out;
+    animation: chromatic-shift 4s ease-in-out infinite;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -891,6 +1024,112 @@ input[type="range"] {
     0% { opacity: 1; transform: scale(1); color: var(--text-bright); }
     85% { opacity: 0.8; transform: scale(0.8); color: var(--text-bright); }
     100% { opacity: 0; transform: scale(0.7); color: var(--green-color); }
+}
+
+/* Split-flap display animation - letters flip in from direction based on navigation */
+#word-display .flip-letter {
+    display: inline-block;
+    opacity: 0;
+    background: rgba(0, 0, 0, 0.6);
+    border: 1px solid var(--border-color);
+    border-radius: 3px;
+    padding: 0.05em 0.08em;
+    margin: 0 1px;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5), 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* Direction classes - all letters same direction */
+#word-display.flip-from-top .flip-letter {
+    transform: translateY(-120%);
+    filter: blur(4px);
+    animation: flip-from-top 180ms cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+#word-display.flip-from-bottom .flip-letter {
+    transform: translateY(120%);
+    filter: blur(4px);
+    animation: flip-from-bottom 180ms cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+@keyframes flip-from-top {
+    0% { opacity: 0; transform: translateY(-120%); filter: blur(4px); }
+    40% { opacity: 1; filter: blur(2px); }
+    100% { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+
+@keyframes flip-from-bottom {
+    0% { opacity: 0; transform: translateY(120%); filter: blur(4px); }
+    40% { opacity: 1; filter: blur(2px); }
+    100% { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+
+/* Stagger delays for each letter position */
+#word-display .flip-letter:nth-child(1) { animation-delay: 0ms; }
+#word-display .flip-letter:nth-child(2) { animation-delay: 20ms; }
+#word-display .flip-letter:nth-child(3) { animation-delay: 40ms; }
+#word-display .flip-letter:nth-child(4) { animation-delay: 60ms; }
+#word-display .flip-letter:nth-child(5) { animation-delay: 80ms; }
+#word-display .flip-letter:nth-child(6) { animation-delay: 100ms; }
+#word-display .flip-letter:nth-child(7) { animation-delay: 120ms; }
+#word-display .flip-letter:nth-child(8) { animation-delay: 140ms; }
+#word-display .flip-letter:nth-child(9) { animation-delay: 160ms; }
+#word-display .flip-letter:nth-child(10) { animation-delay: 180ms; }
+#word-display .flip-letter:nth-child(11) { animation-delay: 200ms; }
+#word-display .flip-letter:nth-child(12) { animation-delay: 220ms; }
+#word-display .flip-letter:nth-child(13) { animation-delay: 240ms; }
+#word-display .flip-letter:nth-child(14) { animation-delay: 260ms; }
+#word-display .flip-letter:nth-child(15) { animation-delay: 280ms; }
+
+/* Search suggestion flip animation with segment borders */
+.suggestion-item .flip-letter {
+    display: inline-block;
+    opacity: 0;
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid var(--border-color);
+    border-radius: 2px;
+    padding: 0.02em 0.05em;
+    margin: 0 0.5px;
+}
+
+.suggestion-item.selected.flip-from-top .flip-letter {
+    transform: translateY(-100%);
+    filter: blur(3px);
+    animation: flip-from-top-fast 140ms cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+.suggestion-item.selected.flip-from-bottom .flip-letter {
+    transform: translateY(100%);
+    filter: blur(3px);
+    animation: flip-from-bottom-fast 140ms cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+@keyframes flip-from-top-fast {
+    0% { opacity: 0; transform: translateY(-100%); filter: blur(3px); }
+    50% { opacity: 1; filter: blur(1px); }
+    100% { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+
+@keyframes flip-from-bottom-fast {
+    0% { opacity: 0; transform: translateY(100%); filter: blur(3px); }
+    50% { opacity: 1; filter: blur(1px); }
+    100% { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+
+/* Stagger for search suggestions */
+.suggestion-item .flip-letter:nth-child(1) { animation-delay: 0ms; }
+.suggestion-item .flip-letter:nth-child(2) { animation-delay: 15ms; }
+.suggestion-item .flip-letter:nth-child(3) { animation-delay: 30ms; }
+.suggestion-item .flip-letter:nth-child(4) { animation-delay: 45ms; }
+.suggestion-item .flip-letter:nth-child(5) { animation-delay: 60ms; }
+.suggestion-item .flip-letter:nth-child(6) { animation-delay: 75ms; }
+.suggestion-item .flip-letter:nth-child(7) { animation-delay: 90ms; }
+.suggestion-item .flip-letter:nth-child(8) { animation-delay: 105ms; }
+.suggestion-item .flip-letter:nth-child(9) { animation-delay: 120ms; }
+.suggestion-item .flip-letter:nth-child(10) { animation-delay: 135ms; }
+
+/* Fallback for non-animated display */
+#word-display.no-animate {
+    opacity: 1 !important;
 }
 
 /* Updated word info content styles for top and bottom cells */

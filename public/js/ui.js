@@ -74,6 +74,7 @@ export const elements = {
     nextWordButton: document.getElementById('next-word'),
 
     // Left Panel Controls (Word Settings) - Word filtering and management
+    wordListSelect: document.getElementById('word-list-select'),
     wordOrderSelect: document.getElementById('word-order'),
     minSyllablesInput: document.getElementById('min-syllables'),
     maxSyllablesInput: document.getElementById('max-syllables'),
@@ -91,7 +92,7 @@ export const elements = {
     // Center Stage Controls (Activation) - Voice and timed mode controls
     voiceModeButton: document.getElementById('voice-mode-button'),
     timedModeButton: document.getElementById('timed-mode-button'),
-    timedCycleOptionsDiv: document.getElementById('timed-cycle-options'),
+    timedCycleOptionsDiv: document.getElementById('timed-cycle-slider-container'),
     cycleSpeedInput: document.getElementById('cycle-speed'),
     cycleSpeedSlider: document.getElementById('cycle-speed-slider'),
     transcriptContainer: document.getElementById('new-transcript'),
@@ -242,25 +243,49 @@ window.addEventListener('resize', () => {
     }, 250); // Wait 250ms after resize stops before recalculating
 });
 
+// Track last navigation direction for flip animation
+let lastFlipDirection = 'top';
+
+// Set flip direction from external callers (keyboard handlers)
+export function setFlipDirection(direction) {
+    lastFlipDirection = direction; // 'top' or 'bottom'
+}
+
 // Main word display function with dynamic font sizing and state management
-export function displayWord(word) { // word is the word to display (could be base or rhyme)
+export function displayWord(word, direction = null) { // word is the word to display (could be base or rhyme)
     console.log(`displayWord called with word: "${word}"`);
     console.log(`elements.wordDisplay exists:`, !!elements.wordDisplay);
-    
+
     if(!elements.wordDisplay) {
         console.error('wordDisplay element not found!');
         return;
     }
 
-    const previousWord = elements.wordDisplay.textContent;
+    const previousWord = elements.wordDisplay.textContent || elements.wordDisplay.innerText;
     console.log(`displayWord called: "${previousWord}" -> "${word}"`);
-    console.log(`wordDisplay element:`, elements.wordDisplay);
-    console.log(`wordDisplay visibility:`, window.getComputedStyle(elements.wordDisplay).visibility);
-    console.log(`wordDisplay display:`, window.getComputedStyle(elements.wordDisplay).display);
-    console.log(`wordDisplay opacity:`, window.getComputedStyle(elements.wordDisplay).opacity);
-    
-    elements.wordDisplay.textContent = word;
-    
+
+    // Use provided direction, or fall back to last set direction
+    const flipDir = direction || lastFlipDirection;
+
+    // Split-flap display animation - all letters flip from same direction
+    if (previousWord && previousWord !== word) {
+        // Remove old direction classes
+        elements.wordDisplay.classList.remove('flip-from-top', 'flip-from-bottom');
+
+        // Create letter spans
+        elements.wordDisplay.innerHTML = word.split('').map((letter) => {
+            const displayChar = letter === ' ' ? '&nbsp;' : letter;
+            return `<span class="flip-letter">${displayChar}</span>`;
+        }).join('');
+
+        // Force reflow then add direction class
+        void elements.wordDisplay.offsetWidth;
+        elements.wordDisplay.classList.add(flipDir === 'top' ? 'flip-from-top' : 'flip-from-bottom');
+    } else {
+        // No animation for initial load or same word
+        elements.wordDisplay.textContent = word;
+    }
+
     // Verify the text was actually set
     console.log(`After setting textContent, wordDisplay.textContent: "${elements.wordDisplay.textContent}"`);
 
@@ -382,13 +407,14 @@ export function updateWordDisplayAnimation() {
 // Updates activation mode UI elements and controls visibility
 export function updateActivationUI() {
     if (!elements.voiceModeButton || !elements.timedModeButton || !elements.timedCycleOptionsDiv) return;
-    elements.voiceModeButton.classList.toggle('active', state.activationMode === 'voice' && state.isMicActive);
+    elements.voiceModeButton.classList.toggle('active', state.activationMode === 'voice');
     elements.timedModeButton.classList.toggle('active', state.activationMode === 'timed');
     elements.timedCycleOptionsDiv.style.display = (state.activationMode === 'timed') ? 'flex' : 'none';
     if (elements.cycleSpeedInput) elements.cycleSpeedInput.value = state.cycleSpeed;
     if (elements.cycleSpeedSlider) elements.cycleSpeedSlider.value = state.cycleSpeed;
     if (elements.wordOrderSelect) elements.wordOrderSelect.value = state.wordOrderMode;
-    
+    if (elements.wordListSelect) elements.wordListSelect.value = state.wordListFile;
+
     // Update syllable filter inputs and dropdowns
     updateSyllableFilterUI();
 }

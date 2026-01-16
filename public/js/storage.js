@@ -84,12 +84,28 @@ export function saveSettings() {
             manualRhymes: serializeNestedSets(state.manualRhymes),
             slantRhymes: serializeNestedSets(state.slantRhymes),
             wordList: state.wordList, // NEW: Save the word list
+            wordListFile: state.wordListFile, // Selected word list file
         };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(settingsToSave));
         // console.log('Settings saved.');
     } catch (e) {
         console.error("Error saving settings:", e);
         ui.showFeedback("Error saving settings!", true);
+    }
+}
+
+// Save only the word list file setting (for large files that shouldn't be cached)
+export function saveWordListFile(filename) {
+    try {
+        const savedSettings = localStorage.getItem(STORAGE_KEY);
+        const settings = savedSettings ? JSON.parse(savedSettings) : {};
+        settings.wordListFile = filename;
+        // Clear the cached word list since we're using a file-based list
+        delete settings.wordList;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+        console.log(`Saved wordListFile: ${filename} (cleared cached wordList)`);
+    } catch (e) {
+        console.error("Error saving word list file setting:", e);
     }
 }
 
@@ -125,6 +141,9 @@ export function loadSettings() {
                  state.wordList = parsedData.wordList;
                  console.log(`Loaded ${state.wordList.length} words from storage.`);
              }
+
+             // Load selected word list file
+             state.wordListFile = parsedData.wordListFile || 'word-list.txt';
 
              console.log('Settings loaded successfully.');
              applyLoadedSettingsToUI();

@@ -130,6 +130,15 @@
         <aside class="control-panel panel-left">
             <!-- Word Settings Section -->
             <h2><i class="fas fa-cog"></i> Word Settings</h2>
+            <!-- Word list file selection -->
+            <div class="control-group">
+                <label for="word-list-select"><i class="fas fa-book"></i> Source:</label>
+                <select id="word-list-select">
+                    <option value="word-list.txt">Default (19K)</option>
+                    <option value="scrabble-nwl2023.txt">Scrabble NWL2023 (196K)</option>
+                </select>
+            </div>
+
             <!-- Word order selection - controls how words are presented to user -->
             <div class="control-group">
                 <label for="word-order"><i class="fas fa-random"></i> Order:</label>
@@ -139,7 +148,7 @@
                     <option value="sequential">Sequential</option>
                 </select>
             </div>
-            
+
             <!-- Syllable Filter Section -->
             <div class="syllable-filter-section">
                 <div class="syllable-header">
@@ -267,6 +276,11 @@
                         <span id="search-prefix-span" style="display:none;"></span>
                         <input type="text" id="search-input" class="search-input" autocomplete="off" spellcheck="false" placeholder="Type to search...">
                         <div id="search-autocomplete" class="search-autocomplete"></div>
+                    </div>
+                    <!-- Reverse search input container (hidden by default) -->
+                    <div id="reverse-search-container" class="reverse-search-container">
+                        <div id="reverse-search-autocomplete" class="reverse-search-autocomplete"></div>
+                        <input type="text" id="reverse-search-input" class="reverse-search-input" autocomplete="off" spellcheck="false" placeholder="Type suffix...">
                     </div>
                     <!-- Word action buttons positioned absolutely around the word -->
                     <button id="blacklist-word" class="word-action-icon blacklist-icon" title="Blacklist Word">

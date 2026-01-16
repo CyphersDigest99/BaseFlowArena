@@ -124,7 +124,8 @@ export async function loadWords() {
     console.log('Loading words...');
     
     // Check if we have a saved word list in state (from localStorage)
-    if (state.wordList && state.wordList.length > 0) {
+    // Only use cached list if it's small (user-customized) - large file-based lists should reload
+    if (state.wordList && state.wordList.length > 0 && state.wordList.length <= 50000) {
         console.log(`Using ${state.wordList.length} words from saved state.`);
         if(ui.elements.wordListTextarea) ui.elements.wordListTextarea.value = state.wordList.join('\n');
         applyFiltersAndSort(); // Apply initial blacklist/sort
@@ -133,16 +134,17 @@ export async function loadWords() {
     
     try {
         let text;
+        const wordListFile = state.wordListFile || 'word-list.txt';
         try {
-            const response = await fetch('/word-list.txt'); // Updated to absolute path
+            const response = await fetch(`/${wordListFile}`);
             if (!response.ok) {
-                console.warn(`Could not fetch 'random word list.txt' (Status: ${response.status}). Falling back to defaults.`);
+                console.warn(`Could not fetch '${wordListFile}' (Status: ${response.status}). Falling back to defaults.`);
                 text = state.DEFAULT_WORD_LIST.join('\n');
             } else {
                 text = await response.text();
             }
         } catch (fetchError) {
-            console.warn(`Network error fetching 'random word list.txt': ${fetchError}. Falling back to defaults.`);
+            console.warn(`Network error fetching '${wordListFile}': ${fetchError}. Falling back to defaults.`);
             text = state.DEFAULT_WORD_LIST.join('\n');
         }
 
@@ -154,8 +156,16 @@ export async function loadWords() {
             state.wordList = [...state.DEFAULT_WORD_LIST];
         }
 
-        console.log(`Loaded ${state.wordList.length} words initially.`);
-        if(ui.elements.wordListTextarea) ui.elements.wordListTextarea.value = state.wordList.join('\n');
+        console.log(`Loaded ${state.wordList.length} words from ${wordListFile}.`);
+
+        // Update textarea (handle large lists)
+        if (ui.elements.wordListTextarea) {
+            if (state.wordList.length > 50000) {
+                ui.elements.wordListTextarea.value = `[${state.wordList.length.toLocaleString()} words from ${wordListFile}]`;
+            } else {
+                ui.elements.wordListTextarea.value = state.wordList.join('\n');
+            }
+        }
 
         applyFiltersAndSort(); // Apply initial blacklist/sort
 
@@ -165,6 +175,61 @@ export async function loadWords() {
         if(ui.elements.wordListTextarea) ui.elements.wordListTextarea.value = state.wordList.join('\n');
         applyFiltersAndSort();
         ui.showFeedback("Error loading word list, used defaults.", true);
+    }
+}
+
+// Switch to a different word list file
+export async function switchWordList(filename) {
+    console.log(`Switching word list to: ${filename}`);
+    state.wordListFile = filename;
+
+    // Clear the current word list from state to force reload
+    state.wordList = [];
+    state.filteredWordList = [];
+
+    // Show loading feedback
+    ui.showFeedback(`Loading ${filename}...`, false, 2000);
+
+    try {
+        // Fetch the new word list directly
+        const response = await fetch(`/${filename}`);
+        if (!response.ok) {
+            throw new Error(`Failed to fetch ${filename}`);
+        }
+        const text = await response.text();
+
+        // Process words
+        state.wordList = text.split('\n').map(word => word.trim()).filter(word => word && word.length > 1);
+        console.log(`Loaded ${state.wordList.length} words from ${filename}`);
+
+        // Update textarea if visible
+        if (ui.elements.wordListTextarea) {
+            if (state.wordList.length > 50000) {
+                ui.elements.wordListTextarea.value = `[${state.wordList.length.toLocaleString()} words - too large to display in editor]\n\nFirst 100 words:\n${state.wordList.slice(0, 100).join('\n')}`;
+            } else {
+                ui.elements.wordListTextarea.value = state.wordList.join('\n');
+            }
+        }
+
+        // Apply filters
+        applyFiltersAndSort();
+
+        // Display the first word from the new list
+        changeWord('next', true, false);
+
+        // Save settings (but NOT the huge word list for large files)
+        if (state.wordList.length > 50000) {
+            // For large lists, only save the filename, not the list itself
+            storage.saveWordListFile(filename);
+        } else {
+            storage.saveSettings();
+        }
+
+        ui.showFeedback(`Loaded ${state.wordList.length.toLocaleString()} words from ${filename}`, false, 3000);
+
+    } catch (error) {
+        console.error('Error switching word list:', error);
+        ui.showFeedback(`Error loading ${filename}`, true, 3000);
     }
 }
 

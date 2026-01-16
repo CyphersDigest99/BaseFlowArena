@@ -397,6 +397,9 @@ function attachEventListeners() {
         ui.showFeedback(`Rhyme navigation: ${modeNames[state.rhymeSortMode] || 'Default'} order`, false, 2000);
     });
 
+    // Word List Source Selection
+    ui.elements.wordListSelect?.addEventListener('change', (e) => wordManager.switchWordList(e.target.value));
+
     // Word Order Setting
     ui.elements.wordOrderSelect?.addEventListener('change', (e) => wordManager.setWordOrder(e.target.value));
 
@@ -693,21 +696,25 @@ function handleMainPageKeydown(event) {
             
         case 'arrowup':
             event.preventDefault();
+            ui.setFlipDirection('bottom'); // Letters flip from bottom when going up
             wordManager.selectRhyme('up');
             break;
-            
+
         case 'arrowdown':
             event.preventDefault();
+            ui.setFlipDirection('top'); // Letters flip from top when going down
             wordManager.selectRhyme('down');
             break;
             
         case 'arrowleft':
             event.preventDefault();
+            ui.setFlipDirection('bottom'); // Letters flip from bottom when going back
             wordManager.previousWord();
             break;
-            
+
         case 'arrowright':
             event.preventDefault();
+            ui.setFlipDirection('top'); // Letters flip from top when going forward
             wordManager.nextWord();
             break;
             

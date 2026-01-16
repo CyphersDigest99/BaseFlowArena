@@ -20,7 +20,8 @@ let reverseSearchState = {
     currentSuffix: '',
     suggestions: [],
     selectedIndex: -1,
-    originalWord: ''
+    originalWord: '',
+    lastDirection: 'top' // Track navigation direction for flip animation
 };
 
 // DOM elements
@@ -280,6 +281,13 @@ function handleReverseSearchKeydown(event) {
             event.preventDefault();
             cancelReverseSearch();
             break;
+        case 'Backspace':
+            // Close search if no letters typed
+            if (reverseSearchState.currentSuffix.length === 0) {
+                event.preventDefault();
+                cancelReverseSearch();
+            }
+            break;
         case 'ArrowDown':
             event.preventDefault();
             navigateReverseSuggestions(1);
@@ -304,6 +312,9 @@ function handleReverseSearchKeydown(event) {
  */
 function navigateReverseSuggestions(direction) {
     if (reverseSearchState.suggestions.length === 0) return;
+
+    // Track direction for flip animation (direction: 1 = down, -1 = up)
+    reverseSearchState.lastDirection = direction > 0 ? 'top' : 'bottom';
 
     let newIndex = reverseSearchState.selectedIndex + direction;
 
@@ -382,20 +393,35 @@ function renderReverseSuggestionList() {
         }
         prevIdx = idx;
 
-        // For reverse search: prefix is autocomplete, suffix is typed
-        const prefix = word.substring(0, word.length - suffix.length);
-        const suffixPart = word.substring(word.length - suffix.length);
-
-        item.innerHTML = `<span class="autocomplete-part">${prefix}</span><span class="typed-part">${suffixPart}</span>`;
-
         // Apply fade based on distance from center
         const distance = Math.abs(offset);
-        if (distance === 0) {
+        const isSelected = distance === 0;
+
+        // For reverse search: prefix is autocomplete, suffix is typed
+        const suffixLength = suffix.length;
+
+        if (isSelected) {
             item.classList.add('selected');
-        } else if (distance === 1) {
-            item.classList.add('fade-1');
+            // Add direction class for flip animation
+            item.classList.add(reverseSearchState.lastDirection === 'top' ? 'flip-from-top' : 'flip-from-bottom');
+            // Apply split-flap animation to selected item
+            const letters = word.split('').map((letter, i) => {
+                const isTyped = i >= (word.length - suffixLength);
+                const partClass = isTyped ? 'typed-part' : 'autocomplete-part';
+                return `<span class="flip-letter ${partClass}">${letter}</span>`;
+            }).join('');
+            item.innerHTML = letters;
         } else {
-            item.classList.add('fade-2');
+            // Non-selected items show normally (no animation)
+            const prefix = word.substring(0, word.length - suffixLength);
+            const suffixPart = word.substring(word.length - suffixLength);
+            item.innerHTML = `<span class="autocomplete-part">${prefix}</span><span class="typed-part">${suffixPart}</span>`;
+
+            if (distance === 1) {
+                item.classList.add('fade-1');
+            } else {
+                item.classList.add('fade-2');
+            }
         }
 
         list.appendChild(item);

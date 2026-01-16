@@ -138,31 +138,43 @@ function clearFavoritesListDisplay() {
 export function showWordListEditor() {
     if (!ui.elements.wordListEditorModal || !ui.elements.wordListTextarea) return;
 
-    // Populate with current full word list from state
-    ui.elements.wordListTextarea.value = state.wordList.join('\n');
-
-    // Try scrolling to current word
-    const wordToFind = state.currentWord; // Use state directly
-    if (wordToFind && wordToFind !== "NO WORDS!") {
-        const lines = ui.elements.wordListTextarea.value.split('\n');
-        // Find first exact match (case sensitive)
-        const lineIndex = lines.findIndex(line => line === wordToFind);
-
-        if (lineIndex !== -1) {
-             setTimeout(() => { // Allow modal to render & calculate heights
-                  try {
-                      const textarea = ui.elements.wordListTextarea;
-                      // Basic calculation - might not be perfect with wrapping
-                      const lineHeight = textarea.scrollHeight / Math.max(1, lines.length);
-                      const targetScrollTop = Math.max(0, lineIndex * lineHeight - (textarea.clientHeight / 3));
-                      textarea.scrollTop = targetScrollTop;
-                  } catch (e) { console.warn("Error calculating scroll for editor:", e); }
-             }, 100);
-         } else {
-              ui.elements.wordListTextarea.scrollTop = 0; // Scroll top if not found
-         }
+    // Check if word list is too large to edit (over 50K words)
+    if (state.wordList.length > 50000) {
+        ui.elements.wordListTextarea.value =
+            `[${state.wordList.length.toLocaleString()} words from ${state.wordListFile}]\n\n` +
+            `This word list is too large to edit directly.\n` +
+            `To use a custom list, switch to "Default" source first.\n\n` +
+            `--- First 100 words preview ---\n` +
+            state.wordList.slice(0, 100).join('\n') +
+            `\n\n--- Last 50 words preview ---\n` +
+            state.wordList.slice(-50).join('\n');
+        ui.elements.wordListTextarea.readOnly = true;
     } else {
-         ui.elements.wordListTextarea.scrollTop = 0; // Scroll top if no current word
+        // Populate with current full word list from state
+        ui.elements.wordListTextarea.value = state.wordList.join('\n');
+        ui.elements.wordListTextarea.readOnly = false;
+
+        // Try scrolling to current word
+        const wordToFind = state.currentWord;
+        if (wordToFind && wordToFind !== "NO WORDS!") {
+            const lines = ui.elements.wordListTextarea.value.split('\n');
+            const lineIndex = lines.findIndex(line => line === wordToFind);
+
+            if (lineIndex !== -1) {
+                 setTimeout(() => {
+                      try {
+                          const textarea = ui.elements.wordListTextarea;
+                          const lineHeight = textarea.scrollHeight / Math.max(1, lines.length);
+                          const targetScrollTop = Math.max(0, lineIndex * lineHeight - (textarea.clientHeight / 3));
+                          textarea.scrollTop = targetScrollTop;
+                      } catch (e) { console.warn("Error calculating scroll for editor:", e); }
+                 }, 100);
+             } else {
+                  ui.elements.wordListTextarea.scrollTop = 0;
+             }
+        } else {
+             ui.elements.wordListTextarea.scrollTop = 0;
+        }
     }
 
     openModal(ui.elements.wordListEditorModal);

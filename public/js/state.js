@@ -27,6 +27,7 @@ export const state = {
     currentWord: '', // Currently displayed/active word
     currentWordIndex: -1, // Position of current word in filtered list
     wordOrderMode: 'random', // 'random', 'alphabetical', 'sequential'
+    wordListFile: 'word-list.txt', // Currently selected word list file
     history: [], // Recent words that have been displayed
     MAX_HISTORY: 20, // Maximum number of words to keep in history
 
