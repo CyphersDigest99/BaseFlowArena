@@ -1,5 +1,17 @@
 # Project Progress
 
+## January 2026
+- Added 90s underground CRT theme with green (classic) and amber (dark) phosphor styles
+- Implemented split-flap display animation for word transitions (fuel pump style)
+- Added word list source selector with support for multiple word lists
+- Integrated Scrabble NWL2023 dictionary (196,601 words)
+- Added direction-based flip animations (top/bottom based on navigation)
+- Added letter segment borders for retro display effect
+- Fixed case-insensitive word matching for search border indicator
+- Added large word list handling with preview mode
+- Backspace now closes search when query is empty
+
+## Previous Progress
 - Fixed server connection errors by adding chunked file serving in `server.py`.
 - Implemented real-time transcript with line breaks and color-coded frequent words.
 - Added progress meter, word frequency tracking, and word expansion.

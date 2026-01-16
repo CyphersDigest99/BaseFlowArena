@@ -1,3 +1,4 @@
+## EXISTING BUGS/IMPROVEMENTS
 - Triplet mode visual bug: Gold haze/background still appears behind the grid. Needs further cleanup so only the active box flashes gold, with no container-wide effect.
 - Add tests for major features (e.g., speech recognition, word expansion).
 - Refactor `index.html` to <300 lines (currently ~350).
@@ -5,6 +6,29 @@
 - Flesh out word menu details (e.g., additional options, styling).
 - Add removal functionality for favorited and common words.
 - Add validation for word list edits (e.g., prevent empty words).
+
+## COMPLETED FEATURES (Jan 2026)
+
+### 90s Underground CRT Theme [DONE]
+- [x] VT323 and Press Start 2P retro terminal fonts
+- [x] Green phosphor CRT theme (classic mode) - Fallout Pip-Boy style
+- [x] Amber phosphor CRT theme (dark mode) - IBM terminal style
+- [x] Scanline overlay and vignette effects
+- [x] Phosphor glow on text elements
+- [x] Chromatic aberration effects
+
+### Split-Flap Display Animation [DONE]
+- [x] Letters flip in from top/bottom based on navigation direction
+- [x] Segment borders on each letter (like real split-flap displays)
+- [x] Staggered animation timing per letter
+- [x] Applied to main word display and search suggestions
+
+### Word List Selector Feature [DONE]
+- [x] Source dropdown in Word Settings panel
+- [x] Support for Default (19K) and Scrabble NWL2023 (196K) word lists
+- [x] Large list handling (preview mode for 50K+ words)
+- [x] Persistent selection across sessions
+- [x] Case-insensitive search matching
 
 ## NEW FEATURES TO IMPLEMENT
 
@@ -17,9 +41,7 @@
 - Quick access button in the interface
 - Export/import notebook functionality
 
-### Urban Street Corner Theme Enhancement
-- Change header font to graffiti-style, centered, urban/street feeling
-- Add static or animated background graphics suggesting street corner cipher session
-- Urban street culture aesthetic while maintaining app functionality
-- Consider adding subtle street corner elements (graffiti, street signs, etc.)
-- Maintain readability and usability while enhancing atmosphere
+### Theme Enhancements (Future)
+- Add glitch effect triggers on word transitions via JS
+- Consider graffiti-style header font option
+- Street corner background graphics (optional toggle)
