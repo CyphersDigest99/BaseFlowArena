@@ -136,7 +136,7 @@ export async function loadWords() {
         let text;
         const wordListFile = state.wordListFile || 'word-list.txt';
         try {
-            const response = await fetch(`/${wordListFile}`);
+            const response = await fetch(`public/${wordListFile}`);
             if (!response.ok) {
                 console.warn(`Could not fetch '${wordListFile}' (Status: ${response.status}). Falling back to defaults.`);
                 text = state.DEFAULT_WORD_LIST.join('\n');
@@ -192,7 +192,7 @@ export async function switchWordList(filename) {
 
     try {
         // Fetch the new word list directly
-        const response = await fetch(`/${filename}`);
+        const response = await fetch(`public/${filename}`);
         if (!response.ok) {
             throw new Error(`Failed to fetch ${filename}`);
         }

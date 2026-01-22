@@ -26,7 +26,7 @@ const definitionCache = new Map(); // word (lowercase) -> definition string or n
  */
 export async function loadLocalDefinitions() {
     try {
-        const response = await fetch('/definitions.json');
+        const response = await fetch('definitions.json');
         if (response.ok) {
             localDefinitions = await response.json();
             console.log(`Loaded ${Object.keys(localDefinitions).length} local definitions`);
