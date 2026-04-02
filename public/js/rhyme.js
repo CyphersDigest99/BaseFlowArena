@@ -23,6 +23,7 @@ import { state } from './state.js';
 import * as ui from './ui.js';
 import * as modal from './modal.js';
 import * as storage from './storage.js'; // Need saveSettings
+import * as phonetics from './phonetics.js';
 
 // --- Load Rhyme Data ---
 // Loads rhyme data from JSON file and updates state
@@ -49,26 +50,9 @@ export async function loadRhymeData() {
 }
 
 // --- Get Rhyme Pattern (Internal) ---
-// Retrieves the rhyme pattern array for a given word from rhyme data
+// Retrieves the rhyme pattern array for a given word, delegating to phonetics module
 function getRhymePattern(word) {
-    if (!state.rhymeData || !word) return null;
-    // Use toLowerCase() for lookup, assumes keys in rhyme_data.json are lowercase
-    const wordLower = word.toLowerCase();
-    const data = state.rhymeData[wordLower];
-    
-    if (!data) return null;
-    
-    // Handle new format (object with rhyme_pattern and syllables)
-    if (data.rhyme_pattern) {
-        return data.rhyme_pattern;
-    }
-    
-    // Handle old format (direct array) - backward compatibility
-    if (Array.isArray(data)) {
-        return data;
-    }
-    
-    return null;
+    return phonetics.getPattern(word);
 }
 
 // --- Get Phonemes (Internal) ---
@@ -160,10 +144,14 @@ function createModalHeaderHTML(baseWord, rhymeSortMode) {
             patternType = 'phonetic ending';
         }
     } else {
-        // For other modes, show the simple vowel pattern
+        // For other modes, show the consonant-context-aware vowel pattern
         const wordPattern = getRhymePattern(baseWord);
         if (wordPattern && wordPattern.length > 0) {
-            const vowelBlocks = wordPattern.map(vowel => `<span class="vowel-pattern-block">${vowel}</span>`).join(' ');
+            const vowelBlocks = wordPattern.map(entry => {
+                // Strip the +class suffix for display: "AE+nasal" -> "AE"
+                const vowel = entry.includes('+') ? entry.split('+')[0] : entry;
+                return `<span class="vowel-pattern-block">${vowel}</span>`;
+            }).join(' ');
             patternDisplay = vowelBlocks;
             patternType = 'vowel sounds';
         } else {
@@ -354,39 +342,38 @@ function getVowelSimilarity(vowel1, vowel2) {
 // --- Get Valid Rhymes for a Word ---
 // Returns a sorted list of valid rhymes for the given base word
 export function getValidRhymesForWord(baseWord) {
-    if (!baseWord || !state.rhymeData) return [];
+    if (!baseWord) return [];
 
     const baseWordLower = baseWord.toLowerCase();
-    const wordPattern = getRhymePattern(baseWord); // Use internal helper
+    const wordPattern = getRhymePattern(baseWord);
 
     const rejectedSet = state.rejectedRhymes[baseWordLower] || new Set();
     const manualSet = state.manualRhymes[baseWordLower] || new Set();
 
-    // Find Phonetic Matches from the currently filtered list
+    // Find phonetic matches from the full CMU vocabulary via inverted index
     let phoneticMatches = [];
     if (wordPattern) {
         const patternString = wordPattern.join('-');
-        phoneticMatches = state.filteredWordList.filter(word => {
+        const candidates = phonetics.getCandidatesForPattern(patternString);
+        phoneticMatches = candidates.filter(word => {
             const wordLower = word.toLowerCase();
-            if (wordLower === baseWordLower) return false; // Exclude self
-            if (rejectedSet.has(wordLower)) return false; // Exclude rejected
-            const otherPattern = getRhymePattern(word);
-            return otherPattern && otherPattern.join('-') === patternString;
+            if (wordLower === baseWordLower) return false;
+            if (rejectedSet.has(wordLower)) return false;
+            return true;
         });
     }
 
-    // Combine, remove duplicates, sort
+    // Combine with manual rhymes, remove duplicates
     const combinedMatches = new Set([...phoneticMatches, ...manualSet]);
     const sortedMatches = Array.from(combinedMatches);
 
-    // Sort by frequency
+    // Sort by frequency (words with frequency data first)
     sortedMatches.sort((a, b) => {
         const freqA = state.wordFrequencies[a.toLowerCase()] || 0;
         const freqB = state.wordFrequencies[b.toLowerCase()] || 0;
-        return freqB - freqA; // Descending frequency
+        return freqB - freqA;
     });
 
-    // console.log(`Found ${sortedMatches.length} valid rhymes for "${baseWord}"`); // Optional Debug
     return sortedMatches;
 }
 
@@ -448,8 +435,21 @@ export function persistTempRejections() {
     const baseWordLower = baseWord?.toLowerCase();
     if (!baseWordLower) return;
     if (!state.rejectedRhymes[baseWordLower]) state.rejectedRhymes[baseWordLower] = new Set();
+
+    const baseContext = phonetics.getVowelContext(baseWordLower);
+
     for (const word of tempRejected) {
-        state.rejectedRhymes[baseWordLower].add(word.toLowerCase());
+        const wordLower = word.toLowerCase();
+        state.rejectedRhymes[baseWordLower].add(wordLower);
+
+        // Log rejection with phonetic context
+        state.rejectionLog.push({
+            base: baseWordLower,
+            rejected: wordLower,
+            base_context: baseContext,
+            rejected_context: phonetics.getVowelContext(wordLower),
+            timestamp: new Date().toISOString().split('T')[0]
+        });
     }
     storage.saveSettings();
     tempRejected.clear();
