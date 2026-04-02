@@ -269,8 +269,8 @@ export function displayWord(word, direction = null) { // word is the word to dis
 
     // Split-flap display animation - all letters flip from same direction
     if (previousWord && previousWord !== word) {
-        // Remove old direction classes
-        elements.wordDisplay.classList.remove('flip-from-top', 'flip-from-bottom');
+        // Remove old animation classes (including voice-match dissolve exit)
+        elements.wordDisplay.classList.remove('flip-from-top', 'flip-from-bottom', 'dissolve-exit');
 
         // Create letter spans
         elements.wordDisplay.innerHTML = word.split('').map((letter) => {

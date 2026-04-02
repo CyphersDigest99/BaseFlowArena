@@ -2824,7 +2824,7 @@ body.screen-shaking {
     border: none;
     outline: none;
     font-family: var(--font-display);
-    font-size: 3.2em !important;
+    font-size: 4em !important; /* Increased to match normal search input */
     font-weight: bold;
     color: var(--text-bright);
     text-shadow: 0 0 10px #fff, 0 0 15px var(--secondary-accent);
@@ -2833,7 +2833,7 @@ body.screen-shaking {
     align-items: center;
     justify-content: center;
     min-width: 150px;
-    line-height: 1;
+    line-height: 2.5; /* Increased to match normal search input */
     margin: 0;
     padding: 0;
     text-align: center;
@@ -2850,7 +2850,7 @@ body.screen-shaking {
 
 .reverse-search-input::placeholder {
     color: rgba(255, 255, 255, 0.2);
-    font-size: 0.8em;
+    font-size: 0.6em; /* Decreased to match normal search input */
     font-style: italic;
     text-shadow: none;
 }
@@ -2921,7 +2921,7 @@ body.screen-shaking {
 /* Reverse search responsive adjustments */
 @media (max-width: 768px) {
     .reverse-search-input {
-        font-size: 3em;
+        font-size: 3.5em; /* Updated to match normal search input */
     }
     
     .reverse-suggestion-container {
@@ -2937,7 +2937,7 @@ body.screen-shaking {
 
 @media (max-width: 480px) {
     .reverse-search-input {
-        font-size: 2.5em;
+        font-size: 3em; /* Updated to match normal search input */
     }
     
     .reverse-suggestion-container {

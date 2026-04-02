@@ -160,170 +160,52 @@ export function triggerPixelBlockEffect() {
         return;
     }
 
-    // Get the position and styling of the word display for overlay positioning
-    const rect = wordDisplay.getBoundingClientRect();
-    const computedStyle = window.getComputedStyle(wordDisplay);
-    const containerStyle = window.getComputedStyle(wordDisplay.parentElement);
-    const bodyStyle = window.getComputedStyle(document.body);
-    
-    // Create overlay container with larger coverage area to prevent word bleed-through
-    // The overlay is positioned with extra padding (15px on each side) to ensure complete coverage
-    // Background matches the page background to make the overlay invisible
-    const overlay = document.createElement('div');
-    overlay.style.cssText = `\n        position: fixed;\n        left: ${rect.left - 15}px;\n        top: ${rect.top - 15}px;\n        width: ${rect.width + 30}px;\n        height: ${rect.height + 30}px;\n        font-family: ${computedStyle.fontFamily};\n        font-size: ${computedStyle.fontSize};\n        font-weight: ${computedStyle.fontWeight};\n        color: ${computedStyle.color};\n        display: flex;\n        align-items: center;\n        justify-content: center;\n        background: ${bodyStyle.backgroundColor || '#000'};\n        pointer-events: none;\n        z-index: 1000;\n        text-align: center;\n        border-radius: 8px;\n        opacity: 1;\n    `;
-    
-    document.body.appendChild(overlay);
+    // Ensure content is wrapped in flip-letter spans (may not be on first word)
+    if (!wordDisplay.querySelector('.flip-letter')) {
+        wordDisplay.innerHTML = currentWord.split('').map(ch =>
+            `<span class="flip-letter">${ch === ' ' ? '&nbsp;' : ch}</span>`
+        ).join('');
+    }
 
-    // CRITICAL: Hide the original word display to prevent static word bleed-through
-    // This ensures only the animated overlay is visible during the entire effect
-    const originalDisplay = wordDisplay.style.display;
-    wordDisplay.style.display = 'none';
+    // Remove any active entrance animation BEFORE touching animation properties —
+    // otherwise the browser restarts the old animation and causes a flicker.
+    wordDisplay.classList.remove('flip-from-top', 'flip-from-bottom');
 
-    // Phase 1: Dissolve current word character by character
-    // Each character gets its own span element for individual animation control
-    const dissolveWord = () => {
-        const chars = currentWord.split('');
-        
-        // Create individual spans for each character with initial visible state
-        // Each span has its own transition for smooth animation
-        const charSpans = chars.map(char => {
-            const span = document.createElement('span');
-            span.textContent = char;
-            span.style.cssText = `
-                opacity: 1;
-                transform: scale(1) rotate(0deg);
-                transition: all 0.4s ease-out;
-                display: inline-block;
-                margin: 0 1px;
-            `;
-            return span;
-        });
-        
-        // Clear overlay and add character spans
-        overlay.innerHTML = '';
-        charSpans.forEach(span => overlay.appendChild(span));
-        
-        let dissolvedChars = 0;
-        const dissolveInterval = setInterval(() => {
-            if (dissolvedChars >= chars.length) {
-                clearInterval(dissolveInterval);
-                // Word is fully dissolved, wait for word change then construct
-                setTimeout(waitForWordChange, 200);
-                return;
-            }
-            
-            // Animate character out: fade to transparent, scale down, rotate 180°
-            if (charSpans[dissolvedChars]) {
-                charSpans[dissolvedChars].style.opacity = '0';
-                charSpans[dissolvedChars].style.transform = 'scale(0.3) rotate(180deg)';
-            }
-            dissolvedChars++;
-        }, 60); // Slightly slower for better visibility of the dissolve effect
-    };
+    // Freeze each span in its current visual state (entrance animation's final frame)
+    // so removing the class doesn't cause them to jump.
+    wordDisplay.querySelectorAll('.flip-letter').forEach((span, i) => {
+        span.style.animation = 'none';
+        span.style.opacity = '1';
+        span.style.transform = 'none';
+        span.style.filter = 'none';
+    });
 
-    // Phase 2: Wait for word change to happen, then construct new word
-    // This phase monitors the hidden word display for changes (handles rhyme navigation, etc.)
-    const waitForWordChange = () => {
-        // Check for word changes more frequently to handle rhyme navigation
-        let checkCount = 0;
-        const maxChecks = 15; // Increased to 15 checks (1.5 seconds total)
-        
-        const checkForWordChange = () => {
-            const newWord = wordDisplay.textContent;
-            if (newWord && newWord !== currentWord && newWord !== "NO WORDS!" && newWord !== "LOADING..." && newWord !== "ERROR") {
-                constructWord(newWord);
-                return;
-            }
-            
-            checkCount++;
-            if (checkCount < maxChecks) {
-                setTimeout(checkForWordChange, 100); // Check every 100ms
-            } else {
-                // No word change detected after all checks, just remove overlay
-                cleanup();
-            }
-        };
-        
-        // Start checking after a short delay
-        setTimeout(checkForWordChange, 100);
-    };
+    // Force reflow so the frozen state is committed before dissolve starts
+    void wordDisplay.offsetWidth;
 
-    // Phase 3: Construct new word character by character
-    // Characters start invisible, scaled down, and rotated -180°, then animate to normal
-    const constructWord = (targetWord) => {
-        const chars = targetWord.split('');
-        let constructedChars = 0;
-        
-        // Start with all characters invisible, scaled down, and rotated -180°
-        const invisibleChars = chars.map(char => 
-            `<span style="opacity: 0; transform: scale(0.5) rotate(-180deg); transition: all 0.6s ease-out; display: inline-block;">${char}</span>`
-        );
-        overlay.innerHTML = invisibleChars.join('');
-        
-        const constructInterval = setInterval(() => {
-            if (constructedChars >= chars.length) {
-                clearInterval(constructInterval);
-                // Construction complete, wait for rotation to finish then remove overlay
-                setTimeout(cleanup, 1000); // Increased wait time for rotation to complete
-                return;
-            }
-            
-            // Make character visible with construction effect: fade in, scale up, rotate to 0°
-            const charSpans = overlay.querySelectorAll('span');
-            if (charSpans[constructedChars]) {
-                charSpans[constructedChars].style.opacity = '1';
-                charSpans[constructedChars].style.transform = 'scale(1) rotate(0deg)';
-            }
-            constructedChars++;
-        }, 80); // Slightly slower to make rotation more visible
-    };
+    // Now set staggered delays and start the dissolve
+    wordDisplay.querySelectorAll('.flip-letter').forEach((span, i) => {
+        span.style.animation = '';
+        span.style.opacity = '';
+        span.style.transform = '';
+        span.style.filter = '';
+        span.style.animationDelay = `${i * 30}ms`;
+    });
 
-    // Cleanup function: Remove overlay and restore original word display
-    const cleanup = () => {
-        // Remove the overlay
-        if (overlay.parentNode) {
-            overlay.parentNode.removeChild(overlay);
-        }
-        // CRITICAL: Restore the original word display so the new word is visible
-        // Also ensure the display is set to flex to make it visible
-        wordDisplay.style.display = 'flex';
-    };
-
-    // Add glow effect to the overlay for visual enhancement
-    overlay.style.textShadow = '0 0 15px #00ffff, 0 0 30px #ff00ff';
-    
-    // Start the dissolve process
-    dissolveWord();
-    
-    // Safety cleanup after a reasonable time to prevent memory leaks
-    setTimeout(() => {
-        if (overlay.parentNode) {
-            cleanup();
-        }
-    }, 5000); // 5 second safety timeout
+    wordDisplay.classList.add('dissolve-exit');
 }
 
 // Function to cancel all animations (for mode switching)
 export function cancelAllAnimations() {
-    // Clear the animation queue
     animationQueue = [];
     isAnimating = false;
-    
-    // Remove any existing overlays from middle cells
-    const middleCells = document.querySelectorAll('.word-display-cell.middle-cell');
-    middleCells.forEach(cell => {
-        const overlays = cell.querySelectorAll('[style*="position: absolute"]');
-        overlays.forEach(overlay => {
-            if (overlay.parentNode) {
-                overlay.parentNode.removeChild(overlay);
-            }
-        });
-    });
-    
-    // Restore word display visibility
+
     const wordDisplay = document.getElementById('word-display');
     if (wordDisplay) {
-        wordDisplay.style.display = 'flex';
+        wordDisplay.classList.remove('flip-from-top', 'flip-from-bottom', 'dissolve-exit');
+        wordDisplay.querySelectorAll('.flip-letter').forEach(el => {
+            el.style.animationDelay = '';
+        });
     }
 }
 

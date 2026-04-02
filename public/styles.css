@@ -1080,6 +1080,16 @@ input[type="range"] {
 #word-display .flip-letter:nth-child(14) { animation-delay: 260ms; }
 #word-display .flip-letter:nth-child(15) { animation-delay: 280ms; }
 
+/* Voice-match dissolve exit — mirrors flip entrance but in reverse */
+#word-display.dissolve-exit .flip-letter {
+    animation: dissolve-char 0.35s ease-out forwards;
+}
+@keyframes dissolve-char {
+    0%   { opacity: 1; transform: translateY(0); filter: blur(0); }
+    60%  { opacity: 0.3; filter: blur(2px); }
+    100% { opacity: 0; transform: translateY(40%) scale(0.7); filter: blur(4px); }
+}
+
 /* Search suggestion flip animation with segment borders */
 .suggestion-item .flip-letter {
     display: inline-block;
