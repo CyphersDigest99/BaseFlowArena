@@ -59,7 +59,7 @@ export function closeModal(modalElement) {
 }
 
 function removeAllMatchTooltips() {
-    document.querySelectorAll('.match-tooltip').forEach(el => el.remove());
+    document.querySelectorAll('.rhyme-tier-tooltip').forEach(el => el.remove());
 }
 
 // --- Favorites Modal ---

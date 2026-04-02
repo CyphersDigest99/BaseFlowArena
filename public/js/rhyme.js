@@ -137,21 +137,20 @@ function createModalHeaderHTML(baseWord, rhymeSortMode) {
     let patternType = '';
     
     if (rhymeSortMode === 'similarity') {
-        // For similarity mode, show the full phonetic ending
+        // For similarity mode, show only the vowel sounds from the phonetic ending
         const phonemes = getPhonemes(baseWord);
         if (phonemes) {
             const rhymingPart = extractRhymingPart(phonemes);
             if (rhymingPart && rhymingPart.length > 0) {
-                // Create phoneme blocks with different styling for vowels vs consonants
-                const phonemeBlocks = rhymingPart.map(phoneme => {
-                    const isVowel = /[AEIOU]/.test(phoneme[0]);
-                    const cleanPhoneme = phoneme.replace(/[012]$/, ''); // Remove stress markers
-                    const className = isVowel ? 'vowel-pattern-block' : 'consonant-pattern-block';
-                    return `<span class="${className}">${cleanPhoneme}</span>`;
-                }).join(' ');
-                
-                patternDisplay = phonemeBlocks;
-                patternType = 'phonetic ending';
+                const vowelBlocks = rhymingPart
+                    .filter(phoneme => /[AEIOU]/.test(phoneme[0]))
+                    .map(phoneme => {
+                        const cleanPhoneme = phoneme.replace(/[012]$/, '');
+                        return `<span class="vowel-pattern-block">${cleanPhoneme}</span>`;
+                    }).join(' ');
+
+                patternDisplay = vowelBlocks || 'no vowel data';
+                patternType = 'vowel sounds';
             } else {
                 patternDisplay = 'unknown pattern';
                 patternType = 'phonetic ending';

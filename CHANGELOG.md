@@ -3,6 +3,9 @@
 ## 2026-04-02
 - Rebuild voice-match word transition animation: replace broken overlay system with CSS-only dissolve-exit animation on real flip-letter spans, eliminating style mismatch and competing animations
 - Add dissolve-char CSS keyframe animation for staggered letter exit
+- Fix rhyme modal tooltip getting stuck: cleanup was querying wrong class name (`.match-tooltip` vs `.rhyme-tier-tooltip`)
+- Fix tooltip positioning: change from `position: absolute` to `position: fixed` for body-appended tooltips
+- Fix rhyme modal heading in similarity mode: show only vowel (orange) phoneme blocks, filter out consonant (green) blocks
 - Backfill CHANGELOG.md from git history
 
 ## 2025-08-17

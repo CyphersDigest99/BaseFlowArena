@@ -3489,7 +3489,7 @@ body.screen-shaking {
 
 /* Rhyme Tier Tooltip */
 .rhyme-tier-tooltip {
-    position: absolute;
+    position: fixed;
     background: rgba(0, 0, 0, 0.9);
     color: var(--text-bright);
     padding: 4px 8px;
