@@ -8,7 +8,7 @@ for the BaseFlowArena application. It uses the CMU Pronouncing Dictionary (via t
 and syllable counting for freestyle rap training.
 
 The script reads words from a text file and outputs a JSON file containing:
-- Rhyme patterns (sequence of vowel sounds)
+- Rhyme patterns (sequence of vowel sounds with consonant context)
 - Syllable counts for each word
 - Original word as key (case preserved)
 
@@ -18,28 +18,34 @@ Features:
 - Provides syllable counting for rhythm training
 - Generates JSON output compatible with the web application
 - Includes error handling and progress reporting
+- Consonant-context-aware patterns (e.g., AE+nasal instead of AE)
+- Full CMU dictionary lookup generation via --cmu-full flag
 
 Usage:
-    python process_rhymes.py
-    
+    python process_rhymes.py [--input FILE] [--output-dir DIR] [--cmu-full] [--all]
+
     Requires:
-    - Input file: 'random word list.txt' (one word per line)
-    - Output file: 'rhyme_data.json' (created automatically)
-    - Dependencies: pronouncing, json, re, os
+    - Dependencies: pronouncing, json, re, os, argparse
 
 Dependencies:
     - pronouncing: CMU Pronouncing Dictionary interface
     - json: JSON file I/O
     - re: Regular expressions for phonetic pattern matching
     - os: File path operations
+    - argparse: Command-line argument parsing
 
-Output Format:
+Output Format (rhyme_data.json):
     {
         "word": {
-            "rhyme_pattern": ["AA", "IY"],
+            "rhyme_pattern": ["AE+nasal", "ER+null"],
             "phonemes": ["IH", "G", "Z", "AE", "M", "P", "AH", "L"],
             "syllables": 2
         }
+    }
+
+Output Format (cmu_lookup.json):
+    {
+        "word": "AE+nasal-ER+null|2"
     }
 
 Note: Words not found in the CMU dictionary are excluded from the output
@@ -51,17 +57,9 @@ import json
 import re
 import os
 
-# --- CONFIGURATION ---
-# Input word list file (assumed to be in the same directory as this script)
-WORD_LIST_FILE = 'random word list.txt'
-# Output JSON file (will be created/overwritten in the same directory)
-OUTPUT_JSON_FILE = 'rhyme_data.json'
-
 # --- PATH DETERMINATION ---
 # Determine paths based on script location for reliable file access
-SCRIPT_DIR = os.path.dirname(__file__)
-INPUT_PATH = os.path.join(SCRIPT_DIR, WORD_LIST_FILE)
-OUTPUT_PATH = os.path.join(SCRIPT_DIR, OUTPUT_JSON_FILE)
+SCRIPT_DIR = os.path.abspath(os.path.dirname(__file__))
 
 
 # --- PHONETIC PROCESSING FUNCTIONS ---
@@ -71,13 +69,13 @@ def get_all_phonemes(word):
     Gets the complete phonetic representation of a word as an array of phonemes.
     Uses the CMU Pronouncing Dictionary via the 'pronouncing' library.
     Returns a list of all phonemes (e.g., ['IH', 'G', 'Z', 'AE', 'M', 'P', 'AH', 'L']) or None if not found.
-    
+
     Args:
         word (str): The word to analyze
-        
+
     Returns:
         list or None: List of all phonemes in order, or None if word not found
-        
+
     Note:
         This function extracts ALL phonemes in sequence, including consonants and vowels,
         which is crucial for advanced rhyme similarity scoring.
@@ -101,13 +99,13 @@ def get_all_vowel_pattern(word):
     Finds the sequence of ALL vowel sounds for a word, regardless of stress.
     Uses the CMU Pronouncing Dictionary via the 'pronouncing' library.
     Returns a list of vowel phonemes (e.g., ['UW', 'IY']) or None if not found.
-    
+
     Args:
         word (str): The word to analyze
-        
+
     Returns:
         list or None: List of vowel phonemes in order, or None if word not found
-        
+
     Note:
         This function extracts ALL vowels in sequence, not just stressed ones,
         which is crucial for comprehensive rhyme detection in freestyle rap.
@@ -140,13 +138,13 @@ def get_syllable_count(word):
     """
     Gets the syllable count for a word using the pronouncing library.
     Returns the syllable count as an integer, or None if the word is not found.
-    
+
     Args:
         word (str): The word to count syllables for
-        
+
     Returns:
         int or None: Number of syllables, or None if word not found
-        
+
     Note:
         Syllable counting is based on stressed phonemes (ending in 0, 1, or 2)
         and is essential for rhythm training in freestyle rap.
@@ -163,100 +161,166 @@ def get_syllable_count(word):
     return max(1, syllable_count)  # Ensure at least 1 syllable
 
 
-# --- MAIN PROCESSING LOGIC ---
+# --- CONSONANT CLASSIFICATION ---
 
-def process_word_list():
+CONSONANT_CLASSES = {
+    'nasal': {'N', 'M', 'NG'},
+    'liquid': {'L', 'R'},
+    'stop': {'P', 'B', 'T', 'D', 'K', 'G'},
+    'fricative': {'F', 'V', 'S', 'Z', 'SH', 'ZH', 'TH', 'DH', 'HH', 'CH', 'JH'},
+}
+
+def classify_consonant(phoneme):
+    """Classify a consonant phoneme into its perceptual class."""
+    clean = re.sub(r'[012]$', '', phoneme)
+    for cls, members in CONSONANT_CLASSES.items():
+        if clean in members:
+            return cls
+    return 'other'
+
+
+def get_context_aware_pattern(word):
     """
-    Reads the input word list, processes each word to find its vowel pattern and syllable count,
-    and writes the results to the output JSON file.
-    
-    This function orchestrates the entire processing pipeline:
-    1. Validates input file existence
-    2. Reads and filters word list
-    3. Processes each word for phonetic data
-    4. Generates summary statistics
-    5. Writes structured JSON output
-    
-    The output JSON is structured for easy consumption by the web application's
-    rhyme detection and syllable filtering features.
+    Gets vowel pattern with consonant class context for each vowel.
+    Returns list like ['AE+nasal', 'ER+null'] or None if word not found.
     """
+    word_lower = word.lower()
+    phones_list = pronouncing.phones_for_word(word_lower)
+    if not phones_list:
+        return None
+
+    pronunciation = phones_list[0]
+    phonemes = pronunciation.split(' ')
+
+    pattern = []
+    for i, phone in enumerate(phonemes):
+        if re.match(r'^[AEIOU]', phone):
+            vowel = re.sub(r'[012]$', '', phone)
+            next_class = 'null'
+            for j in range(i + 1, len(phonemes)):
+                next_phone = phonemes[j]
+                if not re.match(r'^[AEIOU]', next_phone):
+                    next_class = classify_consonant(next_phone)
+                    break
+            pattern.append(f"{vowel}+{next_class}")
+
+    return pattern if pattern else None
+
+
+# --- CONFIGURATION (now via CLI args) ---
+import argparse
+
+def parse_args():
+    parser = argparse.ArgumentParser(description='Generate rhyme data for BaseFlowArena')
+    parser.add_argument('--input', default='word-list.txt',
+                        help='Input word list file (default: word-list.txt)')
+    parser.add_argument('--output-dir', default='public',
+                        help='Output directory (default: public)')
+    parser.add_argument('--cmu-full', action='store_true',
+                        help='Generate cmu_lookup.json from full CMU dictionary')
+    parser.add_argument('--all', action='store_true',
+                        help='Generate both rhyme_data.json and cmu_lookup.json')
+    return parser.parse_args()
+
+
+def process_word_list(input_file, output_dir):
+    """Generates rhyme_data.json from a word list file."""
     rhyme_patterns = {}
     not_found_count = 0
     processed_count = 0
-    word_count = 0
 
-    print(f"Starting rhyme pattern and syllable processing...")
-    print(f"Reading words from: {INPUT_PATH}")
+    input_path = os.path.join(SCRIPT_DIR, input_file)
+    output_path = os.path.join(SCRIPT_DIR, output_dir, 'rhyme_data.json')
 
-    # --- INPUT FILE VALIDATION ---
-    # Check if the input file exists before attempting to read
-    if not os.path.exists(INPUT_PATH):
-        print(f"\n--- ERROR ---")
-        print(f"Input file '{WORD_LIST_FILE}' not found in the directory:")
-        print(f"'{SCRIPT_DIR}'")
-        print(f"Please create this file with one word per line and run the script again.")
-        return  # Stop execution if file not found
+    print(f"Generating rhyme_data.json...")
+    print(f"Reading words from: {input_path}")
 
-    # --- WORD LIST READING ---
-    # Read words from the input file with error handling
-    try:
-        with open(INPUT_PATH, 'r', encoding='utf-8') as f:
-            # Read lines, strip whitespace, filter out empty lines
-            words = [line.strip() for line in f if line.strip()]
-            word_count = len(words)
-    except Exception as e:
-        print(f"Error reading file '{INPUT_PATH}': {e}")
-        return  # Stop execution if file cannot be read
+    if not os.path.exists(input_path):
+        print(f"ERROR: Input file '{input_file}' not found.")
+        return
 
-    print(f"Found {word_count} words/phrases in the list.")
-    print(f"Processing phonetic patterns and syllable counts (this may take a moment for large lists)...")
+    with open(input_path, 'r', encoding='utf-8') as f:
+        words = [line.strip() for line in f if line.strip()]
 
-    # --- WORD PROCESSING LOOP ---
-    # Process each word to extract phonetic data
+    print(f"Found {len(words)} words. Processing...")
+
     for word in words:
-        # Get the vowel pattern using the helper function
-        pattern = get_all_vowel_pattern(word)
-        # Get the complete phoneme array
+        pattern = get_context_aware_pattern(word)
         phonemes = get_all_phonemes(word)
-        # Get the syllable count
         syllable_count = get_syllable_count(word)
 
         if pattern and phonemes and syllable_count is not None:
-            # Store pattern, phonemes, and syllable count with the original (case preserved) word as the key
-            rhyme_patterns[word] = {
+            rhyme_patterns[word.lower()] = {
                 "rhyme_pattern": pattern,
                 "phonemes": phonemes,
                 "syllables": syllable_count
             }
             processed_count += 1
         else:
-            # Word's pronunciation not found in the CMU dictionary
-            # Optionally print a warning for each missing word:
-            # print(f" - Warning: Phonetic data not found for '{word}'")
             not_found_count += 1
 
-    # --- PROCESSING SUMMARY ---
-    print(f"\n--- Processing Complete ---")
-    print(f"Successfully processed: {processed_count} words")
+    print(f"Processed: {processed_count} words")
     if not_found_count > 0:
-        print(f"Phonetic data not found for: {not_found_count} words (excluded from rhyme data)")
-    print(f"Total words from list processed/attempted: {word_count}")
+        print(f"Not found in CMU: {not_found_count} words")
 
-    # --- JSON OUTPUT GENERATION ---
-    print(f"\nWriting {len(rhyme_patterns)} patterns to: {OUTPUT_PATH}")
-    try:
-        # Write the dictionary to a JSON file with pretty printing (indent=2)
-        with open(OUTPUT_PATH, 'w', encoding='utf-8') as f:
-            # ensure_ascii=False for wider character support (international words)
-            json.dump(rhyme_patterns, f, indent=2, ensure_ascii=False)
-        print("Successfully wrote JSON file.")
-    except Exception as e:
-        print(f"--- ERROR ---")
-        print(f"Error writing JSON file '{OUTPUT_PATH}': {e}")
+    print(f"Writing {len(rhyme_patterns)} patterns to: {output_path}")
+    with open(output_path, 'w', encoding='utf-8') as f:
+        json.dump(rhyme_patterns, f, indent=2, ensure_ascii=False)
+    print("Done.")
 
 
-# --- SCRIPT EXECUTION ENTRY POINT ---
+def generate_cmu_lookup(output_dir):
+    """Generates cmu_lookup.json from the full CMU Pronouncing Dictionary."""
+    output_path = os.path.join(SCRIPT_DIR, output_dir, 'cmu_lookup.json')
+
+    print(f"Generating cmu_lookup.json from full CMU dictionary...")
+
+    cmu_entries = pronouncing.cmudict.entries()
+    lookup = {}
+    count = 0
+
+    for word, pronunciation in cmu_entries:
+        if not word.isalpha():
+            continue
+        if word in lookup:
+            continue
+
+        # pronunciation is already a list of phoneme strings from cmudict.entries()
+        phonemes = pronunciation
+
+        pattern_parts = []
+        for i, phone in enumerate(phonemes):
+            if re.match(r'^[AEIOU]', phone):
+                vowel = re.sub(r'[012]$', '', phone)
+                next_class = 'null'
+                for j in range(i + 1, len(phonemes)):
+                    if not re.match(r'^[AEIOU]', phonemes[j]):
+                        next_class = classify_consonant(phonemes[j])
+                        break
+                pattern_parts.append(f"{vowel}+{next_class}")
+
+        if not pattern_parts:
+            continue
+
+        syllable_count = max(1, len([p for p in phonemes if p[-1].isdigit()]))
+        pattern_str = '-'.join(pattern_parts)
+        lookup[word] = f"{pattern_str}|{syllable_count}"
+        count += 1
+
+    print(f"Processed {count} words from CMU dictionary.")
+    print(f"Writing to: {output_path}")
+    with open(output_path, 'w', encoding='utf-8') as f:
+        json.dump(lookup, f, separators=(',', ':'), ensure_ascii=False)
+    print("Done.")
+
+
 if __name__ == "__main__":
-    # This block ensures the code runs only when the script is executed directly
-    # (not when imported as a module)
-    process_word_list()
+    args = parse_args()
+
+    if args.all:
+        process_word_list(args.input, args.output_dir)
+        generate_cmu_lookup(args.output_dir)
+    elif args.cmu_full:
+        generate_cmu_lookup(args.output_dir)
+    else:
+        process_word_list(args.input, args.output_dir)
