@@ -6,6 +6,9 @@
 - Fix rhyme modal tooltip getting stuck: cleanup was querying wrong class name (`.match-tooltip` vs `.rhyme-tier-tooltip`)
 - Fix tooltip positioning: change from `position: absolute` to `position: fixed` for body-appended tooltips
 - Fix rhyme modal heading in similarity mode: show only vowel (orange) phoneme blocks, filter out consonant (green) blocks
+- Fix XSS in search autocomplete: replace innerHTML with textContent/DOM API in wordSearch.js and reverseSearch.js
+- Fix memory leak in rhyme modal: replace per-item mouseenter/mouseleave listeners with event delegation on list container
+- Delete stale root js/ directory (24 files) — only public/js/ is loaded by index.html
 - Backfill CHANGELOG.md from git history
 
 ## 2025-08-17

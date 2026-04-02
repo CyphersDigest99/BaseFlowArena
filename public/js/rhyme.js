@@ -493,57 +493,10 @@ function createRhymeListItem(rhymeWord, baseWordLower, tierInfo = null) {
         }
     }
     
-    // Add tooltip functionality for tier info
+    // Store tier data on the element for delegated tooltip handling
     if (tierInfo && (tierInfo.tier === 'perfect' || tierInfo.tier === 'strong')) {
-        let tooltipTimeout;
-        let tooltip = null;
-        
-        li.addEventListener('mouseenter', () => {
-            tooltipTimeout = setTimeout(() => {
-                tooltip = document.createElement('div');
-                tooltip.className = 'rhyme-tier-tooltip';
-                
-                // Calculate match value based on tier
-                let matchValue = '';
-                if (tierInfo.tier === 'perfect') {
-                    matchValue = '100%';
-                } else if (tierInfo.tier === 'strong') {
-                    const basePhonemes = getPhonemes(state.currentWord);
-                    const candidatePhonemes = getPhonemes(rhymeWord);
-                    if (basePhonemes && candidatePhonemes) {
-                        const score = calculateRhymeScore(basePhonemes, candidatePhonemes);
-                        matchValue = `${Math.round(score * 100)}%`;
-                    } else {
-                        matchValue = '~70%';
-                    }
-                }
-                
-                tooltip.textContent = `Match: ${matchValue}`;
-                document.body.appendChild(tooltip);
-                
-                // Position tooltip
-                const rect = li.getBoundingClientRect();
-                tooltip.style.left = `${rect.left + rect.width / 2 - tooltip.offsetWidth / 2}px`;
-                tooltip.style.top = `${rect.top - tooltip.offsetHeight - 8}px`;
-                tooltip.style.opacity = '1';
-            }, 1000); // 1 second delay
-        });
-        
-        li.addEventListener('mouseleave', () => {
-            if (tooltipTimeout) {
-                clearTimeout(tooltipTimeout);
-                tooltipTimeout = null;
-            }
-            if (tooltip) {
-                tooltip.style.opacity = '0';
-                setTimeout(() => {
-                    if (tooltip && tooltip.parentNode) {
-                        tooltip.parentNode.removeChild(tooltip);
-                    }
-                }, 200);
-                tooltip = null;
-            }
-        });
+        li.dataset.tier = tierInfo.tier;
+        li.dataset.rhymeWord = rhymeWord;
     }
     
     // Add tier class for similarity sort mode
@@ -634,6 +587,65 @@ function createRhymeListItem(rhymeWord, baseWordLower, tierInfo = null) {
     ui.elements.rhymeResultsList.appendChild(li);
 }
 
+// Delegated tooltip handler — one listener pair on the list container instead of per-item.
+// Avoids memory leaks when the list is cleared and rebuilt.
+let _tooltipDelegationBound = false;
+let _activeTooltip = null;
+let _activeTooltipTimeout = null;
+
+function setupRhymeTooltipDelegation(listEl) {
+    if (_tooltipDelegationBound) return;
+    _tooltipDelegationBound = true;
+
+    listEl.addEventListener('mouseenter', (e) => {
+        const li = e.target.closest('li[data-tier]');
+        if (!li) return;
+
+        _activeTooltipTimeout = setTimeout(() => {
+            const tier = li.dataset.tier;
+            const rhymeWord = li.dataset.rhymeWord;
+            let matchValue = '';
+            if (tier === 'perfect') {
+                matchValue = '100%';
+            } else if (tier === 'strong') {
+                const basePhonemes = getPhonemes(state.currentWord);
+                const candidatePhonemes = getPhonemes(rhymeWord);
+                if (basePhonemes && candidatePhonemes) {
+                    matchValue = `${Math.round(calculateRhymeScore(basePhonemes, candidatePhonemes) * 100)}%`;
+                } else {
+                    matchValue = '~70%';
+                }
+            }
+
+            _activeTooltip = document.createElement('div');
+            _activeTooltip.className = 'rhyme-tier-tooltip';
+            _activeTooltip.textContent = `Match: ${matchValue}`;
+            document.body.appendChild(_activeTooltip);
+
+            const rect = li.getBoundingClientRect();
+            _activeTooltip.style.left = `${rect.left + rect.width / 2 - _activeTooltip.offsetWidth / 2}px`;
+            _activeTooltip.style.top = `${rect.top - _activeTooltip.offsetHeight - 8}px`;
+            _activeTooltip.style.opacity = '1';
+        }, 1000);
+    }, true); // useCapture for mouseenter delegation
+
+    listEl.addEventListener('mouseleave', (e) => {
+        const li = e.target.closest('li[data-tier]');
+        if (!li) return;
+
+        if (_activeTooltipTimeout) {
+            clearTimeout(_activeTooltipTimeout);
+            _activeTooltipTimeout = null;
+        }
+        if (_activeTooltip) {
+            const tip = _activeTooltip;
+            tip.style.opacity = '0';
+            setTimeout(() => { if (tip.parentNode) tip.remove(); }, 200);
+            _activeTooltip = null;
+        }
+    }, true);
+}
+
 // Update displayRhymeList to move tempRejected words to end and add tier separators
 function displayRhymeList(baseWordLower) {
     if (!ui.elements.rhymeResultsList || !baseWordLower) return;
@@ -657,7 +669,8 @@ function displayRhymeList(baseWordLower) {
     const finalList = [...normal, ...rejected];
     
     ui.elements.rhymeResultsList.innerHTML = '';
-    
+    setupRhymeTooltipDelegation(ui.elements.rhymeResultsList);
+
     if (finalList.length > 0) {
         if (rhymeSortMode === 'similarity') {
             // For similarity mode, add tier separators and tier info

@@ -402,20 +402,22 @@ function renderReverseSuggestionList() {
 
         if (isSelected) {
             item.classList.add('selected');
-            // Add direction class for flip animation
             item.classList.add(reverseSearchState.lastDirection === 'top' ? 'flip-from-top' : 'flip-from-bottom');
-            // Apply split-flap animation to selected item
-            const letters = word.split('').map((letter, i) => {
-                const isTyped = i >= (word.length - suffixLength);
-                const partClass = isTyped ? 'typed-part' : 'autocomplete-part';
-                return `<span class="flip-letter ${partClass}">${letter}</span>`;
-            }).join('');
-            item.innerHTML = letters;
+            word.split('').forEach((letter, i) => {
+                const span = document.createElement('span');
+                span.textContent = letter;
+                span.className = `flip-letter ${i >= (word.length - suffixLength) ? 'typed-part' : 'autocomplete-part'}`;
+                item.appendChild(span);
+            });
         } else {
-            // Non-selected items show normally (no animation)
-            const prefix = word.substring(0, word.length - suffixLength);
-            const suffixPart = word.substring(word.length - suffixLength);
-            item.innerHTML = `<span class="autocomplete-part">${prefix}</span><span class="typed-part">${suffixPart}</span>`;
+            const pre = document.createElement('span');
+            pre.className = 'autocomplete-part';
+            pre.textContent = word.substring(0, word.length - suffixLength);
+            const suf = document.createElement('span');
+            suf.className = 'typed-part';
+            suf.textContent = word.substring(word.length - suffixLength);
+            item.appendChild(pre);
+            item.appendChild(suf);
 
             if (distance === 1) {
                 item.classList.add('fade-1');
