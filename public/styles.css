@@ -2050,6 +2050,25 @@ input[type="range"] {
     opacity: 0.8;
 }
 
+/* Transcript clickable words */
+.transcript-word {
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: 3px;
+    border-bottom: 1px solid rgba(51, 255, 51, 0.3);
+    transition: background 0.15s ease;
+}
+
+.transcript-word:hover {
+    background: rgba(51, 255, 51, 0.1);
+}
+
+.transcript-word.selected {
+    background: rgba(51, 255, 51, 0.2);
+    border: 1px solid rgba(51, 255, 51, 0.5);
+    color: var(--text-bright);
+}
+
 /* Flow Meter Styling */
 .flow-meter {
     width: 100%;
