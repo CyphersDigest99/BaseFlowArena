@@ -38,6 +38,10 @@ export const state = {
     rhymeData: null, // Loaded rhyme dictionary data
     rejectedRhymes: {}, // { baseWord: Set('rejected1', 'rejected2'), ... }
     manualRhymes: {},   // { baseWord: Set('manual1', 'manual2'), ... }
+    cmuLookup: null,          // Compact CMU dictionary data (loaded from cmu_lookup.json)
+    cmuInvertedIndex: null,   // Map of patternString -> [word1, word2, ...] for O(1) candidate lookup
+    runtimePatterns: {},      // Rule-based fallback cache: { word: "pattern|syllables" }
+    rejectionLog: [],         // Array of { base, rejected, base_context, rejected_context, timestamp }
 
     // Activation & Modes - Voice recognition and interaction modes
     activationMode: 'manual', // 'manual', 'voice', 'timed'
@@ -49,6 +53,7 @@ export const state = {
     transcriptTimeout: null, // Timer for clearing transcript
     timedInterval: null, // Interval for timed word cycling
     voiceRhymeMode: false, // Controls whether voice matches should navigate rhymes
+    transcriptSelectedWord: null, // Currently selected word from transcript (string or null)
 
     // BPM / Rhythm - Beat detection and timing
     bpm: 0, // Current detected beats per minute
