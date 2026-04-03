@@ -139,15 +139,17 @@ function createModalHeaderHTML(baseWord, rhymeSortMode) {
         }
     }
     
-    // Add focusable header with prev/next buttons
+    // Add focusable header with prev/next buttons and blacklist
+    const isBlacklisted = state.blacklist.has(baseWord.toUpperCase());
     return `
+        <button id="rhyme-header-blacklist" class="word-action-icon blacklist-icon${isBlacklisted ? ' active' : ''}" title="Blacklist Word"><i class="fas fa-ban"></i></button>
         <div>${matchCount} ${wordText}</div>
         <div>sound like the</div>
         <div style="margin: 8px 0;">${patternDisplay}</div>
         <div>in</div>
         <div class="rhyme-header-focus-row">
             <button id="rhyme-header-prev" class="rhyme-header-nav" tabindex="-1" aria-label="Previous word"><i class='fas fa-chevron-left'></i></button>
-            <span id="rhyme-header-word" class="rhyme-header-word" tabindex="0">${baseWord}</span>
+            <span id="rhyme-header-word" class="rhyme-header-word" tabindex="0">${baseWord.toUpperCase()}</span>
             <button id="rhyme-header-next" class="rhyme-header-nav" tabindex="-1" aria-label="Next word"><i class='fas fa-chevron-right'></i></button>
         </div>
     `;
@@ -248,9 +250,20 @@ function attachRhymeSortListeners() {
 // --- Temporary Rejection State (modal-local) ---
 let tempRejected = new Set();
 
+// --- Feedback Card State (session-local, not persisted) ---
+let pendingFeedback = new Map();   // rejectedWord -> { reasons: [], remark: '' }
+let lastCardDismissTime = 0;
+let lastCardHadFeedback = false;
+let skipCounter = 0;
+const RAPID_FIRE_MS = 2000;
+
 // --- Enhanced Modal Open with Sorting ---
 export function openRhymeFinderModalWithSort() {
     tempRejected = new Set();
+    pendingFeedback = new Map();
+    lastCardDismissTime = 0;
+    lastCardHadFeedback = false;
+    skipCounter = 0;
     rhymeSortMode = 'similarity';
     updateRhymeSortButtonState();
     attachRhymeSortListeners();
@@ -268,17 +281,234 @@ export function persistTempRejections() {
         const wordLower = word.toLowerCase();
         state.rejectedRhymes[baseWordLower].add(wordLower);
 
-        // Log rejection with phonetic context
+        // Merge pending feedback if available
+        const fb = pendingFeedback.get(wordLower);
         state.rejectionLog.push({
             base: baseWordLower,
             rejected: wordLower,
             base_context: baseContext,
             rejected_context: phonetics.getVowelContext(wordLower),
+            reasons: fb?.reasons || [],
+            remark: fb?.remark || '',
+            skipped: !fb,
             timestamp: new Date().toISOString().split('T')[0]
         });
     }
     storage.saveSettings();
+    pendingFeedback.clear();
     tempRejected.clear();
+}
+
+// --- Feedback Card Reason Chips ---
+const FEEDBACK_REASONS = [
+    { code: 'stressed_vowel', label: 'Stressed sounds don\'t match' },
+    { code: 'ending_different', label: 'Endings sound different' },
+    { code: 'syllable_mismatch', label: 'Wrong syllable count' },
+    { code: 'beginning_different', label: 'Beginning throws it off' },
+    { code: 'not_a_word', label: 'Not a real word' },
+    { code: 'sounds_wrong', label: 'Just sounds wrong' },
+];
+
+function renderPhonemeComparison(comparison, baseWord, rejectedWord) {
+    const section = document.createElement('div');
+    section.className = 'feedback-phoneme-section';
+
+    // Row for word 1
+    const row1 = document.createElement('div');
+    row1.className = 'feedback-phoneme-row';
+    const label1 = document.createElement('span');
+    label1.className = 'word-label';
+    label1.textContent = baseWord;
+    row1.appendChild(label1);
+
+    // Row for word 2
+    const row2 = document.createElement('div');
+    row2.className = 'feedback-phoneme-row';
+    const label2 = document.createElement('span');
+    label2.className = 'word-label';
+    label2.textContent = rejectedWord;
+    row2.appendChild(label2);
+
+    for (const pair of comparison.pairs) {
+        // Word 1 block
+        if (pair.p1) {
+            const block1 = document.createElement('span');
+            block1.className = pair.p1.isVowel ? 'feedback-vowel-block' : 'feedback-consonant-block';
+            block1.textContent = pair.p1.clean;
+            if (pair.mismatch) block1.classList.add('feedback-mismatch');
+            else if (pair.match) block1.classList.add('feedback-match-good');
+            row1.appendChild(block1);
+        } else {
+            const empty = document.createElement('span');
+            empty.className = 'feedback-empty-block';
+            row1.appendChild(empty);
+        }
+
+        // Word 2 block
+        if (pair.p2) {
+            const block2 = document.createElement('span');
+            block2.className = pair.p2.isVowel ? 'feedback-vowel-block' : 'feedback-consonant-block';
+            block2.textContent = pair.p2.clean;
+            if (pair.mismatch) block2.classList.add('feedback-mismatch');
+            else if (pair.match) block2.classList.add('feedback-match-good');
+            row2.appendChild(block2);
+        } else {
+            const empty = document.createElement('span');
+            empty.className = 'feedback-empty-block';
+            row2.appendChild(empty);
+        }
+    }
+
+    section.appendChild(row1);
+    section.appendChild(row2);
+    return section;
+}
+
+function showFeedbackCard(baseWord, rejectedWord) {
+    // Remove any existing card first
+    closeFeedbackCard(false);
+
+    const baseWordLower = baseWord.toLowerCase();
+    const rejectedWordLower = rejectedWord.toLowerCase();
+    const comparison = phonetics.getAlignedComparison(baseWordLower, rejectedWordLower);
+
+    // Build backdrop
+    const backdrop = document.createElement('div');
+    backdrop.className = 'feedback-card-backdrop';
+    backdrop.addEventListener('click', (e) => {
+        if (e.target === backdrop) closeFeedbackCard(true);
+    });
+
+    // Build card
+    const card = document.createElement('div');
+    card.className = 'feedback-card';
+
+    // Close button
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'feedback-card-close';
+    closeBtn.textContent = '\u00d7';
+    closeBtn.onclick = () => closeFeedbackCard(true);
+    card.appendChild(closeBtn);
+
+    // Header: word pair + match %
+    const header = document.createElement('div');
+    header.className = 'feedback-card-header';
+    const wordsDiv = document.createElement('div');
+    wordsDiv.className = 'feedback-card-words';
+    wordsDiv.innerHTML = `<span>${baseWord}</span><span class="feedback-vs">vs</span><span>${rejectedWord}</span>`;
+    header.appendChild(wordsDiv);
+
+    if (comparison) {
+        const matchDiv = document.createElement('div');
+        matchDiv.className = 'feedback-card-match';
+        matchDiv.textContent = `${comparison.matchPercent}% match`;
+        header.appendChild(matchDiv);
+    }
+    card.appendChild(header);
+
+    // Phoneme comparison
+    if (comparison) {
+        card.appendChild(renderPhonemeComparison(comparison, baseWord, rejectedWord));
+    }
+
+    // Reason chips
+    const chipsContainer = document.createElement('div');
+    chipsContainer.className = 'feedback-chips';
+    const selectedReasons = new Set();
+
+    for (const reason of FEEDBACK_REASONS) {
+        const chip = document.createElement('button');
+        chip.className = 'feedback-chip';
+        chip.textContent = reason.label;
+        chip.type = 'button';
+        chip.addEventListener('click', () => {
+            if (selectedReasons.has(reason.code)) {
+                selectedReasons.delete(reason.code);
+                chip.classList.remove('active');
+            } else {
+                selectedReasons.add(reason.code);
+                chip.classList.add('active');
+            }
+        });
+        chipsContainer.appendChild(chip);
+    }
+    card.appendChild(chipsContainer);
+
+    // Remark input
+    const remark = document.createElement('input');
+    remark.type = 'text';
+    remark.className = 'feedback-remark';
+    remark.placeholder = 'Quick note (optional)...';
+    card.appendChild(remark);
+
+    // Escape key handler
+    const escHandler = (e) => {
+        if (e.key === 'Escape') {
+            closeFeedbackCard(true);
+            document.removeEventListener('keydown', escHandler);
+        }
+    };
+    document.addEventListener('keydown', escHandler);
+
+    // Store references for closeFeedbackCard
+    backdrop._feedbackState = {
+        rejectedWordLower,
+        selectedReasons,
+        remarkInput: remark,
+        escHandler,
+    };
+
+    backdrop.appendChild(card);
+    document.body.appendChild(backdrop);
+}
+
+function closeFeedbackCard(saveFeedback) {
+    const backdrop = document.querySelector('.feedback-card-backdrop');
+    if (!backdrop) return;
+
+    if (saveFeedback && backdrop._feedbackState) {
+        const { rejectedWordLower, selectedReasons, remarkInput, escHandler } = backdrop._feedbackState;
+        const reasons = Array.from(selectedReasons);
+        const remarkText = remarkInput.value.trim();
+        const hadFeedback = reasons.length > 0 || remarkText.length > 0;
+
+        if (hadFeedback || pendingFeedback.has(rejectedWordLower)) {
+            pendingFeedback.set(rejectedWordLower, {
+                reasons,
+                remark: remarkText,
+            });
+        }
+
+        lastCardHadFeedback = hadFeedback;
+        lastCardDismissTime = Date.now();
+
+        if (!hadFeedback) {
+            skipCounter++;
+            updateSkipBadge();
+        }
+
+        document.removeEventListener('keydown', escHandler);
+    }
+
+    backdrop.remove();
+}
+
+function updateSkipBadge() {
+    const modalContent = ui.elements.rhymeFinderModal?.querySelector('.modal-content');
+    if (!modalContent) return;
+
+    let badge = modalContent.querySelector('.feedback-skip-badge');
+    if (skipCounter > 0) {
+        if (!badge) {
+            badge = document.createElement('span');
+            badge.className = 'feedback-skip-badge';
+            modalContent.style.position = 'relative';
+            modalContent.appendChild(badge);
+        }
+        badge.textContent = `${skipCounter} skipped`;
+    } else if (badge) {
+        badge.remove();
+    }
 }
 
 // Update createRhymeListItem for temp rejection/undo and slant tagging
@@ -375,11 +605,23 @@ function createRhymeListItem(rhymeWord, baseWordLower, tierInfo = null) {
         // Add the [X] icon
         const x = document.createElement('span');
         x.className = 'rhyme-x';
-        x.textContent = '×';
+        x.textContent = '\u00d7';
         x.title = 'Reject this rhyme';
         x.onclick = (e) => {
             e.stopPropagation();
             tempRejected.add(wordLower);
+
+            // Rapid-fire bypass: if last card was dismissed empty within 2s, skip card
+            const now = Date.now();
+            const rapidFire = !lastCardHadFeedback && (now - lastCardDismissTime) < RAPID_FIRE_MS && lastCardDismissTime > 0;
+
+            if (rapidFire) {
+                skipCounter++;
+                updateSkipBadge();
+            } else {
+                showFeedbackCard(state.currentWord, rhymeWord);
+            }
+
             // Re-render
             const baseWordLower = state.currentWord?.toLowerCase();
             displayRhymeList(baseWordLower);
@@ -423,10 +665,22 @@ function setupRhymeTooltipDelegation(listEl) {
     if (_tooltipDelegationBound) return;
     _tooltipDelegationBound = true;
 
-    listEl.addEventListener('mouseenter', (e) => {
-        const li = e.target.closest('li[data-tier]');
-        if (!li) return;
+    function clearTooltip() {
+        if (_activeTooltipTimeout) {
+            clearTimeout(_activeTooltipTimeout);
+            _activeTooltipTimeout = null;
+        }
+        if (_activeTooltip) {
+            _activeTooltip.remove();
+            _activeTooltip = null;
+        }
+    }
 
+    listEl.addEventListener('mouseover', (e) => {
+        const li = e.target.closest('li[data-tier]');
+        if (!li) { clearTooltip(); return; }
+
+        clearTooltip();
         _activeTooltipTimeout = setTimeout(() => {
             const rhymeWord = li.dataset.rhymeWord;
             const baseWordLower = state.currentWord?.toLowerCase();
@@ -448,23 +702,15 @@ function setupRhymeTooltipDelegation(listEl) {
             _activeTooltip.style.top = `${rect.top - _activeTooltip.offsetHeight - 8}px`;
             _activeTooltip.style.opacity = '1';
         }, 1000);
-    }, true); // useCapture for mouseenter delegation
+    });
 
-    listEl.addEventListener('mouseleave', (e) => {
+    listEl.addEventListener('mouseout', (e) => {
         const li = e.target.closest('li[data-tier]');
         if (!li) return;
-
-        if (_activeTooltipTimeout) {
-            clearTimeout(_activeTooltipTimeout);
-            _activeTooltipTimeout = null;
-        }
-        if (_activeTooltip) {
-            const tip = _activeTooltip;
-            tip.style.opacity = '0';
-            setTimeout(() => { if (tip.parentNode) tip.remove(); }, 200);
-            _activeTooltip = null;
-        }
-    }, true);
+        const related = e.relatedTarget;
+        if (related && li.contains(related)) return;
+        clearTooltip();
+    });
 }
 
 // Update displayRhymeList to move tempRejected words to end and add tier separators
@@ -693,10 +939,11 @@ function updateModalHeader() {
 }
 
 // --- Attach Header Nav Button Handlers ---
-// Wires up the prev/next buttons in the modal header
+// Wires up the prev/next/blacklist buttons in the modal header
 function attachHeaderNavHandlers() {
     const prevBtn = document.getElementById('rhyme-header-prev');
     const nextBtn = document.getElementById('rhyme-header-next');
+    const blacklistBtn = document.getElementById('rhyme-header-blacklist');
 
     if (prevBtn) {
         prevBtn.addEventListener('click', (e) => {
@@ -711,6 +958,28 @@ function attachHeaderNavHandlers() {
             e.preventDefault();
             e.stopPropagation();
             navigateWordInModal('next');
+        });
+    }
+
+    if (blacklistBtn) {
+        blacklistBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const word = state.currentWord;
+            if (!word) return;
+            if (state.blacklist.has(word)) {
+                state.blacklist.delete(word);
+                blacklistBtn.classList.remove('active');
+                ui.showFeedback(`"${word}" un-blacklisted.`);
+            } else {
+                state.blacklist.add(word);
+                blacklistBtn.classList.add('active');
+                ui.showFeedback(`"${word}" blacklisted!`, true);
+            }
+            storage.saveSettings();
+            // Sync the main blacklist button state
+            const mainBtn = document.getElementById('blacklist-word');
+            if (mainBtn) mainBtn.classList.toggle('active', state.blacklist.has(word));
         });
     }
 }
