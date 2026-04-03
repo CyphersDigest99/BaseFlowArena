@@ -549,6 +549,30 @@ export function previousWord() {
 }
 export function stayWord() { changeWord('stay', false, false); }
 
+/**
+ * Sets an arbitrary word as the active word (e.g., from transcript click).
+ * Unlike changeWord(), this does not require the word to be in the filtered list.
+ */
+export function setActiveWord(word) {
+    if (!word) return;
+    const previousWord = state.currentWord;
+    const cleanWord = word.replace(/[^a-zA-Z'-]/g, '').toLowerCase();
+    if (!cleanWord || cleanWord.length < 2) return;
+
+    state.currentWord = cleanWord;
+    state.currentWordIndex = -1; // Not from the word list
+    state.lastMatchedWord = null;
+
+    state.currentRhymeList = rhyme.getValidRhymesForWord(cleanWord);
+    state.currentRhymeIndex = -1;
+
+    ui.displayWord(cleanWord);
+
+    if (onWordChangeCallback) {
+        onWordChangeCallback(cleanWord, previousWord);
+    }
+}
+
 
 // --- Word Actions (Blacklist/Favorite) ---
 // Toggles blacklist status of displayed word (base word or rhyme)
