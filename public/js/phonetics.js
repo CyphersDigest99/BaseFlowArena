@@ -519,3 +519,77 @@ export function getVowelContext(word) {
     // Fall back to rule-based (which already has context)
     return ruleBasedPattern(word.toLowerCase()) || [];
 }
+
+// --- Aligned phoneme comparison for feedback card display ---
+export function getAlignedComparison(word1, word2) {
+    const phonemes1 = getFullPhonemes(word1);
+    const phonemes2 = getFullPhonemes(word2);
+    if (!phonemes1 || !phonemes2) return null;
+
+    const seg1 = extractSegment(phonemes1);
+    const seg2 = extractSegment(phonemes2);
+    if (!seg1 || !seg2) return null;
+
+    // Score both directions to determine alignment
+    const fwdScore = scoreAligned(seg1, seg2);
+    const revScore = scoreAligned([...seg1].reverse(), [...seg2].reverse());
+    const useReverse = fwdScore >= 0.25 && revScore > fwdScore;
+
+    // Build aligned pair arrays
+    const maxLen = Math.max(seg1.length, seg2.length);
+    const pairs = [];
+
+    if (useReverse) {
+        // Right-align: pad shorter segment on the left
+        const pad1 = maxLen - seg1.length;
+        const pad2 = maxLen - seg2.length;
+        for (let i = 0; i < maxLen; i++) {
+            const p1 = i >= pad1 ? seg1[i - pad1] : null;
+            const p2 = i >= pad2 ? seg2[i - pad2] : null;
+            pairs.push(buildPair(p1, p2));
+        }
+    } else {
+        // Left-align: pad shorter segment on the right
+        for (let i = 0; i < maxLen; i++) {
+            const p1 = i < seg1.length ? seg1[i] : null;
+            const p2 = i < seg2.length ? seg2[i] : null;
+            pairs.push(buildPair(p1, p2));
+        }
+    }
+
+    // Overall match percentage (same logic as rhymeScore)
+    const overall = rhymeScore(word1, word2);
+
+    return {
+        word1, word2,
+        alignment: useReverse ? 'reverse' : 'forward',
+        pairs,
+        matchPercent: Math.round(overall * 100),
+        fullPhonemes1: phonemes1,
+        fullPhonemes2: phonemes2,
+        segment1: seg1,
+        segment2: seg2,
+    };
+}
+
+function buildPair(p1, p2) {
+    const isVowel1 = p1 ? /[AEIOU]/.test(p1[0]) : false;
+    const isVowel2 = p2 ? /[AEIOU]/.test(p2[0]) : false;
+
+    let similarity = 0;
+    if (p1 && p2) {
+        if (isVowel1 && isVowel2) {
+            similarity = vowelSimilarity(p1, p2);
+        } else if (!isVowel1 && !isVowel2) {
+            similarity = consonantSimilarity(p1, p2);
+        }
+    }
+
+    return {
+        p1: p1 ? { phoneme: p1, isVowel: isVowel1, clean: p1.replace(/[012]$/, '') } : null,
+        p2: p2 ? { phoneme: p2, isVowel: isVowel2, clean: p2.replace(/[012]$/, '') } : null,
+        similarity,
+        match: similarity >= 0.8,
+        mismatch: p1 && p2 && similarity < 0.4,
+    };
+}
