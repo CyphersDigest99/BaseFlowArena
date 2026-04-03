@@ -40,6 +40,7 @@ export const state = {
     manualRhymes: {},   // { baseWord: Set('manual1', 'manual2'), ... }
     cmuLookup: null,          // Compact CMU dictionary data (loaded from cmu_lookup.json)
     cmuInvertedIndex: null,   // Map of patternString -> [word1, word2, ...] for O(1) candidate lookup
+    cmuPhonemes: null,        // Full phoneme strings for all CMU words (loaded from cmu_phonemes.json)
     runtimePatterns: {},      // Rule-based fallback cache: { word: "pattern|syllables" }
     rejectionLog: [],         // Array of { base, rejected, base_context, rejected_context, timestamp }
 

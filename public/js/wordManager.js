@@ -27,6 +27,7 @@ import { state } from './state.js';
 import * as ui from './ui.js';
 import * as storage from './storage.js';
 import * as rhyme from './rhyme.js'; // Import rhyme module for getting rhyme list
+import * as phonetics from './phonetics.js';
 import * as utils from './utils.js'; // Import utils module for swipe animations
 
 // Callback for when words change (for tooltip updates)
@@ -42,35 +43,16 @@ function filterRhymesBySimilarity(rhymeList, baseWord, threshold = 0.8) {
     if (!rhymeList || rhymeList.length === 0 || !baseWord) {
         return [];
     }
-    
-    const basePhonemes = getPhonemes(baseWord);
-    if (!basePhonemes) {
-        return rhymeList; // If no phonetic data, return all rhymes
-    }
-    
+
     const filteredRhymes = [];
     for (const rhymeWord of rhymeList) {
-        const rhymePhonemes = getPhonemes(rhymeWord);
-        if (rhymePhonemes) {
-            const score = rhyme.calculateRhymeScore(basePhonemes, rhymePhonemes);
-            if (score >= threshold) {
-                filteredRhymes.push(rhymeWord);
-            }
+        const score = phonetics.rhymeScore(baseWord, rhymeWord);
+        if (score >= threshold) {
+            filteredRhymes.push(rhymeWord);
         }
     }
-    
-    return filteredRhymes;
-}
 
-// --- Get Phonemes Helper ---
-// Retrieves the complete phoneme array for a given word from rhyme data
-function getPhonemes(word) {
-    if (!state.rhymeData || !word) return null;
-    const wordLower = word.toLowerCase();
-    const data = state.rhymeData[wordLower];
-    
-    if (!data || !data.phonemes) return null;
-    return data.phonemes;
+    return filteredRhymes;
 }
 
 // --- Syllable Counting Function ---

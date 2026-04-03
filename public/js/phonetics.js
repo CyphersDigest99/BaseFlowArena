@@ -155,7 +155,7 @@ function ruleBasedPattern(word) {
 export async function loadCmuLookup() {
     console.log("Loading CMU lookup data...");
     try {
-        const response = await fetch('cmu_lookup.json');
+        const response = await fetch('public/cmu_lookup.json');
         if (!response.ok) {
             throw new Error(`Failed to load cmu_lookup.json: ${response.status}`);
         }
@@ -167,6 +167,238 @@ export async function loadCmuLookup() {
         state.cmuLookup = null;
         state.cmuInvertedIndex = null;
     }
+}
+
+// --- Load full CMU phoneme data for scoring ---
+export async function loadCmuPhonemes() {
+    console.log("Loading CMU phoneme data...");
+    try {
+        const response = await fetch('public/cmu_phonemes.json');
+        if (!response.ok) {
+            throw new Error(`Failed to load cmu_phonemes.json: ${response.status}`);
+        }
+        state.cmuPhonemes = await response.json();
+        console.log(`CMU phonemes loaded (${Object.keys(state.cmuPhonemes).length} entries).`);
+    } catch (error) {
+        console.error("Could not load cmu_phonemes.json:", error);
+        state.cmuPhonemes = null;
+    }
+}
+
+// --- Get full phoneme array for any word (for scoring) ---
+export function getFullPhonemes(word) {
+    if (!word) return null;
+    const w = word.toLowerCase();
+    // Tier 1: rhymeData (curated word list, already parsed arrays)
+    if (state.rhymeData?.[w]?.phonemes) return state.rhymeData[w].phonemes;
+    // Tier 2: cmuPhonemes (full CMU dict, space-separated strings)
+    if (state.cmuPhonemes?.[w]) return state.cmuPhonemes[w].split(' ');
+    return null;
+}
+
+// ============================================================
+// RHYME SCORING ENGINE
+// ============================================================
+
+// --- 15x15 Vowel Similarity Matrix (articulatory distance) ---
+// Values from IPA vowel chart: height (close/mid/open), frontness (front/central/back), rounding.
+// Symmetric — stored as sorted key pairs.
+const VOWEL_SIM = {};
+(function buildVowelMatrix() {
+    const raw = [
+        ['AA','AE',0.4],['AA','AH',0.7],['AA','AO',0.8],['AA','AW',0.5],['AA','AY',0.4],
+        ['AA','EH',0.3],['AA','ER',0.3],['AA','EY',0.2],['AA','IH',0.2],['AA','IY',0.1],
+        ['AA','OW',0.5],['AA','OY',0.4],['AA','UH',0.5],['AA','UW',0.3],
+        ['AE','AH',0.6],['AE','AO',0.3],['AE','AW',0.4],['AE','AY',0.5],
+        ['AE','EH',0.6],['AE','ER',0.3],['AE','EY',0.6],['AE','IH',0.5],['AE','IY',0.3],
+        ['AE','OW',0.2],['AE','OY',0.3],['AE','UH',0.2],['AE','UW',0.1],
+        ['AH','AO',0.5],['AH','AW',0.5],['AH','AY',0.4],
+        ['AH','EH',0.6],['AH','ER',0.5],['AH','EY',0.4],['AH','IH',0.5],['AH','IY',0.3],
+        ['AH','OW',0.4],['AH','OY',0.3],['AH','UH',0.5],['AH','UW',0.4],
+        ['AO','AW',0.5],['AO','AY',0.3],
+        ['AO','EH',0.3],['AO','ER',0.3],['AO','EY',0.2],['AO','IH',0.2],['AO','IY',0.1],
+        ['AO','OW',0.7],['AO','OY',0.6],['AO','UH',0.6],['AO','UW',0.5],
+        ['AW','AY',0.5],
+        ['AW','EH',0.3],['AW','ER',0.3],['AW','EY',0.3],['AW','IH',0.2],['AW','IY',0.1],
+        ['AW','OW',0.6],['AW','OY',0.5],['AW','UH',0.4],['AW','UW',0.4],
+        ['AY','EH',0.4],['AY','ER',0.3],['AY','EY',0.6],['AY','IH',0.5],['AY','IY',0.5],
+        ['AY','OW',0.3],['AY','OY',0.4],['AY','UH',0.2],['AY','UW',0.2],
+        ['EH','ER',0.4],['EH','EY',0.7],['EH','IH',0.7],['EH','IY',0.5],
+        ['EH','OW',0.2],['EH','OY',0.3],['EH','UH',0.2],['EH','UW',0.1],
+        ['ER','EY',0.3],['ER','IH',0.4],['ER','IY',0.3],
+        ['ER','OW',0.3],['ER','OY',0.3],['ER','UH',0.4],['ER','UW',0.3],
+        ['EY','IH',0.5],['EY','IY',0.6],
+        ['EY','OW',0.3],['EY','OY',0.3],['EY','UH',0.2],['EY','UW',0.1],
+        ['IH','IY',0.8],
+        ['IH','OW',0.2],['IH','OY',0.2],['IH','UH',0.3],['IH','UW',0.2],
+        ['IY','OW',0.1],['IY','OY',0.2],['IY','UH',0.2],['IY','UW',0.2],
+        ['OW','OY',0.6],['OW','UH',0.6],['OW','UW',0.7],
+        ['OY','UH',0.4],['OY','UW',0.4],
+        ['UH','UW',0.6],
+    ];
+    for (const [v1, v2, score] of raw) {
+        VOWEL_SIM[`${v1}-${v2}`] = score;
+    }
+})();
+
+function vowelSimilarity(p1, p2) {
+    const v1 = p1.replace(/[012]$/, '');
+    const v2 = p2.replace(/[012]$/, '');
+    if (v1 === v2) return 1.0;
+    const key = v1 < v2 ? `${v1}-${v2}` : `${v2}-${v1}`;
+    return VOWEL_SIM[key] ?? 0.1;
+}
+
+// --- Consonant Similarity (manner + place + voicing) ---
+const MANNER = {
+    N:'nasal',M:'nasal',NG:'nasal',
+    P:'stop',B:'stop',T:'stop',D:'stop',K:'stop',G:'stop',
+    F:'fricative',V:'fricative',S:'fricative',Z:'fricative',
+    SH:'fricative',ZH:'fricative',TH:'fricative',DH:'fricative',HH:'fricative',
+    CH:'affricate',JH:'affricate',
+    L:'liquid',R:'liquid',
+    W:'glide',Y:'glide'
+};
+
+const PLACE = {
+    P:'bilabial',B:'bilabial',M:'bilabial',
+    F:'labiodental',V:'labiodental',
+    TH:'dental',DH:'dental',
+    T:'alveolar',D:'alveolar',N:'alveolar',S:'alveolar',Z:'alveolar',L:'alveolar',R:'alveolar',
+    SH:'postalveolar',ZH:'postalveolar',CH:'postalveolar',JH:'postalveolar',
+    K:'velar',G:'velar',NG:'velar',
+    HH:'glottal',
+    W:'labiovelar',Y:'palatal'
+};
+
+const VOICED = new Set(['B','D','G','V','DH','Z','ZH','JH','M','N','NG','L','R','W','Y']);
+
+const MANNER_CROSS = {
+    'nasal-liquid': 0.3,
+    'liquid-nasal': 0.3,
+    'affricate-stop': 0.4,
+    'stop-affricate': 0.4,
+    'fricative-stop': 0.2,
+    'stop-fricative': 0.2,
+};
+
+function consonantSimilarity(p1, p2) {
+    const c1 = p1.replace(/[012]$/, '');
+    const c2 = p2.replace(/[012]$/, '');
+    if (c1 === c2) return 1.0;
+
+    const m1 = MANNER[c1], m2 = MANNER[c2];
+    if (!m1 || !m2) return 0.1;
+
+    let score;
+    if (m1 === m2) {
+        score = 0.6;
+    } else {
+        score = MANNER_CROSS[`${m1}-${m2}`] ?? 0.1;
+    }
+
+    // Place bonus
+    const pl1 = PLACE[c1], pl2 = PLACE[c2];
+    if (pl1 && pl2 && pl1 === pl2) score += 0.2;
+
+    // Voicing bonus
+    if (VOICED.has(c1) === VOICED.has(c2)) score += 0.1;
+
+    return Math.min(1.0, score);
+}
+
+// --- Extract rhyming segment from last stressed vowel onward ---
+function extractSegment(phonemes) {
+    // Scan right-to-left for last stressed vowel (marker 1 or 2)
+    for (let i = phonemes.length - 1; i >= 0; i--) {
+        if (/[AEIOU]/.test(phonemes[i][0]) && /[12]$/.test(phonemes[i])) {
+            return phonemes.slice(i);
+        }
+    }
+    // Fallback: last vowel of any stress
+    for (let i = phonemes.length - 1; i >= 0; i--) {
+        if (/[AEIOU]/.test(phonemes[i][0])) {
+            return phonemes.slice(i);
+        }
+    }
+    // Ultimate fallback: last 3 phonemes
+    return phonemes.slice(-3);
+}
+
+// --- Score two aligned phoneme sequences position-by-position ---
+function scoreAligned(seg1, seg2) {
+    const minLen = Math.min(seg1.length, seg2.length);
+    const maxLen = Math.max(seg1.length, seg2.length);
+
+    let weightedSum = 0;
+    let weightedCount = 0;
+
+    for (let i = 0; i < minLen; i++) {
+        const p1 = seg1[i];
+        const p2 = seg2[i];
+        const isVowel1 = /[AEIOU]/.test(p1[0]);
+        const isVowel2 = /[AEIOU]/.test(p2[0]);
+
+        let pairScore;
+        if (isVowel1 && isVowel2) {
+            pairScore = vowelSimilarity(p1, p2);
+        } else if (!isVowel1 && !isVowel2) {
+            pairScore = consonantSimilarity(p1, p2);
+        } else {
+            pairScore = 0.0; // vowel-consonant mismatch
+        }
+
+        // Stressed vowel pairs count 2x
+        const isStressed = (isVowel1 && /[12]$/.test(p1)) || (isVowel2 && /[12]$/.test(p2));
+        const weight = isStressed ? 2.0 : 1.0;
+
+        weightedSum += pairScore * weight;
+        weightedCount += weight;
+    }
+
+    // Penalty for unmatched trailing phonemes
+    const unmatched = maxLen - minLen;
+    weightedSum -= unmatched * 0.1;
+
+    if (weightedCount === 0) return 0;
+    return Math.max(0, Math.min(1, weightedSum / weightedCount));
+}
+
+// --- Main scoring function: returns 0.0 to 1.0 ---
+export function rhymeScore(word1, word2) {
+    const phonemes1 = getFullPhonemes(word1);
+    const phonemes2 = getFullPhonemes(word2);
+    if (!phonemes1 || !phonemes2) return 0;
+
+    const seg1 = extractSegment(phonemes1);
+    const seg2 = extractSegment(phonemes2);
+    if (!seg1 || !seg2) return 0;
+
+    // Bidirectional: score L→R (stress-aligned) and R→L (ending-aligned)
+    // Only use reverse when forward shows some match — prevents coincidental
+    // ending overlaps (e.g., shared "-unz" suffix) from inflating unrelated words
+    const fwdScore = scoreAligned(seg1, seg2);
+    const revScore = scoreAligned([...seg1].reverse(), [...seg2].reverse());
+    let score = fwdScore >= 0.25 ? Math.max(fwdScore, revScore) : fwdScore;
+
+    // Tail coverage dampening: when the rhyming segment is a small fraction
+    // of the word, the tail match alone isn't enough for a high score
+    const avgSegLen = (seg1.length + seg2.length) / 2;
+    const avgWordLen = (phonemes1.length + phonemes2.length) / 2;
+    const tailRatio = avgSegLen / avgWordLen;
+    if (tailRatio < 0.5) {
+        score *= tailRatio / 0.5;
+    }
+
+    // Syllable count penalty: different syllable counts reduce structural fit
+    const syl1 = phonemes1.filter(p => /[AEIOU]/.test(p[0])).length;
+    const syl2 = phonemes2.filter(p => /[AEIOU]/.test(p[0])).length;
+    const sylDiff = Math.abs(syl1 - syl2);
+    if (sylDiff > 0) {
+        score *= Math.max(0.6, 1.0 - sylDiff * 0.15);
+    }
+
+    return Math.max(0, Math.min(1, score));
 }
 
 // --- Build inverted index: patternString -> [word1, word2, ...] ---
@@ -183,43 +415,49 @@ function buildInvertedIndex() {
     state.cmuInvertedIndex = index;
 }
 
-// --- Core lookup: get pattern for any word ---
+// --- Core lookup: get bare vowel pattern for any word ---
 export function getPattern(word) {
     if (!word) return null;
     const wordLower = word.toLowerCase();
+    let pattern = null;
 
     // Tier 1: full rhymeData
-    if (state.rhymeData) {
+    if (!pattern && state.rhymeData) {
         const data = state.rhymeData[wordLower];
         if (data) {
-            if (data.rhyme_pattern) return data.rhyme_pattern;
-            if (Array.isArray(data)) return data;
+            if (data.rhyme_pattern) pattern = data.rhyme_pattern;
+            else if (Array.isArray(data)) pattern = data;
         }
     }
 
     // Tier 2: compact CMU lookup
-    if (state.cmuLookup && state.cmuLookup[wordLower]) {
+    if (!pattern && state.cmuLookup && state.cmuLookup[wordLower]) {
         const compact = state.cmuLookup[wordLower];
         const pipeIdx = compact.lastIndexOf('|');
-        return compact.substring(0, pipeIdx).split('-');
+        pattern = compact.substring(0, pipeIdx).split('-');
     }
 
     // Tier 3: runtime cache (previously computed rule-based)
-    if (state.runtimePatterns[wordLower]) {
+    if (!pattern && state.runtimePatterns[wordLower]) {
         const cached = state.runtimePatterns[wordLower];
         const pipeIdx = cached.lastIndexOf('|');
-        return cached.substring(0, pipeIdx).split('-');
+        pattern = cached.substring(0, pipeIdx).split('-');
     }
 
     // Tier 4: rule-based fallback
-    const approx = ruleBasedPattern(wordLower);
-    if (approx) {
-        // Cache for future lookups
-        const syllables = approx.length; // rough estimate: 1 vowel per syllable
-        state.runtimePatterns[wordLower] = `${approx.join('-')}|${syllables}`;
-        return approx;
+    if (!pattern) {
+        const approx = ruleBasedPattern(wordLower);
+        if (approx) {
+            const syllables = approx.length;
+            state.runtimePatterns[wordLower] = `${approx.join('-')}|${syllables}`;
+            pattern = approx;
+        }
     }
 
+    // Strip consonant context (e.g. "AE+nasal" -> "AE") for bare vowel index lookup
+    if (pattern) {
+        return pattern.map(p => p.includes('+') ? p.split('+')[0] : p);
+    }
     return null;
 }
 
@@ -259,6 +497,25 @@ export function getCandidatesForPattern(patternString) {
 
 // --- Get vowel+consonant context for a word (used by rejection reporting) ---
 export function getVowelContext(word) {
-    const pattern = getPattern(word);
-    return pattern || [];
+    if (!word) return [];
+    const phonemes = getFullPhonemes(word);
+    if (phonemes) {
+        // Compute context-aware pattern from full phonemes
+        const pattern = [];
+        for (let i = 0; i < phonemes.length; i++) {
+            if (/[AEIOU]/.test(phonemes[i][0])) {
+                const vowel = phonemes[i].replace(/[012]$/, '');
+                let nextClass = 'null';
+                for (let j = i + 1; j < phonemes.length; j++) {
+                    if (/[AEIOU]/.test(phonemes[j][0])) break;
+                    nextClass = classifyConsonant(phonemes[j]);
+                    break;
+                }
+                pattern.push(`${vowel}+${nextClass}`);
+            }
+        }
+        return pattern;
+    }
+    // Fall back to rule-based (which already has context)
+    return ruleBasedPattern(word.toLowerCase()) || [];
 }

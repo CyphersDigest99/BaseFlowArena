@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-04-03
+- Replace binary rhyme matching with continuous 0.0-1.0 phoneme similarity scorer
+- Add 15x15 vowel similarity matrix based on IPA articulatory distance
+- Add consonant similarity scoring with manner, place, and voicing heuristics
+- Extract rhyming segments from last stressed vowel (not primary), fixing multi-syllable words
+- Add bidirectional segment scoring with gated reverse alignment to catch offset words (president/resident)
+- Add tail coverage dampening for short rhyming segments in long words
+- Add syllable count mismatch penalty
+- Revert inverted index to bare vowel patterns (remove consonant context encoding)
+- Generate cmu_phonemes.json (117k words with full phoneme strings and stress markers)
+- Rewrite getValidRhymesForWord() with score threshold filtering (0.45) and tier mapping
+- Update tier system: Perfect (0.85+), Strong (0.65+), Standard (0.50+), Slant (0.45+)
+- Remove old calculateRhymeScore(), getVowelSimilarity(), isPerfectRhyme()
+
 ## 2026-04-02
 - Wire transcript word click handler: clicking a word in the Live Feed sets it as the active word with selection highlight
 - Clear transcript selection on arrow button clicks, keyboard arrow navigation, and voice match word advance

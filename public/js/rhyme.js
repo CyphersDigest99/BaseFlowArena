@@ -25,12 +25,21 @@ import * as modal from './modal.js';
 import * as storage from './storage.js'; // Need saveSettings
 import * as phonetics from './phonetics.js';
 
+// --- Score cache: avoids re-scoring in getTierInfo/sort after getValidRhymesForWord ---
+let rhymeScoreCache = new Map();
+
+// --- Tier thresholds (from spec) ---
+const SCORE_THRESHOLD = 0.45;
+const TIER_PERFECT = 0.85;
+const TIER_STRONG = 0.65;
+const TIER_STANDARD = 0.50;
+
 // --- Load Rhyme Data ---
 // Loads rhyme data from JSON file and updates state
 export async function loadRhymeData() {
     console.log("Loading rhyme data...");
     try {
-        const response = await fetch('rhyme_data.json');
+        const response = await fetch('public/rhyme_data.json');
         if (!response.ok) {
             if (response.status === 404) {
                 throw new Error(`Rhyme data file ('rhyme_data.json') not found. Please run 'python process_rhymes.py'.`);
@@ -56,57 +65,29 @@ function getRhymePattern(word) {
 }
 
 // --- Get Phonemes (Internal) ---
-// Retrieves the complete phoneme array for a given word from rhyme data
+// Retrieves the complete phoneme array for a given word via phonetics module
 function getPhonemes(word) {
-    if (!state.rhymeData || !word) return null;
-    const wordLower = word.toLowerCase();
-    const data = state.rhymeData[wordLower];
-    
-    if (!data || !data.phonemes) return null;
-    return data.phonemes;
+    return phonetics.getFullPhonemes(word);
 }
 
-// --- Extract Rhyming Part ---
-// Extracts the phonetic segment from the stressed vowel to the end of the word
+// --- Extract Rhyming Part (for modal header display) ---
+// Extracts from the last stressed vowel to end of word
 function extractRhymingPart(phonemes) {
     if (!Array.isArray(phonemes) || phonemes.length === 0) return null;
-    
-    // Find the primary stressed vowel (stress marker 1)
-    let stressIndex = -1;
-    for (let i = 0; i < phonemes.length; i++) {
-        if (phonemes[i].endsWith('1')) {
-            stressIndex = i;
-            break;
+
+    // Last stressed vowel (marker 1 or 2)
+    for (let i = phonemes.length - 1; i >= 0; i--) {
+        if (/[AEIOU]/.test(phonemes[i][0]) && /[12]$/.test(phonemes[i])) {
+            return phonemes.slice(i);
         }
     }
-    
-    // If no primary stress found, look for secondary stress (2) or unstressed (0)
-    if (stressIndex === -1) {
-        for (let i = 0; i < phonemes.length; i++) {
-            if (phonemes[i].endsWith('2') || phonemes[i].endsWith('0')) {
-                stressIndex = i;
-                break;
-            }
+    // Fallback: last vowel of any stress
+    for (let i = phonemes.length - 1; i >= 0; i--) {
+        if (/[AEIOU]/.test(phonemes[i][0])) {
+            return phonemes.slice(i);
         }
     }
-    
-    // If still no stress found, use the last vowel
-    if (stressIndex === -1) {
-        for (let i = phonemes.length - 1; i >= 0; i--) {
-            if (/[AEIOU]/.test(phonemes[i][0])) {
-                stressIndex = i;
-                break;
-            }
-        }
-    }
-    
-    // If no stress point found, return the last few phonemes
-    if (stressIndex === -1) {
-        return phonemes.slice(-3); // Return last 3 phonemes as fallback
-    }
-    
-    // Return the segment from stress point to end
-    return phonemes.slice(stressIndex);
+    return phonemes.slice(-3);
 }
 
 // --- Create Modal Header HTML ---
@@ -144,13 +125,11 @@ function createModalHeaderHTML(baseWord, rhymeSortMode) {
             patternType = 'phonetic ending';
         }
     } else {
-        // For other modes, show the consonant-context-aware vowel pattern
+        // For other modes, show the bare vowel pattern
         const wordPattern = getRhymePattern(baseWord);
         if (wordPattern && wordPattern.length > 0) {
             const vowelBlocks = wordPattern.map(entry => {
-                // Strip the +class suffix for display: "AE+nasal" -> "AE"
-                const vowel = entry.includes('+') ? entry.split('+')[0] : entry;
-                return `<span class="vowel-pattern-block">${vowel}</span>`;
+                return `<span class="vowel-pattern-block">${entry}</span>`;
             }).join(' ');
             patternDisplay = vowelBlocks;
             patternType = 'vowel sounds';
@@ -174,173 +153,8 @@ function createModalHeaderHTML(baseWord, rhymeSortMode) {
     `;
 }
 
-// --- Calculate Rhyme Score ---
-// Calculates a similarity score between two words based on their phonetic endings
-// Returns a score from 0.0 to 1.0, where 1.0 indicates a perfect rhyme
-export function calculateRhymeScore(word1_phonemes, word2_phonemes) {
-    if (!Array.isArray(word1_phonemes) || !Array.isArray(word2_phonemes)) {
-        return 0.0;
-    }
-    
-    // Find the primary stressed vowel in word1 (the one with stress marker 1)
-    let stressIndex1 = -1;
-    for (let i = 0; i < word1_phonemes.length; i++) {
-        if (word1_phonemes[i].endsWith('1')) {
-            stressIndex1 = i;
-            break;
-        }
-    }
-    
-    // If no primary stress found, look for secondary stress (2) or unstressed (0)
-    if (stressIndex1 === -1) {
-        for (let i = 0; i < word1_phonemes.length; i++) {
-            if (word1_phonemes[i].endsWith('2') || word1_phonemes[i].endsWith('0')) {
-                stressIndex1 = i;
-                break;
-            }
-        }
-    }
-    
-    // If still no stress found, use the last vowel
-    if (stressIndex1 === -1) {
-        for (let i = word1_phonemes.length - 1; i >= 0; i--) {
-            if (/[AEIOU]/.test(word1_phonemes[i][0])) {
-                stressIndex1 = i;
-                break;
-            }
-        }
-    }
-    
-    // If no stress point found in word1, return 0
-    if (stressIndex1 === -1) {
-        return 0.0;
-    }
-    
-    // Find the corresponding stress point in word2
-    let stressIndex2 = -1;
-    for (let i = 0; i < word2_phonemes.length; i++) {
-        if (word2_phonemes[i].endsWith('1')) {
-            stressIndex2 = i;
-            break;
-        }
-    }
-    
-    // If no primary stress found, look for secondary stress (2) or unstressed (0)
-    if (stressIndex2 === -1) {
-        for (let i = 0; i < word2_phonemes.length; i++) {
-            if (word2_phonemes[i].endsWith('2') || word2_phonemes[i].endsWith('0')) {
-                stressIndex2 = i;
-                break;
-            }
-        }
-    }
-    
-    // If still no stress found, use the last vowel
-    if (stressIndex2 === -1) {
-        for (let i = word2_phonemes.length - 1; i >= 0; i--) {
-            if (/[AEIOU]/.test(word2_phonemes[i][0])) {
-                stressIndex2 = i;
-                break;
-            }
-        }
-    }
-    
-    // If no stress point found in word2, return 0
-    if (stressIndex2 === -1) {
-        return 0.0;
-    }
-    
-    // Get the segments from stress point to end for both words
-    const segment1 = word1_phonemes.slice(stressIndex1);
-    const segment2 = word2_phonemes.slice(stressIndex2);
-    
-    // Calculate similarity based on matching phonemes from stress point to end
-    let matches = 0;
-    const minLength = Math.min(segment1.length, segment2.length);
-    
-    for (let i = 0; i < minLength; i++) {
-        // Remove stress markers for comparison
-        const phoneme1 = segment1[i].replace(/[012]$/, '');
-        const phoneme2 = segment2[i].replace(/[012]$/, '');
-        
-        if (phoneme1 === phoneme2) {
-            matches++;
-        } else {
-            // Check for similar vowel sounds (near rhymes)
-            if (/[AEIOU]/.test(phoneme1[0]) && /[AEIOU]/.test(phoneme2[0])) {
-                // Vowel similarity scoring
-                const vowelSimilarity = getVowelSimilarity(phoneme1, phoneme2);
-                if (vowelSimilarity > 0.7) {
-                    matches += vowelSimilarity;
-                }
-            }
-        }
-    }
-    
-    // Calculate base score
-    let score = matches / Math.max(segment1.length, segment2.length);
-    
-    // Bonus for perfect ending match
-    if (segment1.length === segment2.length && matches === segment1.length) {
-        score = 1.0; // Perfect rhyme
-    }
-    
-    // Penalty for length mismatch
-    const lengthDiff = Math.abs(segment1.length - segment2.length);
-    if (lengthDiff > 0) {
-        score *= Math.max(0.5, 1 - (lengthDiff * 0.1));
-    }
-    
-    return Math.min(1.0, Math.max(0.0, score));
-}
-
-// --- Vowel Similarity Helper ---
-// Returns a similarity score between two vowel phonemes
-function getVowelSimilarity(vowel1, vowel2) {
-    if (vowel1 === vowel2) return 1.0;
-    
-    // Define vowel similarity groups
-    const vowelGroups = {
-        'AA': ['AA', 'AO'], // father, caught
-        'AE': ['AE', 'AH'], // cat, cut
-        'AH': ['AH', 'AE', 'AX'], // cut, cat, about
-        'AO': ['AO', 'AA'], // caught, father
-        'AW': ['AW', 'OW'], // cow, go
-        'AY': ['AY', 'EY'], // price, face
-        'EH': ['EH', 'IH'], // bed, bit
-        'EY': ['EY', 'AY'], // face, price
-        'IH': ['IH', 'EH', 'IY'], // bit, bed, fleece
-        'IY': ['IY', 'IH'], // fleece, bit
-        'OW': ['OW', 'AW'], // go, cow
-        'OY': ['OY'], // boy
-        'UH': ['UH', 'UW'], // foot, goose
-        'UW': ['UW', 'UH'] // goose, foot
-    };
-    
-    // Check if vowels are in the same similarity group
-    for (const [key, group] of Object.entries(vowelGroups)) {
-        if (group.includes(vowel1) && group.includes(vowel2)) {
-            return 0.8; // High similarity
-        }
-    }
-    
-    // Check for partial matches
-    for (const [key, group] of Object.entries(vowelGroups)) {
-        if (group.includes(vowel1) || group.includes(vowel2)) {
-            // Check if the other vowel is in any adjacent group
-            for (const [otherKey, otherGroup] of Object.entries(vowelGroups)) {
-                if (key !== otherKey && (group.includes(vowel1) || group.includes(vowel2))) {
-                    return 0.6; // Medium similarity
-                }
-            }
-        }
-    }
-    
-    return 0.3; // Low similarity
-}
-
 // --- Get Valid Rhymes for a Word ---
-// Returns a sorted list of valid rhymes for the given base word
+// Returns a sorted list of valid rhymes using scored candidates from the full CMU vocabulary
 export function getValidRhymesForWord(baseWord) {
     if (!baseWord) return [];
 
@@ -350,31 +164,43 @@ export function getValidRhymesForWord(baseWord) {
     const rejectedSet = state.rejectedRhymes[baseWordLower] || new Set();
     const manualSet = state.manualRhymes[baseWordLower] || new Set();
 
-    // Find phonetic matches from the full CMU vocabulary via inverted index
-    let phoneticMatches = [];
+    // Clear score cache for this base word
+    rhymeScoreCache = new Map();
+
+    // Score candidates from inverted index
+    let scoredMatches = [];
     if (wordPattern) {
         const patternString = wordPattern.join('-');
         const candidates = phonetics.getCandidatesForPattern(patternString);
-        phoneticMatches = candidates.filter(word => {
+
+        for (const word of candidates) {
             const wordLower = word.toLowerCase();
-            if (wordLower === baseWordLower) return false;
-            if (rejectedSet.has(wordLower)) return false;
-            return true;
-        });
+            if (wordLower === baseWordLower) continue;
+            if (rejectedSet.has(wordLower)) continue;
+
+            const score = phonetics.rhymeScore(baseWordLower, wordLower);
+            if (score >= SCORE_THRESHOLD) {
+                scoredMatches.push({ word, score });
+                rhymeScoreCache.set(`${baseWordLower}|${wordLower}`, score);
+            }
+        }
     }
 
-    // Combine with manual rhymes, remove duplicates
-    const combinedMatches = new Set([...phoneticMatches, ...manualSet]);
-    const sortedMatches = Array.from(combinedMatches);
+    // Add manual rhymes (bypass threshold)
+    for (const manualWord of manualSet) {
+        const manualLower = manualWord.toLowerCase();
+        if (manualLower === baseWordLower) continue;
+        if (!scoredMatches.find(m => m.word.toLowerCase() === manualLower)) {
+            const score = phonetics.rhymeScore(baseWordLower, manualLower) || 0.7;
+            scoredMatches.push({ word: manualWord, score });
+            rhymeScoreCache.set(`${baseWordLower}|${manualLower}`, score);
+        }
+    }
 
-    // Sort by frequency (words with frequency data first)
-    sortedMatches.sort((a, b) => {
-        const freqA = state.wordFrequencies[a.toLowerCase()] || 0;
-        const freqB = state.wordFrequencies[b.toLowerCase()] || 0;
-        return freqB - freqA;
-    });
+    // Sort by score descending
+    scoredMatches.sort((a, b) => b.score - a.score);
 
-    return sortedMatches;
+    return scoredMatches.map(m => m.word);
 }
 
 // --- Rhyme Finder Sorting State ---
@@ -602,20 +428,15 @@ function setupRhymeTooltipDelegation(listEl) {
         if (!li) return;
 
         _activeTooltipTimeout = setTimeout(() => {
-            const tier = li.dataset.tier;
             const rhymeWord = li.dataset.rhymeWord;
-            let matchValue = '';
-            if (tier === 'perfect') {
-                matchValue = '100%';
-            } else if (tier === 'strong') {
-                const basePhonemes = getPhonemes(state.currentWord);
-                const candidatePhonemes = getPhonemes(rhymeWord);
-                if (basePhonemes && candidatePhonemes) {
-                    matchValue = `${Math.round(calculateRhymeScore(basePhonemes, candidatePhonemes) * 100)}%`;
-                } else {
-                    matchValue = '~70%';
-                }
+            const baseWordLower = state.currentWord?.toLowerCase();
+            const wordLower = rhymeWord?.toLowerCase();
+            const cacheKey = `${baseWordLower}|${wordLower}`;
+            let score = rhymeScoreCache.get(cacheKey);
+            if (score === undefined) {
+                score = phonetics.rhymeScore(baseWordLower, wordLower);
             }
+            const matchValue = `${Math.round(score * 100)}%`;
 
             _activeTooltip = document.createElement('div');
             _activeTooltip.className = 'rhyme-tier-tooltip';
@@ -727,26 +548,23 @@ function displayRhymeList(baseWordLower) {
 function getTierInfo(word, baseWordLower) {
     const wordLower = word.toLowerCase();
     const slantSet = state.slantRhymes[baseWordLower] || new Set();
-    const manualSet = state.manualRhymes[baseWordLower] || new Set();
-    
+
     if (slantSet.has(wordLower)) {
         return { tier: 'slant' };
-    } else if (manualSet.has(wordLower)) {
-        return { tier: 'standard' };
-    } else {
-        const basePhonemes = getPhonemes(state.currentWord);
-        const candidatePhonemes = getPhonemes(word);
-        
-        if (basePhonemes && candidatePhonemes) {
-            const score = calculateRhymeScore(basePhonemes, candidatePhonemes);
-            if (score === 1.0) return { tier: 'perfect' };
-            else if (score >= 0.5) return { tier: 'strong' };
-            else if (score >= 0.2) return { tier: 'standard' };
-            else return { tier: 'weak' };
-        } else {
-            return { tier: 'unknown' };
-        }
     }
+
+    // Use cached score from getValidRhymesForWord, or compute fresh
+    const cacheKey = `${baseWordLower}|${wordLower}`;
+    let score = rhymeScoreCache.get(cacheKey);
+    if (score === undefined) {
+        score = phonetics.rhymeScore(baseWordLower, wordLower);
+        rhymeScoreCache.set(cacheKey, score);
+    }
+
+    if (score >= TIER_PERFECT) return { tier: 'perfect', score };
+    if (score >= TIER_STRONG) return { tier: 'strong', score };
+    if (score >= TIER_STANDARD) return { tier: 'standard', score };
+    return { tier: 'slant', score };
 }
 
 // Helper function to add tier separators
@@ -815,77 +633,47 @@ function sortByPhoneticEnding(words) {
 // --- Slant Rhymes State ---
 if (!state.slantRhymes) state.slantRhymes = {};
 
-// --- Helper: Is Perfect Rhyme ---
-function isPerfectRhyme(basePhonetic, candidatePhonetic) {
-    // Both are arrays of phonemes (e.g., ['AH0', 'N', 'D'])
-    if (!Array.isArray(basePhonetic) || !Array.isArray(candidatePhonetic)) return false;
-    // Find the last stressed vowel in basePhonetic
-    let baseIdx = -1;
-    for (let i = basePhonetic.length - 1; i >= 0; i--) {
-        if (/\d/.test(basePhonetic[i])) { baseIdx = i; break; }
-    }
-    if (baseIdx === -1) return false;
-    const baseEnding = basePhonetic.slice(baseIdx).join('-');
-    // Do the same for candidate
-    let candIdx = -1;
-    for (let i = candidatePhonetic.length - 1; i >= 0; i--) {
-        if (/\d/.test(candidatePhonetic[i])) { candIdx = i; break; }
-    }
-    if (candIdx === -1) return false;
-    const candEnding = candidatePhonetic.slice(candIdx).join('-');
-    return baseEnding === candEnding;
-}
-
 // --- Rhyme Similarity Sort ---
 function sortByRhymeSimilarity(words, baseWord) {
-    const basePhonemes = getPhonemes(baseWord);
     const baseWordLower = baseWord.toLowerCase();
     const slantSet = state.slantRhymes[baseWordLower] || new Set();
-    const manualSet = state.manualRhymes[baseWordLower] || new Set();
-    
-    // Calculate rhyme scores for all words
+
     const wordScores = [];
     for (const word of words) {
         const wordLower = word.toLowerCase();
-        const candidatePhonemes = getPhonemes(word);
-        
+
+        // Use cached score
+        const cacheKey = `${baseWordLower}|${wordLower}`;
+        let score = rhymeScoreCache.get(cacheKey);
+        if (score === undefined) {
+            score = phonetics.rhymeScore(baseWordLower, wordLower);
+            rhymeScoreCache.set(cacheKey, score);
+        }
+
+        let category;
         if (slantSet.has(wordLower)) {
-            // User-tagged slant rhymes get a special score
-            wordScores.push({ word, score: 0.5, category: 'slant' });
-        } else if (manualSet.has(wordLower)) {
-            // Manual rhymes get a medium score
-            wordScores.push({ word, score: 0.7, category: 'manual' });
-        } else if (basePhonemes && candidatePhonemes) {
-            // Calculate actual rhyme score
-            const score = calculateRhymeScore(basePhonemes, candidatePhonemes);
-            let category = 'near';
-            if (score === 1.0) category = 'perfect';
-            else if (score >= 0.5) category = 'strong';
-            else if (score >= 0.2) category = 'medium';
-            else category = 'weak';
-            wordScores.push({ word, score, category });
+            category = 'slant';
+        } else if (score >= TIER_PERFECT) {
+            category = 'perfect';
+        } else if (score >= TIER_STRONG) {
+            category = 'strong';
+        } else if (score >= TIER_STANDARD) {
+            category = 'standard';
         } else {
-            // No phonetic data available
-            wordScores.push({ word, score: 0.0, category: 'unknown' });
+            category = 'weak';
         }
+
+        wordScores.push({ word, score, category });
     }
-    
-    // Sort by score (descending), then by category priority, then alphabetically
+
     wordScores.sort((a, b) => {
-        // First by score
-        if (Math.abs(a.score - b.score) > 0.01) {
-            return b.score - a.score;
-        }
-        
-        // Then by category priority
-        const categoryOrder = { 'perfect': 0, 'strong': 1, 'medium': 2, 'manual': 3, 'slant': 4, 'weak': 5, 'unknown': 6 };
-        const catDiff = categoryOrder[a.category] - categoryOrder[b.category];
+        if (Math.abs(a.score - b.score) > 0.01) return b.score - a.score;
+        const categoryOrder = { perfect: 0, strong: 1, standard: 2, manual: 3, slant: 4, weak: 5, unknown: 6 };
+        const catDiff = (categoryOrder[a.category] ?? 6) - (categoryOrder[b.category] ?? 6);
         if (catDiff !== 0) return catDiff;
-        
-        // Finally alphabetically
         return a.word.localeCompare(b.word);
     });
-    
+
     return wordScores.map(ws => ws.word);
 }
 

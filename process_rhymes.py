@@ -56,6 +56,7 @@ import pronouncing
 import json
 import re
 import os
+import argparse
 
 # --- PATH DETERMINATION ---
 # Determine paths based on script location for reliable file access
@@ -181,8 +182,9 @@ def classify_consonant(phoneme):
 
 def get_context_aware_pattern(word):
     """
-    Gets vowel pattern with consonant class context for each vowel.
-    Returns list like ['AE+nasal', 'ER+null'] or None if word not found.
+    Gets vowel pattern with consonant class context for stressed vowels only.
+    Stressed vowels (markers 1, 2) get 'VOWEL+class', unstressed (0) get plain 'VOWEL'.
+    Returns list like ['AE+nasal', 'ER'] or None if word not found.
     """
     word_lower = word.lower()
     phones_list = pronouncing.phones_for_word(word_lower)
@@ -196,30 +198,37 @@ def get_context_aware_pattern(word):
     for i, phone in enumerate(phonemes):
         if re.match(r'^[AEIOU]', phone):
             vowel = re.sub(r'[012]$', '', phone)
-            next_class = 'null'
-            for j in range(i + 1, len(phonemes)):
-                next_phone = phonemes[j]
-                if not re.match(r'^[AEIOU]', next_phone):
+            is_stressed = phone[-1] in ('1', '2')
+
+            if is_stressed:
+                next_class = 'null'
+                for j in range(i + 1, len(phonemes)):
+                    next_phone = phonemes[j]
+                    if re.match(r'^[AEIOU]', next_phone):
+                        break  # vowel followed by another vowel → null
                     next_class = classify_consonant(next_phone)
                     break
-            pattern.append(f"{vowel}+{next_class}")
+                pattern.append(f"{vowel}+{next_class}")
+            else:
+                pattern.append(vowel)
 
     return pattern if pattern else None
 
 
 # --- CONFIGURATION (now via CLI args) ---
-import argparse
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Generate rhyme data for BaseFlowArena')
-    parser.add_argument('--input', default='word-list.txt',
-                        help='Input word list file (default: word-list.txt)')
+    parser.add_argument('--input', default='public/word-list.txt',
+                        help='Input word list file (default: public/word-list.txt)')
     parser.add_argument('--output-dir', default='public',
                         help='Output directory (default: public)')
     parser.add_argument('--cmu-full', action='store_true',
                         help='Generate cmu_lookup.json from full CMU dictionary')
+    parser.add_argument('--cmu-phonemes', action='store_true',
+                        help='Generate cmu_phonemes.json from full CMU dictionary')
     parser.add_argument('--all', action='store_true',
-                        help='Generate both rhyme_data.json and cmu_lookup.json')
+                        help='Generate rhyme_data.json, cmu_lookup.json, and cmu_phonemes.json')
     return parser.parse_args()
 
 
@@ -245,7 +254,7 @@ def process_word_list(input_file, output_dir):
     print(f"Found {len(words)} words. Processing...")
 
     for word in words:
-        pattern = get_context_aware_pattern(word)
+        pattern = get_all_vowel_pattern(word)
         phonemes = get_all_phonemes(word)
         syllable_count = get_syllable_count(word)
 
@@ -285,19 +294,14 @@ def generate_cmu_lookup(output_dir):
         if word in lookup:
             continue
 
-        # pronunciation is already a list of phoneme strings from cmudict.entries()
         phonemes = pronunciation
 
+        # Extract bare vowels only (no consonant context)
         pattern_parts = []
-        for i, phone in enumerate(phonemes):
+        for phone in phonemes:
             if re.match(r'^[AEIOU]', phone):
                 vowel = re.sub(r'[012]$', '', phone)
-                next_class = 'null'
-                for j in range(i + 1, len(phonemes)):
-                    if not re.match(r'^[AEIOU]', phonemes[j]):
-                        next_class = classify_consonant(phonemes[j])
-                        break
-                pattern_parts.append(f"{vowel}+{next_class}")
+                pattern_parts.append(vowel)
 
         if not pattern_parts:
             continue
@@ -314,12 +318,41 @@ def generate_cmu_lookup(output_dir):
     print("Done.")
 
 
+def generate_cmu_phonemes(output_dir):
+    """Generates cmu_phonemes.json - full phoneme strings for all CMU words."""
+    output_path = os.path.join(SCRIPT_DIR, output_dir, 'cmu_phonemes.json')
+
+    print(f"Generating cmu_phonemes.json from full CMU dictionary...")
+
+    cmu_entries = pronouncing.cmudict.entries()
+    phonemes_map = {}
+    count = 0
+
+    for word, pronunciation in cmu_entries:
+        if not word.isalpha():
+            continue
+        if word in phonemes_map:
+            continue
+
+        phonemes_map[word] = ' '.join(pronunciation)
+        count += 1
+
+    print(f"Processed {count} words from CMU dictionary.")
+    print(f"Writing to: {output_path}")
+    with open(output_path, 'w', encoding='utf-8') as f:
+        json.dump(phonemes_map, f, separators=(',', ':'), ensure_ascii=False)
+    print("Done.")
+
+
 if __name__ == "__main__":
     args = parse_args()
 
     if args.all:
         process_word_list(args.input, args.output_dir)
         generate_cmu_lookup(args.output_dir)
+        generate_cmu_phonemes(args.output_dir)
+    elif args.cmu_phonemes:
+        generate_cmu_phonemes(args.output_dir)
     elif args.cmu_full:
         generate_cmu_lookup(args.output_dir)
     else:

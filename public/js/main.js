@@ -95,9 +95,9 @@ async function initializeApp() {
     // No explicit init needed for the Web Audio API approach here,
     // it's handled when startDetection is called.
 
-    // 2. Load Settings, Rhyme Data, CMU Lookup, Word List
+    // 2. Load Settings, Rhyme Data, CMU Lookup, CMU Phonemes, Word List
     storage.loadSettings(); // Loads ALL settings, applies defaults, updates relevant UI
-    await Promise.all([rhyme.loadRhymeData(), phonetics.loadCmuLookup()]);
+    await Promise.all([rhyme.loadRhymeData(), phonetics.loadCmuLookup(), phonetics.loadCmuPhonemes()]);
     await wordManager.loadWords(); // Applies filters based on loaded blacklist
 
     // Retroactively enrich existing rejections with phonetic context (one-time migration)
@@ -122,20 +122,6 @@ async function initializeApp() {
     // 7. Set up keyboard control system
     setupModalObserver();
 
-    // Debug Flow Meter initialization
-    console.log('Flow Meter Debug: Checking element after initialization');
-    console.log('Flow Meter element exists:', !!ui.elements.flowMeterBar);
-    if (ui.elements.flowMeterBar) {
-        console.log('Flow Meter element found:', ui.elements.flowMeterBar);
-        console.log('Flow Meter initial state:', {
-            width: ui.elements.flowMeterBar.style.width,
-            display: window.getComputedStyle(ui.elements.flowMeterBar).display,
-            visibility: window.getComputedStyle(ui.elements.flowMeterBar).visibility
-        });
-    } else {
-        console.error('Flow Meter Debug: Element not found during initialization!');
-    }
-    
     // 8. Initialize word search functionality
     console.log('Initializing word search...');
     wordSearch.initSearch();
@@ -158,8 +144,6 @@ function setActivationMode(newMode) {
     if (previousMode === 'timed' && state.timedInterval) { clearInterval(state.timedInterval); state.timedInterval = null; ui.updateWordDisplayAnimation(); }
     if (previousMode === 'voice') {
         speech.stopRecognition(true);
-        console.log('Flow Meter Debug: Resetting Flow Meter due to voice mode deactivation');
-        ui.resetFlowMeter(); // Reset Flow Meter when voice mode is deactivated
     }
     if (state.activationMode === 'timed') startTimedCycleInternal();
     else if (state.activationMode === 'voice') speech.startRecognition();
