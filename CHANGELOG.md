@@ -1,6 +1,8 @@
 # Changelog
 
 ## 2026-04-02
+- Wire transcript word click handler: clicking a word in the Live Feed sets it as the active word with selection highlight
+- Clear transcript selection on arrow button clicks, keyboard arrow navigation, and voice match word advance
 - Rebuild voice-match word transition animation: replace broken overlay system with CSS-only dissolve-exit animation on real flip-letter spans, eliminating style mismatch and competing animations
 - Add dissolve-char CSS keyframe animation for staggered letter exit
 - Fix rhyme modal tooltip getting stuck: cleanup was querying wrong class name (`.match-tooltip` vs `.rhyme-tier-tooltip`)

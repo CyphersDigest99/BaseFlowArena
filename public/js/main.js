@@ -40,6 +40,7 @@ import { openRhymeFinderModalWithSort } from './rhyme.js';
 import { getPlaylist, initializeBeatPlayer } from './beatManager.js';
 import * as wordSearch from './wordSearch.js'; // Import the word search module
 import * as reverseSearch from './reverseSearch.js'; // Import the reverse search module
+import * as phonetics from './phonetics.js';
 
 // Cached word data for tooltip display and performance optimization
 let lastWordData = { synonyms: '', definition: '', word: '' };
@@ -94,10 +95,13 @@ async function initializeApp() {
     // No explicit init needed for the Web Audio API approach here,
     // it's handled when startDetection is called.
 
-    // 2. Load Settings, Rhyme Data, Word List
+    // 2. Load Settings, Rhyme Data, CMU Lookup, Word List
     storage.loadSettings(); // Loads ALL settings, applies defaults, updates relevant UI
-    await rhyme.loadRhymeData();
+    await Promise.all([rhyme.loadRhymeData(), phonetics.loadCmuLookup()]);
     await wordManager.loadWords(); // Applies filters based on loaded blacklist
+
+    // Retroactively enrich existing rejections with phonetic context (one-time migration)
+    storage.enrichExistingRejections();
 
     // 3. Setup Features
     speech.setupSpeechRecognition();
@@ -223,9 +227,44 @@ async function handleDetectBpmClick() {
 // --- Attach Event Listeners ---
 function attachEventListeners() {
     // Word Navigation & Actions
-    ui.elements.prevWordButton?.addEventListener('click', wordManager.previousWord);
-    ui.elements.nextWordButton?.addEventListener('click', wordManager.nextWord);
+    ui.elements.prevWordButton?.addEventListener('click', () => {
+        ui.clearTranscriptSelection();
+        wordManager.previousWord();
+    });
+    ui.elements.nextWordButton?.addEventListener('click', () => {
+        ui.clearTranscriptSelection();
+        wordManager.nextWord();
+    });
     ui.elements.blacklistButton?.addEventListener('click', wordManager.toggleBlacklist);
+
+    // Transcript word selection — delegated click handler
+    ui.elements.transcriptContainer?.addEventListener('click', (e) => {
+        const wordSpan = e.target.closest('.transcript-word');
+        if (!wordSpan) return;
+        const word = wordSpan.textContent.trim();
+        if (!word) return;
+
+        // Toggle off if clicking the same word
+        if (state.transcriptSelectedWord === word.toLowerCase()) {
+            ui.clearTranscriptSelection();
+            return;
+        }
+
+        // Clear previous selection
+        ui.clearTranscriptSelection();
+
+        // Highlight new selection
+        wordSpan.classList.add('selected');
+        state.transcriptSelectedWord = word.toLowerCase();
+
+        // Turn off timed mode if active
+        if (state.activationMode === 'timed') {
+            setActivationMode('manual');
+        }
+
+        // Set as active word
+        wordManager.setActiveWord(word);
+    });
     ui.elements.favoriteButton?.addEventListener('click', wordManager.toggleFavorite);
     ui.elements.findRhymesButton?.addEventListener('click', openRhymeFinderModalWithSort);
 
@@ -709,12 +748,14 @@ function handleMainPageKeydown(event) {
         case 'arrowleft':
             event.preventDefault();
             ui.setFlipDirection('bottom'); // Letters flip from bottom when going back
+            ui.clearTranscriptSelection();
             wordManager.previousWord();
             break;
 
         case 'arrowright':
             event.preventDefault();
             ui.setFlipDirection('top'); // Letters flip from top when going forward
+            ui.clearTranscriptSelection();
             wordManager.nextWord();
             break;
             

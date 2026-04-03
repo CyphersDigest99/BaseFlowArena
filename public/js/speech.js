@@ -248,6 +248,7 @@ function checkForWordMatch(utterance) {
               setTimeout(() => {
                   // Double-check the mode hasn't changed during the timeout
                   if (state.activationMode === 'voice' && targetWord === state.lastMatchedWord) {
+                      ui.clearTranscriptSelection();
                       // Check if we should navigate rhymes or get a random word
                       if (state.voiceRhymeMode) {
                           // Try to navigate to next rhyme, fallback to random word if no more rhymes
