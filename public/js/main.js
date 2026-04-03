@@ -257,12 +257,7 @@ function attachEventListeners() {
         wordSpan.classList.add('selected');
         state.transcriptSelectedWord = word.toLowerCase();
 
-        // Turn off timed mode if active
-        if (state.activationMode === 'timed') {
-            setActivationMode('manual');
-        }
-
-        // Set as active word
+        // Set as active word (also handles turning off timed mode if active)
         wordManager.setActiveWord(word);
     });
     ui.elements.favoriteButton?.addEventListener('click', wordManager.toggleFavorite);

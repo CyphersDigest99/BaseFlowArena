@@ -559,6 +559,13 @@ export function setActiveWord(word) {
     const cleanWord = word.replace(/[^a-zA-Z'-]/g, '').toLowerCase();
     if (!cleanWord || cleanWord.length < 2) return;
 
+    // Turn off timed cycle if active — this word replaces the auto-cycle
+    if (state.activationMode === 'timed') {
+        if (state.timedInterval) { clearInterval(state.timedInterval); state.timedInterval = null; }
+        state.activationMode = 'manual';
+        ui.updateActivationUI();
+    }
+
     state.currentWord = cleanWord;
     state.currentWordIndex = -1; // Not from the word list
     state.lastMatchedWord = null;
