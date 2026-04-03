@@ -525,33 +525,49 @@ export function stopWordBuzz() {
      }
 }
 
+/** Removes .selected class from any transcript word and clears state */
+export function clearTranscriptSelection() {
+    const selected = elements.transcriptContainer?.querySelector('.transcript-word.selected');
+    if (selected) selected.classList.remove('selected');
+    state.transcriptSelectedWord = null;
+}
+
 // Updates transcript display with interim or final speech recognition results
 export function updateTranscript(lineText, isFinal) {
      if (!lineText || !elements.transcriptContainer) return;
      lineText = lineText.trim();
      if (!lineText) return;
-     const displayLine = lineText;
      let interimElement = elements.transcriptContainer.querySelector('.interim');
      if (!isFinal) {
          if (interimElement) {
-             if (interimElement.textContent !== displayLine) interimElement.textContent = displayLine;
+             if (interimElement.textContent !== lineText) interimElement.textContent = lineText;
          } else {
              interimElement = document.createElement('div');
              interimElement.classList.add('interim');
-             interimElement.textContent = displayLine;
+             interimElement.textContent = lineText;
              elements.transcriptContainer.insertBefore(interimElement, elements.transcriptContainer.firstChild);
          }
      } else {
          if (interimElement) interimElement.remove();
          const finalElement = document.createElement('div');
          finalElement.classList.add('final');
-         finalElement.textContent = displayLine;
+
+         // Split into clickable word spans
+         lineText.split(/\s+/).forEach((rawWord, i) => {
+             const cleaned = rawWord.replace(/[^a-zA-Z'-]/g, '');
+             if (cleaned.length < 2) return;
+             if (i > 0) finalElement.appendChild(document.createTextNode(' '));
+             const span = document.createElement('span');
+             span.className = 'transcript-word';
+             span.textContent = cleaned;
+             finalElement.appendChild(span);
+         });
+
          elements.transcriptContainer.insertBefore(finalElement, elements.transcriptContainer.firstChild);
          while (elements.transcriptContainer.children.length > state.MAX_TRANSCRIPT_LINES) {
              elements.transcriptContainer.removeChild(elements.transcriptContainer.lastChild);
          }
-         
-         // Update Flow Meter for new word activity
+
          console.log('Flow Meter Debug: Calling updateFlowMeter from updateTranscript');
          updateFlowMeter(true);
      }
