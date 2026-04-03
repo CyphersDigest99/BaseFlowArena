@@ -329,6 +329,40 @@ function renderPhonemeComparison(comparison, baseWord, rejectedWord) {
     label2.textContent = rejectedWord;
     row2.appendChild(label2);
 
+    // Pre-segment context (phonemes before the rhyming segment, shown smaller/faded)
+    const preSeg1 = comparison.fullPhonemes1.slice(0, comparison.fullPhonemes1.length - comparison.segment1.length);
+    const preSeg2 = comparison.fullPhonemes2.slice(0, comparison.fullPhonemes2.length - comparison.segment2.length);
+    const maxPre = Math.max(preSeg1.length, preSeg2.length);
+
+    for (let i = 0; i < maxPre; i++) {
+        const ph1 = i < preSeg1.length ? preSeg1[i] : null;
+        const ph2 = i < preSeg2.length ? preSeg2[i] : null;
+
+        if (ph1) {
+            const block = document.createElement('span');
+            const isVowel = /[AEIOU]/.test(ph1[0]);
+            block.className = isVowel ? 'feedback-vowel-block' : 'feedback-consonant-block';
+            block.textContent = ph1.replace(/[012]$/, '');
+            block.style.opacity = '0.35';
+            block.style.fontSize = '0.65em';
+            row1.appendChild(block);
+        } else {
+            row1.appendChild(Object.assign(document.createElement('span'), { className: 'feedback-empty-block' }));
+        }
+
+        if (ph2) {
+            const block = document.createElement('span');
+            const isVowel = /[AEIOU]/.test(ph2[0]);
+            block.className = isVowel ? 'feedback-vowel-block' : 'feedback-consonant-block';
+            block.textContent = ph2.replace(/[012]$/, '');
+            block.style.opacity = '0.35';
+            block.style.fontSize = '0.65em';
+            row2.appendChild(block);
+        } else {
+            row2.appendChild(Object.assign(document.createElement('span'), { className: 'feedback-empty-block' }));
+        }
+    }
+
     for (const pair of comparison.pairs) {
         // Word 1 block
         if (pair.p1) {
@@ -466,18 +500,22 @@ function closeFeedbackCard(saveFeedback) {
     const backdrop = document.querySelector('.feedback-card-backdrop');
     if (!backdrop) return;
 
+    // Always clean up escape handler
+    if (backdrop._feedbackState?.escHandler) {
+        document.removeEventListener('keydown', backdrop._feedbackState.escHandler);
+    }
+
     if (saveFeedback && backdrop._feedbackState) {
-        const { rejectedWordLower, selectedReasons, remarkInput, escHandler } = backdrop._feedbackState;
+        const { rejectedWordLower, selectedReasons, remarkInput } = backdrop._feedbackState;
         const reasons = Array.from(selectedReasons);
         const remarkText = remarkInput.value.trim();
         const hadFeedback = reasons.length > 0 || remarkText.length > 0;
 
-        if (hadFeedback || pendingFeedback.has(rejectedWordLower)) {
-            pendingFeedback.set(rejectedWordLower, {
-                reasons,
-                remark: remarkText,
-            });
-        }
+        // Always write to pendingFeedback so persistTempRejections knows card was shown
+        pendingFeedback.set(rejectedWordLower, {
+            reasons,
+            remark: remarkText,
+        });
 
         lastCardHadFeedback = hadFeedback;
         lastCardDismissTime = Date.now();
@@ -486,8 +524,6 @@ function closeFeedbackCard(saveFeedback) {
             skipCounter++;
             updateSkipBadge();
         }
-
-        document.removeEventListener('keydown', escHandler);
     }
 
     backdrop.remove();
