@@ -41,6 +41,7 @@ import { getPlaylist, initializeBeatPlayer } from './beatManager.js';
 import * as wordSearch from './wordSearch.js'; // Import the word search module
 import * as reverseSearch from './reverseSearch.js'; // Import the reverse search module
 import * as phonetics from './phonetics.js';
+import * as fillerTicker from './fillerTicker.js';
 
 // Cached word data for tooltip display and performance optimization
 let lastWordData = { synonyms: '', definition: '', word: '' };
@@ -131,6 +132,9 @@ async function initializeApp() {
     console.log('Initializing reverse search...');
     reverseSearch.initReverseSearch();
     
+    // 10. Initialize filler ticker
+    fillerTicker.init();
+
     console.log("--- Initialization Complete ---");
 }
 
@@ -149,6 +153,11 @@ function setActivationMode(newMode) {
     if (state.activationMode === 'timed') startTimedCycleInternal();
     else if (state.activationMode === 'voice') speech.startRecognition();
     ui.updateActivationUI();
+    if (state.activationMode === 'voice' || state.activationMode === 'timed') {
+        fillerTicker.show();
+    } else {
+        fillerTicker.hide();
+    }
 }
 
 // --- Timed Cycle ---
