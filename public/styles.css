@@ -3849,3 +3849,131 @@ body.screen-shaking {
     opacity: 0.5;
     font-size: 0.85em;
 }
+
+/* ============================================================
+   KEY FINDER
+   ============================================================ */
+
+/* Panel button inherits .large-button — no extra styles needed */
+
+/* Modal header */
+.kf-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 18px;
+}
+
+.kf-mic-dot {
+    width: 10px;
+    height: 10px;
+    background: var(--primary-accent);
+    border-radius: 50%;
+    box-shadow: 0 0 6px var(--primary-accent);
+    animation: kf-pulse 1.1s ease-in-out infinite;
+}
+
+@keyframes kf-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.2; }
+}
+
+.kf-listening-label {
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: var(--secondary-text, #6b9e6b);
+    font-family: 'Courier New', monospace;
+}
+
+/* Detected note display */
+.kf-detected-row {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    margin-bottom: 20px;
+}
+
+.kf-big-note {
+    font-size: 72px;
+    font-weight: bold;
+    color: var(--primary-accent);
+    text-shadow: 0 0 20px var(--primary-accent);
+    line-height: 1;
+    min-width: 80px;
+    text-align: center;
+    font-family: 'Orbitron', monospace;
+}
+
+.kf-note-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.kf-scale-label {
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--secondary-text, #5a8a5a);
+    font-family: 'Courier New', monospace;
+}
+
+.kf-scale-name {
+    font-size: 16px;
+    color: var(--primary-accent);
+    font-family: 'Courier New', monospace;
+}
+
+/* Piano keyboard */
+.kf-piano {
+    display: flex;
+    gap: 3px;
+    overflow-x: auto;
+    padding: 4px 0 8px;
+    margin-bottom: 12px;
+}
+
+.kf-key {
+    width: 36px;
+    height: 100px;
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 0 0 4px 4px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding-bottom: 6px;
+    font-size: 10px;
+    font-family: 'Courier New', monospace;
+    color: #444;
+    flex-shrink: 0;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+/* Root note — bright accent */
+.kf-key--root {
+    background: var(--primary-accent);
+    border-color: var(--primary-accent);
+    color: #000;
+    box-shadow: 0 0 12px var(--primary-accent);
+}
+
+/* Scale notes — dim accent */
+.kf-key--scale {
+    background: color-mix(in srgb, var(--primary-accent) 25%, #111);
+    border-color: color-mix(in srgb, var(--primary-accent) 40%, #333);
+    color: var(--primary-accent);
+}
+
+.kf-octave-gap {
+    width: 10px;
+    flex-shrink: 0;
+}
+
+/* Hint */
+.kf-hint {
+    font-size: 11px;
+    color: var(--secondary-text, #3a6a3a);
+    text-align: center;
+    letter-spacing: 1px;
+    font-family: 'Courier New', monospace;
+}
