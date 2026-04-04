@@ -84,3 +84,148 @@ export function autoCorrelate(buf, sampleRate) {
 
   return sampleRate / T0;
 }
+
+/**
+ * Updates piano key highlight classes based on the detected root note.
+ * @param {string|null} rootName - Note name e.g. 'A', or null to clear all highlights.
+ */
+function updatePiano(rootName) {
+  const keys = document.querySelectorAll('.kf-key');
+  const scaleNotes = rootName ? getMinorScale(rootName) : [];
+
+  keys.forEach(key => {
+    const note = key.dataset.note;
+    key.classList.remove('kf-key--root', 'kf-key--scale');
+    if (!rootName) return;
+    if (note === rootName) {
+      key.classList.add('kf-key--root');
+    } else if (scaleNotes.includes(note)) {
+      key.classList.add('kf-key--scale');
+    }
+  });
+}
+
+/**
+ * Updates the note label, scale name, and piano highlights.
+ * @param {string|null} noteName - e.g. 'A', or null to show idle state.
+ */
+function updateDisplay(noteName) {
+  const noteEl = document.getElementById('kf-detected-note');
+  const scaleEl = document.getElementById('kf-scale-name');
+
+  if (!noteName) {
+    noteEl.textContent = '—';
+    scaleEl.textContent = '—';
+    updatePiano(null);
+    return;
+  }
+
+  noteEl.textContent = noteName;
+  scaleEl.textContent = `${noteName} Natural Minor`;
+  updatePiano(noteName);
+}
+
+// Module-level state — shared between open/close/loop
+let _audioCtx = null;
+let _analyser = null;
+let _stream = null;
+let _rafId = null;
+let _buf = null;
+// Debounce: only switch displayed note when same note is stable for N frames
+let _lastNote = null;
+let _noteCount = 0;
+const NOTE_HOLD_FRAMES = 4;
+
+function startPitchLoop() {
+  if (!_analyser || !_audioCtx) return;
+
+  function tick() {
+    _analyser.getFloatTimeDomainData(_buf);
+    const freq = autoCorrelate(_buf, _audioCtx.sampleRate);
+
+    if (freq > 0) {
+      const midi = freqToMidi(freq);
+      if (midi !== null) {
+        const name = midiToName(midi);
+        if (name === _lastNote) {
+          _noteCount++;
+          if (_noteCount >= NOTE_HOLD_FRAMES) updateDisplay(name);
+        } else {
+          _lastNote = name;
+          _noteCount = 1;
+        }
+      }
+    }
+
+    _rafId = requestAnimationFrame(tick);
+  }
+
+  _rafId = requestAnimationFrame(tick);
+}
+
+/**
+ * Opens the Key Finder modal and starts mic capture + pitch detection.
+ */
+export async function open() {
+  const modal = document.getElementById('key-finder-modal');
+  if (!modal) return;
+
+  try {
+    _stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+    _audioCtx = new AudioContext();
+    _analyser = _audioCtx.createAnalyser();
+    _analyser.fftSize = 2048;
+    _buf = new Float32Array(_analyser.fftSize);
+
+    const source = _audioCtx.createMediaStreamSource(_stream);
+    source.connect(_analyser);
+
+    modal.style.display = 'block';
+    updateDisplay(null);
+    startPitchLoop();
+  } catch (err) {
+    console.warn('Key Finder: mic access denied or unavailable', err);
+    modal.style.display = 'block';
+  }
+}
+
+/**
+ * Closes the Key Finder modal and releases all audio resources.
+ */
+export function close() {
+  const modal = document.getElementById('key-finder-modal');
+  if (modal) modal.style.display = 'none';
+
+  if (_rafId) { cancelAnimationFrame(_rafId); _rafId = null; }
+  if (_stream) { _stream.getTracks().forEach(t => t.stop()); _stream = null; }
+  if (_audioCtx) { _audioCtx.close(); _audioCtx = null; }
+  _analyser = null;
+  _buf = null;
+  _lastNote = null;
+  _noteCount = 0;
+
+  updateDisplay(null);
+}
+
+/**
+ * Wires the FIND KEY button and modal close handlers.
+ * Call once from main.js after DOMContentLoaded.
+ */
+export function init() {
+  const openBtn = document.getElementById('open-key-finder-button');
+  const closeBtn = document.getElementById('close-key-finder-modal');
+  const modal = document.getElementById('key-finder-modal');
+
+  if (!openBtn || !closeBtn || !modal) {
+    console.warn('Key Finder: DOM elements not found');
+    return;
+  }
+
+  openBtn.addEventListener('click', open);
+  closeBtn.addEventListener('click', close);
+
+  // Close on backdrop click
+  modal.addEventListener('click', e => {
+    if (e.target === modal) close();
+  });
+}
