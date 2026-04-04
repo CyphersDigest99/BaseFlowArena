@@ -3,3 +3,5 @@ google-credentials.json
 BaseFlowArena-1/
 # Git worktrees
 .worktrees/
+# Superpowers brainstorm sessions
+.superpowers/
