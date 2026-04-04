@@ -104,7 +104,7 @@ export const elements = {
     // Center Stage Controls (Activation) - Voice and timed mode controls
     voiceModeButton: document.getElementById('voice-mode-button'),
     timedModeButton: document.getElementById('timed-mode-button'),
-    timedCycleOptionsDiv: document.getElementById('timed-cycle-slider-container'),
+    timedCycleOptionsDiv: document.getElementById('timed-cycle-options'),
     cycleSpeedInput: document.getElementById('cycle-speed'),
     cycleSpeedSlider: document.getElementById('cycle-speed-slider'),
     transcriptContainer: document.getElementById('new-transcript'),

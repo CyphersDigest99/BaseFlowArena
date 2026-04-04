@@ -215,22 +215,24 @@ function drawVolumeBar(volume) {
     const h = canvas.height;
     const barHeight = h * volume;
 
-    // Gradient from bottom (cyan) to top (gold)
-    const gradient = ctx.createLinearGradient(0, h, 0, h - barHeight);
-    gradient.addColorStop(0, '#00ffff');
-    gradient.addColorStop(0.5, '#ff00ff');
-    gradient.addColorStop(1, '#f9a826');
+    // Gradient: green at bottom, yellow in mid, red at top
+    const gradient = ctx.createLinearGradient(0, h, 0, 0);
+    gradient.addColorStop(0,    '#33ff33');
+    gradient.addColorStop(0.75, '#33ff33');
+    gradient.addColorStop(0.88, '#ffff00');
+    gradient.addColorStop(1,    '#ff2222');
 
     // Background
-    ctx.fillStyle = 'rgba(0, 255, 255, 0.1)';
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
     ctx.fillRect(0, 0, w, h);
 
     // Volume bar (fills from bottom)
     ctx.fillStyle = gradient;
     ctx.fillRect(0, h - barHeight, w, barHeight);
 
-    // Glow
-    ctx.shadowColor = '#00ffff';
+    // Glow — color matches bar level
+    const glowColor = volume > 0.88 ? '#ff2222' : '#33ff33';
+    ctx.shadowColor = glowColor;
     ctx.shadowBlur = 6;
     ctx.fillRect(0, h - barHeight, w, barHeight);
     ctx.shadowBlur = 0;
