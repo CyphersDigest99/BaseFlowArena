@@ -112,6 +112,7 @@ function updatePiano(rootName) {
 function updateDisplay(noteName) {
   const noteEl = document.getElementById('kf-detected-note');
   const scaleEl = document.getElementById('kf-scale-name');
+  if (!noteEl || !scaleEl) return;
 
   if (!noteName) {
     noteEl.textContent = '—';
@@ -140,7 +141,7 @@ function startPitchLoop() {
   if (!_analyser || !_audioCtx) return;
 
   function tick() {
-    if (!_analyser) return;
+    if (!_analyser || !_buf) return;
     _analyser.getFloatTimeDomainData(_buf);
     const freq = autoCorrelate(_buf, _audioCtx.sampleRate);
 
@@ -153,7 +154,7 @@ function startPitchLoop() {
           if (_noteCount >= NOTE_HOLD_FRAMES) updateDisplay(name);
         } else {
           _lastNote = name;
-          _noteCount = 1;
+          _noteCount = 1; // count this frame as the first observation
         }
       }
     }
@@ -168,6 +169,7 @@ function startPitchLoop() {
  * Opens the Key Finder modal and starts mic capture + pitch detection.
  */
 export async function open() {
+  if (_audioCtx) return; // already open — prevent double-init
   const modal = document.getElementById('key-finder-modal');
   if (!modal) return;
 
