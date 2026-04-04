@@ -159,6 +159,20 @@ export const elements = {
     clearBlacklistButton: document.getElementById('clear-blacklist-button'),
     clearWordFrequenciesButton: document.getElementById('clear-word-frequencies-button'),
     resetAllSettingsButton: document.getElementById('reset-all-settings-button'),
+
+    // Filler Ticker
+    fillerTickerEl: document.getElementById('filler-ticker'),
+    fillerTickerText: document.getElementById('filler-ticker-text'),
+    fillerTickerButton: document.getElementById('filler-ticker-button'),
+    fillerTickerModal: document.getElementById('filler-ticker-modal'),
+    closeFillerTickerModal: document.getElementById('close-filler-ticker-modal'),
+    fillerTickerInput: document.getElementById('filler-ticker-input'),
+    fillerTickerAddBtn: document.getElementById('filler-ticker-add-btn'),
+    fillerTickerList: document.getElementById('filler-ticker-list'),
+    fillerTickerSpeed: document.getElementById('filler-ticker-speed'),
+    fillerTickerSpeedVal: document.getElementById('filler-ticker-speed-val'),
+    fillerTickerGap: document.getElementById('filler-ticker-gap'),
+    fillerTickerGapVal: document.getElementById('filler-ticker-gap-val'),
 };
 
 // --- UI Update Functions ---
