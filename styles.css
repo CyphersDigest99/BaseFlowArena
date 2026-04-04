@@ -1982,6 +1982,19 @@ input[type="range"] {
     height: 350px;
     display: flex;
     flex-direction: column;
+    padding: 6px 10px 4px;
+}
+
+.transcript-area h2 {
+    margin-bottom: 5px;
+}
+
+/* Ticker inline in Live Feed h2 */
+.transcript-area .led-ticker-canvas {
+    flex: 1;
+    height: 24px;
+    margin-bottom: 0;
+    border-radius: 3px;
 }
 
 #new-transcript {
@@ -2072,20 +2085,41 @@ input[type="range"] {
     pointer-events: none;
 }
 
+.feed-footer {
+    display: flex;
+    justify-content: flex-end;
+    padding: 4px 8px 2px;
+}
+
+.feed-clear-btn {
+    background: none;
+    border: none;
+    color: rgba(51, 255, 51, 0.3);
+    font-size: 0.75em;
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 3px;
+    transition: color 0.15s ease;
+}
+
+.feed-clear-btn:hover {
+    color: rgba(51, 255, 51, 0.8);
+}
+
 .pill-ban {
-    display: none;
     margin-left: 5px;
-    opacity: 0.4;
+    opacity: 0;
     font-size: 0.85em;
     line-height: 1;
+    transition: opacity 0.15s ease;
 }
 
 .recent-word-pill:hover .pill-ban {
-    display: inline;
+    opacity: 0.4;
 }
 
 .pill-ban:hover {
-    opacity: 1;
+    opacity: 1 !important;
     color: #ff4444;
 }
 

@@ -262,12 +262,34 @@ function attachEventListeners() {
     document.getElementById('recent-words-tray')?.addEventListener('click', (e) => {
         const pill = e.target.closest('.recent-word-pill');
         if (!pill) return;
-        const word = pill.textContent.trim();
+        const word = pill.dataset.word;
         if (!word) return;
-        ui.clearTranscriptSelection();       // clears feed selection + resets state.transcriptSelectedWord
-        state.transcriptSelectedWord = word.toLowerCase();
-        ui.updateRecentWordsTray();          // re-render tray with new pill highlighted
+
+        // Ban button — ignore this word in future feed results
+        if (e.target.closest('.pill-ban')) {
+            state.ignoredFeedWords.add(word);
+            state.recentWords = state.recentWords.filter(w => w !== word);
+            ui.updateRecentWordsTray();
+            storage.saveSettings();
+            return;
+        }
+
+        // Regular pill click — set as active word
+        ui.clearTranscriptSelection();
+        state.transcriptSelectedWord = word;
+        ui.updateRecentWordsTray();
         wordManager.setActiveWord(word);
+    });
+
+    // Clear feed button — single click clears transcript, double-click also clears word tray
+    const clearFeedBtn = document.getElementById('clear-feed-btn');
+    clearFeedBtn?.addEventListener('click', () => {
+        ui.clearTranscript();
+    });
+    clearFeedBtn?.addEventListener('dblclick', () => {
+        ui.clearTranscript();
+        state.recentWords = [];
+        ui.updateRecentWordsTray();
     });
 
     ui.elements.favoriteButton?.addEventListener('click', wordManager.toggleFavorite);

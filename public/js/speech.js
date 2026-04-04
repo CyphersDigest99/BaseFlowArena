@@ -204,9 +204,6 @@ function onRecognitionEnd() {
         }, 500); // Delay before restart attempt
     } else {
          console.log('Mic ended intentionally or mode changed.');
-         // Only clear tray when truly stopping (not during auto-restart)
-         state.recentWords = [];
-         ui.updateRecentWordsTray();
     }
 }
 
@@ -225,7 +222,7 @@ export function startRecognition() {
     try {
         state.finalTranscript = '';
         state.interimTranscript = '';
-        ui.clearTranscript(); // Clear display
+        if (state.activationMode !== 'voice') ui.clearTranscript(); // Don't wipe feed mid-session in voice mode
         console.log("Requesting speech recognition hardware start...");
         state.recognition.start();
         // Start mic visualizer

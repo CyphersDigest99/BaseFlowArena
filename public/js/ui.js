@@ -35,6 +35,9 @@ const TRAY_STOPWORDS = new Set([
     'this','than','then','when','who','what','how','all','just','like'
 ]);
 
+// Hover-pause flag: when tray is hovered, defer new pill inserts until mouseleave
+let trayLeavePending = false;
+
 // Callback for when displayed word changes (for tooltip updates)
 let onDisplayedWordChangeCallback = null;
 
@@ -617,27 +620,54 @@ export function updateRecentWordsTray() {
     if (!tray) return;
     if (!state.recentWords.length) {
         tray.style.display = 'none';
+        tray.innerHTML = '';
         return;
     }
     tray.style.display = 'flex';
-    tray.innerHTML = '';
-    state.recentWords.forEach(word => {
-        const pill = document.createElement('span');
-        pill.className = 'recent-word-pill';
-        pill.dataset.word = word;
-        if (word === state.transcriptSelectedWord) {
-            pill.classList.add('selected');
+
+    // Build map of currently rendered pills
+    const rendered = new Map();
+    tray.querySelectorAll('.recent-word-pill').forEach(el => rendered.set(el.dataset.word, el));
+
+    // Remove pills for words no longer in state (banned/cleared)
+    const wordSet = new Set(state.recentWords);
+    rendered.forEach((el, word) => { if (!wordSet.has(word)) el.remove(); });
+
+    // Prepend new pills — but pause while tray is hovered to avoid position shifts
+    const toAdd = state.recentWords.filter(w => !rendered.has(w));
+    if (toAdd.length) {
+        if (tray.matches(':hover')) {
+            // Register a one-shot mouseleave to backfill as soon as hover ends
+            if (!trayLeavePending) {
+                trayLeavePending = true;
+                tray.addEventListener('mouseleave', () => {
+                    trayLeavePending = false;
+                    updateRecentWordsTray();
+                }, { once: true });
+            }
+            // Skip the prepend — existing pills stay put
+        } else {
+            [...toAdd].reverse().forEach(word => {
+                const pill = document.createElement('span');
+                pill.className = 'recent-word-pill';
+                pill.dataset.word = word;
+                const label = document.createElement('span');
+                label.className = 'pill-label';
+                label.textContent = word;
+                const ban = document.createElement('span');
+                ban.className = 'pill-ban';
+                ban.title = 'Ignore in feed';
+                ban.textContent = '×';
+                pill.appendChild(label);
+                pill.appendChild(ban);
+                tray.insertBefore(pill, tray.firstChild);
+            });
         }
-        const label = document.createElement('span');
-        label.className = 'pill-label';
-        label.textContent = word;
-        const ban = document.createElement('span');
-        ban.className = 'pill-ban';
-        ban.title = 'Ignore in feed';
-        ban.textContent = '×';
-        pill.appendChild(label);
-        pill.appendChild(ban);
-        tray.appendChild(pill);
+    }
+
+    // Update selected state in-place
+    tray.querySelectorAll('.recent-word-pill').forEach(el => {
+        el.classList.toggle('selected', el.dataset.word === state.transcriptSelectedWord);
     });
 }
 

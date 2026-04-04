@@ -81,6 +81,7 @@ export function saveSettings() {
             wordFrequencies: state.wordFrequencies,
             blacklist: Array.from(state.blacklist),
             favorites: Array.from(state.favorites),
+            ignoredFeedWords: Array.from(state.ignoredFeedWords),
             rejectedRhymes: serializeNestedSets(state.rejectedRhymes),
             manualRhymes: serializeNestedSets(state.manualRhymes),
             slantRhymes: serializeNestedSets(state.slantRhymes),
@@ -136,6 +137,7 @@ export function loadSettings() {
              state.wordFrequencies = parsedData.wordFrequencies || {};
              state.blacklist = Array.isArray(parsedData.blacklist) ? new Set(parsedData.blacklist) : new Set();
              state.favorites = Array.isArray(parsedData.favorites) ? new Set(parsedData.favorites) : new Set();
+             state.ignoredFeedWords = Array.isArray(parsedData.ignoredFeedWords) ? new Set(parsedData.ignoredFeedWords) : new Set();
              state.rejectedRhymes = parsedData.rejectedRhymes ? deserializeNestedSets(parsedData.rejectedRhymes) : {};
              state.manualRhymes = parsedData.manualRhymes ? deserializeNestedSets(parsedData.manualRhymes) : {};
              state.slantRhymes = parsedData.slantRhymes ? deserializeNestedSets(parsedData.slantRhymes) : {};
