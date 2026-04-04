@@ -169,8 +169,10 @@ export function getValidRhymesForWord(baseWord) {
     // Clear score cache for this base word
     rhymeScoreCache = new Map();
 
+    // Track seen words for dedup (lowercase -> { word, score })
+    const seen = new Map();
+
     // Score candidates from inverted index
-    let scoredMatches = [];
     if (wordPattern) {
         const patternString = wordPattern.join('-');
         const candidates = phonetics.getCandidatesForPattern(patternString);
@@ -182,8 +184,35 @@ export function getValidRhymesForWord(baseWord) {
 
             const score = phonetics.rhymeScore(baseWordLower, wordLower);
             if (score >= SCORE_THRESHOLD) {
-                scoredMatches.push({ word, score });
+                seen.set(wordLower, { word, score });
                 rhymeScoreCache.set(`${baseWordLower}|${wordLower}`, score);
+            }
+        }
+    }
+
+    // Alias candidates: for each alias, pull its candidates and score against the alias word
+    const aliasSet = state.rhymeAliases[baseWordLower];
+    if (aliasSet) {
+        for (const aliasWord of aliasSet) {
+            const aliasPattern = getRhymePattern(aliasWord);
+            if (!aliasPattern) continue;
+
+            const aliasPatternString = aliasPattern.join('-');
+            const aliasCandidates = phonetics.getCandidatesForPattern(aliasPatternString);
+
+            for (const word of aliasCandidates) {
+                const wordLower = word.toLowerCase();
+                if (wordLower === baseWordLower) continue;
+                if (rejectedSet.has(wordLower)) continue;
+
+                const score = phonetics.rhymeScore(aliasWord, wordLower);
+                if (score >= SCORE_THRESHOLD) {
+                    const existing = seen.get(wordLower);
+                    if (!existing || score > existing.score) {
+                        seen.set(wordLower, { word, score });
+                        rhymeScoreCache.set(`${baseWordLower}|${wordLower}`, score);
+                    }
+                }
             }
         }
     }
@@ -192,14 +221,15 @@ export function getValidRhymesForWord(baseWord) {
     for (const manualWord of manualSet) {
         const manualLower = manualWord.toLowerCase();
         if (manualLower === baseWordLower) continue;
-        if (!scoredMatches.find(m => m.word.toLowerCase() === manualLower)) {
+        if (!seen.has(manualLower)) {
             const score = phonetics.rhymeScore(baseWordLower, manualLower) || 0.7;
-            scoredMatches.push({ word: manualWord, score });
+            seen.set(manualLower, { word: manualWord, score });
             rhymeScoreCache.set(`${baseWordLower}|${manualLower}`, score);
         }
     }
 
     // Sort by score descending
+    const scoredMatches = Array.from(seen.values());
     scoredMatches.sort((a, b) => b.score - a.score);
 
     return scoredMatches.map(m => m.word);
@@ -1133,6 +1163,19 @@ export function showRhymeFinder() {
     if (ui.elements.rhymeNoResults) ui.elements.rhymeNoResults.style.display = 'none';
     if (ui.elements.manualRhymeInput) ui.elements.manualRhymeInput.value = '';
 
+    // Reset sounds-like checkbox and attach toggle
+    const soundsLikeCheckbox = document.getElementById('sounds-like-checkbox');
+    if (soundsLikeCheckbox) {
+        soundsLikeCheckbox.checked = false;
+        soundsLikeCheckbox.onchange = () => {
+            if (ui.elements.manualRhymeInput) {
+                ui.elements.manualRhymeInput.placeholder = soundsLikeCheckbox.checked
+                    ? 'Type a word this sounds like...'
+                    : 'Add your own rhyme...';
+            }
+        };
+    }
+
     // Populate List
     displayRhymeList(baseWordLower); // Calls internal helper which calls getValidRhymesForWord
 
@@ -1140,7 +1183,7 @@ export function showRhymeFinder() {
 }
 
 // --- addManualRhyme (EXPORTED) ---
-// Allows user to manually add a rhyme for the current base word
+// Adds a manual rhyme or a "sounds like" alias depending on checkbox state
 export function addManualRhyme() {
     if (!ui.elements.manualRhymeInput) return;
     const suggestedWord = ui.elements.manualRhymeInput.value.trim();
@@ -1148,16 +1191,37 @@ export function addManualRhyme() {
     const baseWordLower = baseWord?.toLowerCase();
     if (!suggestedWord || !baseWordLower || baseWord === "NO WORDS!") { return; }
     if (suggestedWord.toLowerCase() === baseWordLower) { return; }
-    console.log(`Manually adding rhyme: "${suggestedWord}" for base word "${baseWord}"`);
-    if (!state.manualRhymes[baseWordLower]) state.manualRhymes[baseWordLower] = new Set();
-    if (state.manualRhymes[baseWordLower].has(suggestedWord)) { return; }
-    state.manualRhymes[baseWordLower].add(suggestedWord);
-    storage.saveSettings();
-    // Update rhyme list so selectRhymeWordFromModal can find the new word
-    state.currentRhymeList = getValidRhymesForWord(baseWord);
-    // Refresh the displayed list
-    displayRhymeList(baseWordLower); // Re-render list
-    ui.showFeedback(`"${suggestedWord}" added to manual rhymes for "${baseWord}".`);
+
+    const soundsLikeCheckbox = document.getElementById('sounds-like-checkbox');
+    const isAlias = soundsLikeCheckbox?.checked;
+
+    if (isAlias) {
+        // Alias mode: "this word sounds like suggestedWord"
+        const suggestedLower = suggestedWord.toLowerCase();
+        if (!state.rhymeAliases[baseWordLower]) state.rhymeAliases[baseWordLower] = new Set();
+        if (state.rhymeAliases[baseWordLower].has(suggestedLower)) {
+            ui.showFeedback(`"${baseWord}" already sounds like "${suggestedWord}".`);
+            return;
+        }
+        state.rhymeAliases[baseWordLower].add(suggestedLower);
+        console.log(`Added alias: "${baseWord}" sounds like "${suggestedWord}"`);
+        storage.saveSettings();
+        // Refresh rhyme list to show imported matches
+        state.currentRhymeList = getValidRhymesForWord(baseWord);
+        displayRhymeList(baseWordLower);
+        updateModalHeader();
+        ui.showFeedback(`"${baseWord}" now inherits rhymes from "${suggestedWord}".`);
+    } else {
+        // Manual mode: add a single rhyme (existing behavior)
+        console.log(`Manually adding rhyme: "${suggestedWord}" for base word "${baseWord}"`);
+        if (!state.manualRhymes[baseWordLower]) state.manualRhymes[baseWordLower] = new Set();
+        if (state.manualRhymes[baseWordLower].has(suggestedWord)) { return; }
+        state.manualRhymes[baseWordLower].add(suggestedWord);
+        storage.saveSettings();
+        state.currentRhymeList = getValidRhymesForWord(baseWord);
+        displayRhymeList(baseWordLower);
+        ui.showFeedback(`"${suggestedWord}" added to manual rhymes for "${baseWord}".`);
+    }
     ui.elements.manualRhymeInput.value = '';
 }
 
