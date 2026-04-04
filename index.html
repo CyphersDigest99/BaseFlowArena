@@ -421,6 +421,17 @@
                 </div>
             </div> <!-- End of #bpm-panel -->
 
+            <!-- --- KEY FINDER --- -->
+            <div id="key-finder-panel" class="panel">
+                <h3><i class="fas fa-music"></i> Key Finder</h3>
+                <div class="bpm-main-controls">
+                    <button id="open-key-finder-button" class="icon-button large-button" title="Find the key you're humming">
+                        <i class="fas fa-microphone"></i> FIND KEY
+                    </button>
+                </div>
+            </div>
+            <!-- END: Key Finder -->
+
             <!-- --- BPM MULTIPLIER CONTROLS --- -->
             <div class="bpm-multiplier-controls panel">
                 <h3><i class="fas fa-forward"></i> Multiplier</h3>
@@ -466,6 +477,49 @@
             <!-- List of user's ignored words -->
             <ul id="ignored-words-list"></ul>
             <button id="clear-ignored-words-button" class="icon-button red-button"><i class="fas fa-trash"></i> Clear All Ignored Words</button>
+        </div>
+    </div>
+
+    <!-- Key Finder Modal -->
+    <div id="key-finder-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" id="close-key-finder-modal">×</span>
+            <h2><i class="fas fa-music"></i> Key Finder</h2>
+
+            <div class="kf-header">
+                <div class="kf-mic-dot" id="kf-mic-dot"></div>
+                <span class="kf-listening-label">LISTENING</span>
+            </div>
+
+            <div class="kf-detected-row">
+                <div class="kf-big-note" id="kf-detected-note">—</div>
+                <div class="kf-note-meta">
+                    <div class="kf-scale-label">DETECTED KEY</div>
+                    <div class="kf-scale-name" id="kf-scale-name">—</div>
+                </div>
+            </div>
+
+            <div class="kf-piano" id="kf-piano">
+                <!-- Octave 3 -->
+                <div class="kf-key" data-note="C"><span>C</span></div>
+                <div class="kf-key" data-note="D"><span>D</span></div>
+                <div class="kf-key" data-note="E"><span>E</span></div>
+                <div class="kf-key" data-note="F"><span>F</span></div>
+                <div class="kf-key" data-note="G"><span>G</span></div>
+                <div class="kf-key" data-note="A"><span>A</span></div>
+                <div class="kf-key" data-note="B"><span>B</span></div>
+                <div class="kf-octave-gap"></div>
+                <!-- Octave 4 -->
+                <div class="kf-key" data-note="C"><span>C</span></div>
+                <div class="kf-key" data-note="D"><span>D</span></div>
+                <div class="kf-key" data-note="E"><span>E</span></div>
+                <div class="kf-key" data-note="F"><span>F</span></div>
+                <div class="kf-key" data-note="G"><span>G</span></div>
+                <div class="kf-key" data-note="A"><span>A</span></div>
+                <div class="kf-key" data-note="B"><span>B</span></div>
+            </div>
+
+            <p class="kf-hint">Hum into your mic · keyboard updates in real time</p>
         </div>
     </div>
 
