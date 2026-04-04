@@ -1,6 +1,7 @@
 # Changelog
 
 ## 2026-04-03
+- feat: Key Finder — real-time mic pitch detection with piano keyboard scale display
 - Remove Flow Meter panel from layout (HTML, CSS, JS) — feature was unused
 - Remove test harness files (test-flow-meter.html, test-audio-visualizer.html)
 - Convert mic visualizer from full-width horizontal panel to compact 18×60 vertical meter inside Live Feed margin
