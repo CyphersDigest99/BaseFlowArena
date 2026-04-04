@@ -1579,13 +1579,19 @@ input[type="range"] {
         padding: 10px; 
     }
     
-    .game-header { 
-        flex-direction: column; 
-        gap: 10px; 
-        text-align: center; 
+    .game-header {
+        flex-direction: column;
+        gap: 10px;
+        text-align: center;
         padding: 10px;
     }
-    
+
+    .filler-ticker {
+        flex: none;
+        width: 100%;
+        margin: 0;
+    }
+
     .theme-controls {
         flex-wrap: wrap;
         justify-content: center;
@@ -4091,6 +4097,7 @@ body.screen-shaking {
     padding: 6px 10px;
     font-family: var(--font-main);
     font-size: 0.95em;
+    border-radius: 4px;
 }
 
 /* Entry list */
@@ -4113,14 +4120,14 @@ body.screen-shaking {
     border-bottom: none;
 }
 
-.filler-ticker-entry span {
+.filler-ticker-entry > span {
     flex: 1;
     font-family: var(--font-main);
     font-size: 0.95em;
     color: var(--text-color);
 }
 
-.filler-ticker-entry button {
+.filler-ticker-entry > button {
     background: none;
     border: none;
     cursor: pointer;
@@ -4131,12 +4138,12 @@ body.screen-shaking {
     transition: color 0.15s, opacity 0.15s;
 }
 
-.filler-ticker-entry button:hover {
+.filler-ticker-entry > button:hover {
     color: var(--primary-accent);
     opacity: 1;
 }
 
-.filler-ticker-entry button.eye-off {
+.filler-ticker-entry > button.eye-off {
     opacity: 0.3;
 }
 
