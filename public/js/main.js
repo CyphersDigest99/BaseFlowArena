@@ -41,6 +41,7 @@ import { getPlaylist, initializeBeatPlayer } from './beatManager.js';
 import * as wordSearch from './wordSearch.js'; // Import the word search module
 import * as reverseSearch from './reverseSearch.js'; // Import the reverse search module
 import * as phonetics from './phonetics.js';
+import * as keyFinder from './keyFinder.js';
 
 // Cached word data for tooltip display and performance optimization
 let lastWordData = { synonyms: '', definition: '', word: '' };
@@ -105,6 +106,8 @@ async function initializeApp() {
 
     // 3. Setup Features
     speech.setupSpeechRecognition();
+    // Key Finder
+    keyFinder.init();
     // beatManager.initializeBeatPlayer(); // Initialize beat player - Moved to DOMContentLoaded
 
     // 4. Display Initial Word & Sync Final UI
