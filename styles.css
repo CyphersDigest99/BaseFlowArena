@@ -3126,16 +3126,29 @@ body.screen-shaking {
 
 .mic-search-stack {
     position: relative;
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     line-height: 1;
+    overflow: visible;
+}
+
+.mic-search-glass {
+    width: 1em;
+    height: 1em;
+    display: block;
+}
+
+.word-action-icon.mic-search-icon {
+    overflow: visible;
 }
 
 .mic-search-sub {
     position: absolute;
-    font-size: 0.9em;
-    top: 20%;
-    left: -40%;
-    color: var(--bg-color);
+    font-size: 0.48em;
+    top: 37.5%;
+    left: 37.5%;
+    transform: translate(-50%, -50%);
 }
 
 /* Search mode styles */

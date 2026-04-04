@@ -160,6 +160,22 @@ export async function loadWords() {
     }
 }
 
+// Load the default word list into state.rhymeVocabulary as a Set.
+// Always loads word-list.txt regardless of which list is active for navigation.
+export async function loadRhymeVocabulary() {
+    try {
+        const response = await fetch('public/word-list.txt');
+        if (!response.ok) throw new Error(`Failed to fetch word-list.txt: ${response.status}`);
+        const text = await response.text();
+        const words = text.split('\n').map(w => w.trim().toLowerCase()).filter(w => w.length > 1);
+        state.rhymeVocabulary = new Set(words);
+        console.log(`Rhyme vocabulary loaded: ${state.rhymeVocabulary.size} words`);
+    } catch (err) {
+        console.warn('Could not load rhyme vocabulary, rhyme filtering disabled:', err);
+        state.rhymeVocabulary = null;
+    }
+}
+
 // Switch to a different word list file
 export async function switchWordList(filename) {
     console.log(`Switching word list to: ${filename}`);

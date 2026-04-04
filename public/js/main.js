@@ -97,7 +97,7 @@ async function initializeApp() {
 
     // 2. Load Settings, Rhyme Data, CMU Lookup, CMU Phonemes, Word List
     storage.loadSettings(); // Loads ALL settings, applies defaults, updates relevant UI
-    await Promise.all([rhyme.loadRhymeData(), phonetics.loadCmuLookup(), phonetics.loadCmuPhonemes()]);
+    await Promise.all([rhyme.loadRhymeData(), phonetics.loadCmuLookup(), phonetics.loadCmuPhonemes(), wordManager.loadRhymeVocabulary()]);
     await wordManager.loadWords(); // Applies filters based on loaded blacklist
 
     // Retroactively enrich existing rejections with phonetic context (one-time migration)

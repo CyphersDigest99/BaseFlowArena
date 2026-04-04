@@ -39,6 +39,7 @@ export const state = {
     rejectedRhymes: {}, // { baseWord: Set('rejected1', 'rejected2'), ... }
     manualRhymes: {},   // { baseWord: Set('manual1', 'manual2'), ... }
     rhymeAliases: {},   // { baseWord: Set('alias1', 'alias2'), ... } — "sounds like" pointers
+    rhymeVocabulary: null,      // Set of words from default word-list.txt — used to filter rhyme candidates
     cmuLookup: null,          // Compact CMU dictionary data (loaded from cmu_lookup.json)
     cmuInvertedIndex: null,   // Map of patternString -> [word1, word2, ...] for O(1) candidate lookup
     cmuPhonemes: null,        // Full phoneme strings for all CMU words (loaded from cmu_phonemes.json)

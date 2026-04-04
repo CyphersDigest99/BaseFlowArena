@@ -30,6 +30,7 @@ let rhymeScoreCache = new Map();
 
 // --- Tier thresholds (from spec) ---
 const SCORE_THRESHOLD = 0.45;
+const MAX_RHYME_RESULTS = 200;
 const TIER_PERFECT = 0.85;
 const TIER_STRONG = 0.65;
 const TIER_STANDARD = 0.50;
@@ -92,10 +93,13 @@ function extractRhymingPart(phonemes) {
 
 // --- Create Modal Header HTML ---
 // Creates the appropriate header HTML based on sort mode
-function createModalHeaderHTML(baseWord, rhymeSortMode) {
+function createModalHeaderHTML(baseWord, rhymeSortMode, rhymeList) {
     const baseWordLower = baseWord.toLowerCase();
-    const rhymeMatches = getValidRhymesForWord(baseWord);
+    const rhymeMatches = rhymeList || getValidRhymesForWord(baseWord);
     const matchCount = rhymeMatches.length;
+    const totalBeforeCap = rhymeMatches._totalBeforeCap || matchCount;
+    const wasCapped = totalBeforeCap > matchCount;
+    const countLabel = wasCapped ? `${matchCount} of ${totalBeforeCap}` : `${matchCount}`;
     const wordText = matchCount === 1 ? 'word' : 'words';
     
     let patternDisplay = '';
@@ -143,7 +147,7 @@ function createModalHeaderHTML(baseWord, rhymeSortMode) {
     const isBlacklisted = state.blacklist.has(baseWord.toUpperCase());
     return `
         <button id="rhyme-header-blacklist" class="word-action-icon blacklist-icon${isBlacklisted ? ' active' : ''}" title="Blacklist Word"><i class="fas fa-ban"></i></button>
-        <div>${matchCount} ${wordText}</div>
+        <div>${countLabel} ${wordText}</div>
         <div>sound like the</div>
         <div style="margin: 8px 0;">${patternDisplay}</div>
         <div>in</div>
@@ -181,6 +185,7 @@ export function getValidRhymesForWord(baseWord) {
             const wordLower = word.toLowerCase();
             if (wordLower === baseWordLower) continue;
             if (rejectedSet.has(wordLower)) continue;
+            if (state.rhymeVocabulary && !state.rhymeVocabulary.has(wordLower)) continue;
 
             const score = phonetics.rhymeScore(baseWordLower, wordLower);
             if (score >= SCORE_THRESHOLD) {
@@ -204,6 +209,7 @@ export function getValidRhymesForWord(baseWord) {
                 const wordLower = word.toLowerCase();
                 if (wordLower === baseWordLower) continue;
                 if (rejectedSet.has(wordLower)) continue;
+                if (state.rhymeVocabulary && !state.rhymeVocabulary.has(wordLower)) continue;
 
                 const score = phonetics.rhymeScore(aliasWord, wordLower);
                 if (score >= SCORE_THRESHOLD) {
@@ -232,7 +238,11 @@ export function getValidRhymesForWord(baseWord) {
     const scoredMatches = Array.from(seen.values());
     scoredMatches.sort((a, b) => b.score - a.score);
 
-    return scoredMatches.map(m => m.word);
+    const totalCount = scoredMatches.length;
+    const capped = scoredMatches.slice(0, MAX_RHYME_RESULTS);
+    const result = capped.map(m => m.word);
+    result._totalBeforeCap = totalCount;
+    return result;
 }
 
 // --- Rhyme Finder Sorting State ---
@@ -829,7 +839,8 @@ function setupRhymeTooltipDelegation(listEl) {
 function displayRhymeList(baseWordLower) {
     if (!ui.elements.rhymeResultsList || !baseWordLower) return;
     let rhymesToDisplay = getValidRhymesForWord(state.currentWord);
-    
+    const totalBeforeCap = rhymesToDisplay._totalBeforeCap || rhymesToDisplay.length;
+
     // Apply sorting
     if (rhymeSortMode === 'alpha') {
         rhymesToDisplay = [...rhymesToDisplay].sort((a, b) => a.localeCompare(b));
@@ -837,6 +848,13 @@ function displayRhymeList(baseWordLower) {
         rhymesToDisplay = sortByPhoneticEnding(rhymesToDisplay, baseWordLower);
     } else if (rhymeSortMode === 'similarity') {
         rhymesToDisplay = sortByRhymeSimilarity(rhymesToDisplay, state.currentWord);
+    }
+    rhymesToDisplay._totalBeforeCap = totalBeforeCap;
+
+    // Update header with accurate count
+    if (ui.elements.rhymeModalDynamicHeading) {
+        ui.elements.rhymeModalDynamicHeading.innerHTML = createModalHeaderHTML(state.currentWord, rhymeSortMode, rhymesToDisplay);
+        attachHeaderNavHandlers();
     }
     
     // Move tempRejected words to end

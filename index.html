@@ -135,6 +135,7 @@
                 <label for="word-list-select"><i class="fas fa-book"></i> Source:</label>
                 <select id="word-list-select">
                     <option value="word-list.txt">Default (19K)</option>
+                    <option value="curated-words.txt">Curated (705)</option>
                     <option value="scrabble-nwl2023.txt">Scrabble NWL2023 (196K)</option>
                 </select>
             </div>
@@ -304,8 +305,11 @@
                             </button>
                             <button id="mic-search-word" class="word-action-icon mic-search-icon" title="Mic Search (Ctrl+Click)">
                                 <span class="mic-search-stack">
-                                    <i class="fas fa-microphone"></i>
-                                    <i class="fas fa-search mic-search-sub"></i>
+                                    <svg class="mic-search-glass" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <circle cx="7.5" cy="7.5" r="6" stroke="currentColor" stroke-width="1.4"/>
+                                        <line x1="12.2" y1="12.2" x2="18.5" y2="18.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                                    </svg>
+                                    <i class="fas fa-microphone mic-search-sub"></i>
                                 </span>
                             </button>
                         </div>
