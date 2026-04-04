@@ -85,28 +85,59 @@ export function autoCorrelate(buf, sampleRate) {
   return sampleRate / T0;
 }
 
+const SCALE_MIN_MIDI = 48; // C3
+const SCALE_MAX_MIDI = 72; // C5
+const SCALE_ROW_HEIGHT = 12; // 25 rows × 12px = 300px
+
 /**
- * Updates piano key highlight classes based on the detected root note.
+ * Moves the pitch needle to the given MIDI note position, or hides it on null.
+ */
+function updateNeedle(midi) {
+  const needle = document.getElementById('kf-scale-needle');
+  if (!needle) return;
+  if (midi === null) {
+    needle.style.opacity = '0';
+    return;
+  }
+  const clamped = Math.max(SCALE_MIN_MIDI, Math.min(SCALE_MAX_MIDI, midi));
+  needle.style.top = ((SCALE_MAX_MIDI - clamped) * SCALE_ROW_HEIGHT + SCALE_ROW_HEIGHT / 2 - 1) + 'px';
+  needle.style.opacity = '1';
+}
+
+/**
+ * Highlights piano key elements based on the detected root note.
  * @param {string|null} rootName - Note name e.g. 'A', or null to clear all highlights.
  */
 function updatePiano(rootName) {
   const keys = document.querySelectorAll('.kf-key');
   const scaleNotes = rootName ? getMinorScale(rootName) : [];
-
   keys.forEach(key => {
     const note = key.dataset.note;
     key.classList.remove('kf-key--root', 'kf-key--scale');
     if (!rootName) return;
-    if (note === rootName) {
-      key.classList.add('kf-key--root');
-    } else if (scaleNotes.includes(note)) {
-      key.classList.add('kf-key--scale');
-    }
+    if (note === rootName) key.classList.add('kf-key--root');
+    else if (scaleNotes.includes(note)) key.classList.add('kf-key--scale');
   });
 }
 
 /**
- * Updates the note label, scale name, and piano highlights.
+ * Highlights pitch scale rows based on the detected root note.
+ * @param {string|null} rootName - Note name e.g. 'A', or null to clear all highlights.
+ */
+function updateScale(rootName) {
+  const scaleNotes = rootName ? getMinorScale(rootName) : [];
+  document.querySelectorAll('.kf-scale-row').forEach(row => {
+    const rowMidi = parseInt(row.dataset.midi);
+    const rowNote = CHROMATIC[((rowMidi % 12) + 12) % 12];
+    row.classList.remove('kf-scale-row--root', 'kf-scale-row--scale');
+    if (!rootName) return;
+    if (rowNote === rootName) row.classList.add('kf-scale-row--root');
+    else if (scaleNotes.includes(rowNote)) row.classList.add('kf-scale-row--scale');
+  });
+}
+
+/**
+ * Updates the note label, scale name, piano keys, and pitch scale rows.
  * @param {string|null} noteName - e.g. 'A', or null to show idle state.
  */
 function updateDisplay(noteName) {
@@ -118,12 +149,14 @@ function updateDisplay(noteName) {
     noteEl.textContent = '—';
     scaleEl.textContent = '—';
     updatePiano(null);
+    updateScale(null);
     return;
   }
 
   noteEl.textContent = noteName;
   scaleEl.textContent = `${noteName} Natural Minor`;
   updatePiano(noteName);
+  updateScale(noteName);
 }
 
 // Module-level state — shared between open/close/loop
@@ -148,6 +181,7 @@ function startPitchLoop() {
     if (freq > 0) {
       const midi = freqToMidi(freq);
       if (midi !== null) {
+        updateNeedle(midi); // smooth real-time needle movement
         const name = midiToName(midi);
         if (name === _lastNote) {
           _noteCount++;
@@ -157,6 +191,8 @@ function startPitchLoop() {
           _noteCount = 1; // count this frame as the first observation
         }
       }
+    } else {
+      updateNeedle(null); // silence — hide needle
     }
 
     _rafId = requestAnimationFrame(tick);
