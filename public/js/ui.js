@@ -26,6 +26,15 @@
 
 import { state } from './state.js';
 
+const TRAY_STOPWORDS = new Set([
+    'a','an','the','i','me','my','you','your','we','our','it','its',
+    'is','are','was','were','be','been','being','have','has','had',
+    'do','does','did','will','would','could','should','may','might',
+    'can','to','of','in','on','at','by','for','up','out','so',
+    'and','but','or','not','no','if','as','with','from','that',
+    'this','than','then','when','who','what','how','all','just','like'
+]);
+
 // Callback for when displayed word changes (for tooltip updates)
 let onDisplayedWordChangeCallback = null;
 
@@ -543,6 +552,7 @@ export function clearTranscriptSelection() {
     const selected = elements.transcriptContainer?.querySelector('.transcript-word.selected');
     if (selected) selected.classList.remove('selected');
     state.transcriptSelectedWord = null;
+    updateRecentWordsTray();
 }
 
 // Updates transcript display with interim or final speech recognition results
@@ -581,6 +591,17 @@ export function updateTranscript(lineText, isFinal) {
              elements.transcriptContainer.removeChild(elements.transcriptContainer.lastChild);
          }
 
+         // Update recent words tray
+         lineText.split(/\s+/).forEach(rawWord => {
+             const w = rawWord.replace(/[^a-zA-Z'-]/g, '').toLowerCase();
+             if (w.length <= 2 || TRAY_STOPWORDS.has(w)) return;
+             if (!state.recentWords.includes(w)) {
+                 state.recentWords.unshift(w);
+                 if (state.recentWords.length > 20) state.recentWords.pop();
+             }
+         });
+         updateRecentWordsTray();
+
      }
      elements.transcriptContainer.scrollTop = 0;
 }
@@ -588,6 +609,27 @@ export function updateTranscript(lineText, isFinal) {
 // Clears all transcript content
 export function clearTranscript() {
     if (elements.transcriptContainer) elements.transcriptContainer.innerHTML = '';
+}
+
+// Renders the recent-words pill tray from state.recentWords
+export function updateRecentWordsTray() {
+    const tray = document.getElementById('recent-words-tray');
+    if (!tray) return;
+    if (!state.recentWords.length) {
+        tray.style.display = 'none';
+        return;
+    }
+    tray.style.display = 'flex';
+    tray.innerHTML = '';
+    state.recentWords.forEach(word => {
+        const pill = document.createElement('span');
+        pill.className = 'recent-word-pill';
+        pill.textContent = word;
+        if (word === state.transcriptSelectedWord) {
+            pill.classList.add('selected');
+        }
+        tray.appendChild(pill);
+    });
 }
 
 
