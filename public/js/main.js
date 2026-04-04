@@ -125,6 +125,7 @@ async function initializeApp() {
     // 8. Initialize word search functionality
     console.log('Initializing word search...');
     wordSearch.initSearch();
+    wordSearch.initMicSearch();
     
     // 9. Initialize reverse search functionality
     console.log('Initializing reverse search...');

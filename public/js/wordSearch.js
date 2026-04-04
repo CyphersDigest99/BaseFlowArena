@@ -860,3 +860,98 @@ export function forceExitSearch() {
         exitSearchMode();
     }
 }
+
+// --- Mic Search ---
+
+let micSearchRecognition = null;
+let micSearchBtn = null;
+
+/**
+ * Initialize mic search button and Ctrl-key visibility tracking
+ */
+export function initMicSearch() {
+    micSearchBtn = document.getElementById('mic-search-word');
+    if (!micSearchBtn) return;
+
+    micSearchBtn.addEventListener('click', startMicSearch);
+
+    document.addEventListener('keydown', (e) => {
+        if (e.ctrlKey && e.key === 's') {
+            e.preventDefault();
+            startMicSearch();
+        }
+    });
+}
+
+function startMicSearch() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+        ui.showFeedback('Speech recognition not supported', true, 2000);
+        return;
+    }
+
+    // Toggle off if already listening
+    if (micSearchRecognition) {
+        micSearchRecognition.abort();
+        micSearchRecognition = null;
+        micSearchBtn.classList.remove('listening');
+        return;
+    }
+
+    micSearchRecognition = new SpeechRecognition();
+    micSearchRecognition.continuous = false;
+    micSearchRecognition.interimResults = false;
+    micSearchRecognition.lang = 'en-US';
+    micSearchRecognition.maxAlternatives = 1;
+
+    micSearchBtn.classList.add('listening');
+    ui.showFeedback('Say a word...', false, 3000);
+
+    micSearchRecognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript.trim().toLowerCase();
+        const firstWord = transcript.split(/\s+/)[0];
+        micSearchBtn.classList.remove('listening');
+        micSearchRecognition = null;
+        if (firstWord && firstWord.length >= 2) {
+            promoteMicSearchWord(firstWord);
+        }
+    };
+
+    micSearchRecognition.onerror = (event) => {
+        micSearchBtn.classList.remove('listening');
+        micSearchRecognition = null;
+        if (event.error !== 'no-speech') {
+            ui.showFeedback('Mic search failed', true, 2000);
+        }
+    };
+
+    micSearchRecognition.onend = () => {
+        micSearchBtn.classList.remove('listening');
+        micSearchRecognition = null;
+    };
+
+    micSearchRecognition.start();
+}
+
+function promoteMicSearchWord(word) {
+    if (searchState.isActive) exitSearchMode();
+
+    if (state.wordList.includes(word)) {
+        const wordIndex = state.wordList.indexOf(word);
+        state.currentWord = word;
+        state.currentWordIndex = wordIndex;
+        state.currentRhymeList = [];
+        state.currentRhymeIndex = -1;
+        ui.displayWord(word);
+        state.currentRhymeList = rhyme.getValidRhymesForWord(word);
+        state.currentRhymeIndex = -1;
+        ui.updateRhymeNavButtons();
+        ui.showFeedback(`"${word}"`, false, 1500);
+    } else {
+        startSearch();
+        setTimeout(() => {
+            searchElements.searchInput.value = word;
+            searchElements.searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+        }, 150);
+    }
+}
