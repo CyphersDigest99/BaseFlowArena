@@ -4052,3 +4052,124 @@ body.screen-shaking {
     letter-spacing: 1px;
     font-family: 'Courier New', monospace;
 }
+
+/* ===== FILLER TICKER ===== */
+
+/* Header ticker strip */
+.filler-ticker {
+    flex: 1;
+    overflow: hidden;
+    height: 2em;
+    display: flex;
+    align-items: center;
+    margin: 0 20px;
+    position: relative;
+}
+
+.filler-ticker-text {
+    white-space: nowrap;
+    font-family: var(--font-display);
+    font-size: 1.1em;
+    color: var(--primary-accent);
+    text-shadow: 0 0 6px var(--primary-accent);
+    position: absolute;
+    will-change: transform;
+}
+
+/* Modal add row */
+.filler-ticker-add-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+}
+
+.filler-ticker-add-row input[type="text"] {
+    flex: 1;
+    background: var(--panel-bg);
+    border: 1px solid var(--border-color);
+    color: var(--text-color);
+    padding: 6px 10px;
+    font-family: var(--font-main);
+    font-size: 0.95em;
+}
+
+/* Entry list */
+.filler-ticker-list {
+    max-height: 200px;
+    overflow-y: auto;
+    margin-bottom: 14px;
+    border: 1px solid var(--border-color);
+}
+
+.filler-ticker-entry {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.filler-ticker-entry:last-child {
+    border-bottom: none;
+}
+
+.filler-ticker-entry span {
+    flex: 1;
+    font-family: var(--font-main);
+    font-size: 0.95em;
+    color: var(--text-color);
+}
+
+.filler-ticker-entry button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-color);
+    padding: 2px 6px;
+    margin-top: 0;
+    opacity: 0.8;
+    transition: color 0.15s, opacity 0.15s;
+}
+
+.filler-ticker-entry button:hover {
+    color: var(--primary-accent);
+    opacity: 1;
+}
+
+.filler-ticker-entry button.eye-off {
+    opacity: 0.3;
+}
+
+/* Sliders */
+.filler-ticker-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.filler-ticker-controls label {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-family: var(--font-main);
+    font-size: 0.9em;
+    color: var(--text-color);
+}
+
+.filler-ticker-slider-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.filler-ticker-slider-row input[type="range"] {
+    flex: 1;
+    accent-color: var(--primary-accent);
+}
+
+.filler-ticker-slider-row span {
+    min-width: 30px;
+    font-size: 0.85em;
+    color: var(--primary-accent);
+    text-align: right;
+}
