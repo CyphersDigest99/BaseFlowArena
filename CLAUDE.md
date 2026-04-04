@@ -11,10 +11,11 @@ BaseFlowArena is a web-based freestyle rap training application with intelligent
 ## Project Structure
 ```
 BaseFlowArena/
-├── index.html              # Main entry point (loads from public/)
+├── index.html              # Main HTML entry point (canonical, served by server)
+├── styles.css              # Main stylesheet (canonical, CRT themes)
+├── server.py               # Development server (python3 server.py)
 ├── word-list.txt           # Default word database (19,115 words)
 ├── scrabble-nwl2023.txt    # Scrabble NWL2023 dictionary (196,601 words)
-├── server.py               # Development server (python3 server.py)
 ├── public/
 │   ├── js/                 # All JavaScript modules
 │   │   ├── main.js         # App orchestrator
@@ -24,18 +25,21 @@ BaseFlowArena/
 │   │   ├── speech.js       # Voice recognition
 │   │   ├── autoBPM.js      # BPM detection
 │   │   ├── beatManager.js  # Audio playback
-│   │   ├── rhyme.js        # Rhyme finding
+│   │   ├── rhyme.js        # Rhyme finding + feedback card
+│   │   ├── phonetics.js    # Phonetic scoring engine
 │   │   ├── ui.js           # UI updates + split-flap animations
 │   │   ├── modal.js        # Modal dialogs
 │   │   ├── state.js        # App state
 │   │   └── storage.js      # LocalStorage persistence
-│   ├── styles.css          # Main stylesheet (CRT themes)
 │   ├── beats/              # Audio files
-│   ├── word-list.txt       # Default word list
-│   └── scrabble-nwl2023.txt # Scrabble dictionary
-├── docs/                   # Feature documentation
+│   ├── cmu_lookup.json     # Compact CMU dictionary (vowel patterns)
+│   ├── cmu_phonemes.json   # Full CMU phoneme data (117k entries)
+│   └── rhyme_data.json     # Pre-baked rhyme data for word list
+├── docs/                   # Feature specs and plans
 └── beats/                  # Beat audio files
 ```
+
+**IMPORTANT: No HTML or CSS in `public/`.** `index.html` and `styles.css` live at root only. Do NOT create `public/index.html` or `public/styles.css` — they were deleted to end duplication drift.
 
 ## Development Commands
 ```bash
@@ -48,7 +52,7 @@ python3 server.py
 ```
 
 ## Key Conventions
-- **All web app code** lives in `/public/` folder
+- **HTML/CSS at root**, JS in `public/js/`, data files in `public/`
 - **File naming**: BPM must be ALL CAPS (autoBPM.js, not autobpm.js)
 - **Module imports**: Use relative paths (e.g., `./autoBPM.js`)
 - **Word lists**: Selectable via dropdown (Default 19K or Scrabble 196K)
@@ -61,8 +65,8 @@ python3 server.py
 - **Add new words**: Edit `word-list.txt` or use in-app editor (small lists only)
 - **Add word list**: Drop `.txt` file in root + public, add option to dropdown in index.html
 - **Modify search behavior**: `public/js/wordSearch.js` or `public/js/reverseSearch.js`
-- **Change styling/themes**: `public/styles.css`
-- **Update UI elements**: `public/js/ui.js` and `index.html`
+- **Change styling/themes**: `styles.css` (root)
+- **Update UI elements**: `public/js/ui.js` and `index.html` (root)
 - **Word transitions**: Split-flap animation in `ui.js` displayWord function
 
 ## Testing Notes

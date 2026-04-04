@@ -285,7 +285,9 @@ let pendingFeedback = new Map();   // rejectedWord -> { reasons: [], remark: '' 
 let lastCardDismissTime = 0;
 let lastCardHadFeedback = false;
 let skipCounter = 0;
-const RAPID_FIRE_MS = 2000;
+let consecutiveEmptyDismissals = 0;
+let feedbackHidden = false;
+const RAPID_FIRE_MS = 5000;
 
 // --- Enhanced Modal Open with Sorting ---
 export function openRhymeFinderModalWithSort() {
@@ -294,6 +296,8 @@ export function openRhymeFinderModalWithSort() {
     lastCardDismissTime = 0;
     lastCardHadFeedback = false;
     skipCounter = 0;
+    consecutiveEmptyDismissals = 0;
+    feedbackHidden = false;
     rhymeSortMode = 'similarity';
     updateRhymeSortButtonState();
     attachRhymeSortListeners();
@@ -553,7 +557,13 @@ function closeFeedbackCard(saveFeedback) {
 
         if (!hadFeedback) {
             skipCounter++;
+            consecutiveEmptyDismissals++;
             updateSkipBadge();
+            if (consecutiveEmptyDismissals >= 2) {
+                showHideFeedbackButton();
+            }
+        } else {
+            consecutiveEmptyDismissals = 0;
         }
 
         showRejectionToast();
@@ -597,6 +607,20 @@ function updateSkipBadge() {
     } else if (badge) {
         badge.remove();
     }
+}
+
+function showHideFeedbackButton() {
+    const modalContent = ui.elements.rhymeFinderModal?.querySelector('.modal-content');
+    if (!modalContent || modalContent.querySelector('.feedback-hide-btn')) return;
+
+    const btn = document.createElement('button');
+    btn.className = 'feedback-hide-btn';
+    btn.textContent = 'Hide feedback';
+    btn.onclick = () => {
+        feedbackHidden = true;
+        btn.remove();
+    };
+    modalContent.appendChild(btn);
 }
 
 // Update createRhymeListItem for temp rejection/undo and slant tagging
@@ -699,11 +723,11 @@ function createRhymeListItem(rhymeWord, baseWordLower, tierInfo = null) {
             e.stopPropagation();
             tempRejected.add(wordLower);
 
-            // Rapid-fire bypass: if last card was dismissed empty within 2s, skip card
+            // Skip card if hidden, rapid-fire, or within cooldown
             const now = Date.now();
             const rapidFire = !lastCardHadFeedback && (now - lastCardDismissTime) < RAPID_FIRE_MS && lastCardDismissTime > 0;
 
-            if (rapidFire) {
+            if (feedbackHidden || rapidFire) {
                 skipCounter++;
                 updateSkipBadge();
             } else {
