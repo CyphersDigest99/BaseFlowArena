@@ -140,6 +140,7 @@ function startPitchLoop() {
   if (!_analyser || !_audioCtx) return;
 
   function tick() {
+    if (!_analyser) return;
     _analyser.getFloatTimeDomainData(_buf);
     const freq = autoCorrelate(_buf, _audioCtx.sampleRate);
 
