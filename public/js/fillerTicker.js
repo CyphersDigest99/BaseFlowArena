@@ -66,18 +66,17 @@ function loadNextEntry() {
 }
 
 function tick() {
-    if (isPausing) {
-        rafId = requestAnimationFrame(tick);
-        return;
-    }
     xPos -= data.speed;
     elements.fillerTickerText.style.transform = `translateX(${xPos}px)`;
     if (xPos < -getTextWidth()) {
         isPausing = true;
+        rafId = null;
         pauseTimer = setTimeout(() => {
             isPausing = false;
             loadNextEntry();
+            rafId = requestAnimationFrame(tick);
         }, data.gap * 1000);
+        return;
     }
     rafId = requestAnimationFrame(tick);
 }
@@ -105,8 +104,8 @@ function restartAnimation() {
     stopAnimation();
     const enabled = getEnabledEntries();
     if (enabled.length === 0) return;
-    currentEntryIndex = 0;
-    elements.fillerTickerText.textContent = enabled[0].text;
+    currentEntryIndex = Math.min(currentEntryIndex, enabled.length - 1);
+    elements.fillerTickerText.textContent = enabled[currentEntryIndex].text;
     xPos = getTickerWidth();
     elements.fillerTickerText.style.transform = `translateX(${xPos}px)`;
     elements.fillerTickerText.style.willChange = 'transform';
