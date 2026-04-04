@@ -57,6 +57,7 @@ export const state = {
     timedInterval: null, // Interval for timed word cycling
     voiceRhymeMode: false, // Controls whether voice matches should navigate rhymes
     transcriptSelectedWord: null, // Currently selected word from transcript (string or null)
+    recentWords: [],              // Recently spoken unique content words, newest first, max 20, session-only
 
     // BPM / Rhythm - Beat detection and timing
     bpm: 0, // Current detected beats per minute
