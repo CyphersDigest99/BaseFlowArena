@@ -503,10 +503,16 @@
             <!-- List of rhyming words -->
             <ul id="rhyme-results-list"></ul>
             <p id="rhyme-no-results" style="display: none;">No other words found with this pattern (or they were rejected).</p>
-            <!-- Manual rhyme addition section -->
+            <!-- Manual rhyme addition / alias section -->
             <div class="add-rhyme-section">
-                <input type="text" id="manual-rhyme-input" placeholder="Add your own rhyme...">
-                <button id="add-manual-rhyme-button" class="icon-button tiny-button"><i class="fas fa-plus"></i> Add</button>
+                <div class="add-rhyme-row">
+                    <input type="text" id="manual-rhyme-input" placeholder="Add your own rhyme...">
+                    <button id="add-manual-rhyme-button" class="icon-button tiny-button"><i class="fas fa-plus"></i> Add</button>
+                </div>
+                <label class="sounds-like-toggle">
+                    <input type="checkbox" id="sounds-like-checkbox">
+                    <span>Sounds like</span>
+                </label>
             </div>
         </div>
     </div>
