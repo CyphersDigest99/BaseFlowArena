@@ -24,6 +24,7 @@ import * as ui from './ui.js';
 import * as wordManager from './wordManager.js';
 import * as utils from './utils.js';
 import * as wordApi from './wordApi.js';
+import { initAudioVisualizer, stopAudioVisualizer } from './audioVisualizer.js';
 
 // --- Setup Speech Recognition ---
 // Initializes the Speech Recognition API and configures event handlers
@@ -64,6 +65,42 @@ function onRecognitionStart() {
     }
 }
 
+// Force-promote interim text to final on a recurring interval.
+// The speech API accumulates text in a single growing result during continuous speech.
+// We track how many characters we've already promoted and only push the new portion.
+let _interimPromoteInterval = null;
+let _promotedCharCount = 0; // How many chars of the current interim we already promoted
+const INTERIM_PROMOTE_MS = 2000;
+
+function startInterimPromotion() {
+    if (_interimPromoteInterval) return;
+    _interimPromoteInterval = setInterval(() => {
+        const interimEl = document.getElementById('new-transcript')?.querySelector('.interim');
+        if (!interimEl) return;
+        const fullText = interimEl.textContent.trim();
+        if (!fullText || fullText.length <= _promotedCharCount) return;
+
+        // Extract only the new portion we haven't promoted yet
+        const newText = fullText.substring(_promotedCharCount).trim();
+        if (!newText) return;
+
+        _promotedCharCount = fullText.length;
+
+        // Push the new portion as a final clickable line (don't remove interim —
+        // the API will keep updating it with more text)
+        ui.updateTranscript(newText, true);
+        wordManager.updateFrequencies(newText);
+    }, INTERIM_PROMOTE_MS);
+}
+
+function stopInterimPromotion() {
+    if (_interimPromoteInterval) {
+        clearInterval(_interimPromoteInterval);
+        _interimPromoteInterval = null;
+    }
+    _promotedCharCount = 0;
+}
+
 // Handles speech recognition results (final and interim)
 function onRecognitionResult(event) {
     let currentInterim = '';
@@ -81,21 +118,37 @@ function onRecognitionResult(event) {
     currentInterim = currentInterim.trim();
 
     // --- Update Transcript Display ---
-    state.finalTranscript = currentFinal; // Store final part
-    state.interimTranscript = currentInterim; // Store interim part
-    ui.updateTranscript(currentFinal, true); // Display final
-    ui.updateTranscript(currentInterim, false); // Display interim
+    state.finalTranscript = currentFinal;
+    state.interimTranscript = currentInterim;
 
-    // --- Process Final Transcript for Frequencies ---
     if (currentFinal) {
-        wordManager.updateFrequencies(currentFinal);
+        // API finalized naturally. Only display the portion we haven't already promoted.
+        if (_promotedCharCount > 0) {
+            const newPortion = currentFinal.substring(_promotedCharCount).trim();
+            if (newPortion) {
+                ui.updateTranscript(newPortion, true);
+                wordManager.updateFrequencies(newPortion);
+            }
+            // Remove the interim element since the API is done with this result
+            const interimEl = document.getElementById('new-transcript')?.querySelector('.interim');
+            if (interimEl) interimEl.remove();
+        } else {
+            ui.updateTranscript(currentFinal, true);
+            wordManager.updateFrequencies(currentFinal);
+        }
+        // Reset for next result
+        _promotedCharCount = 0;
+    }
+    if (currentInterim) {
+        ui.updateTranscript(currentInterim, false);
+        startInterimPromotion();
     }
 
     // --- Check for Voice Commands First ---
     if (currentFinal && state.activationMode === 'voice') {
         const commandProcessed = processVoiceCommands(currentFinal);
         if (commandProcessed) {
-            return; // Skip word matching if command was processed
+            return;
         }
     }
 
@@ -172,7 +225,10 @@ export function startRecognition() {
         ui.clearTranscript(); // Clear display
         console.log("Requesting speech recognition hardware start...");
         state.recognition.start();
-        // state.isMicActive = true; // Set by onstart event
+        // Start mic visualizer
+        navigator.mediaDevices.getUserMedia({ audio: true })
+            .then(stream => { state._micStream = stream; initAudioVisualizer(stream); })
+            .catch(err => console.warn('Mic visualizer unavailable:', err));
     } catch (error) {
         console.error("Error starting speech recognition hardware:", error);
         state.isMicActive = false; // Ensure state is false
@@ -184,6 +240,12 @@ export function startRecognition() {
 
 // Stops speech recognition hardware
 export function stopRecognition(isModeChange = false) { // `isModeChange` suppresses feedback msg
+    stopInterimPromotion(); // Clean up the promotion interval
+    stopAudioVisualizer();
+    if (state._micStream) {
+        state._micStream.getTracks().forEach(t => t.stop());
+        state._micStream = null;
+    }
     if (!state.recognition || !state.isMicActive) {
         return; // Only stop if initialized and active
     }

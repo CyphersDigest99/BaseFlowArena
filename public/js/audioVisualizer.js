@@ -205,45 +205,35 @@ function draw() {
 }
 
 /**
- * Draw the volume bar on the canvas
+ * Draw a vertical volume bar on the canvas (fills bottom-to-top)
  * @param {number} volume - Normalized volume (0-1)
  */
 function drawVolumeBar(volume) {
     if (!ctx || !canvas) return;
 
-    // Remove horizontal padding for full-width bar
-    const barHeight = canvas.height - 10; // Keep vertical padding if you like
-    const barWidth = canvas.width;        // Full width
-    const x = 0;                          // Start at left edge
-    const y = 5;                          // Keep vertical padding
+    const w = canvas.width;
+    const h = canvas.height;
+    const barHeight = h * volume;
 
-    // Calculate the width of the bar based on volume
-    const currentWidth = barWidth * volume;
+    // Gradient from bottom (cyan) to top (gold)
+    const gradient = ctx.createLinearGradient(0, h, 0, h - barHeight);
+    gradient.addColorStop(0, '#00ffff');
+    gradient.addColorStop(0.5, '#ff00ff');
+    gradient.addColorStop(1, '#f9a826');
 
-    // Create gradient for the bar
-    const gradient = ctx.createLinearGradient(x, y, x + currentWidth, y);
-    gradient.addColorStop(0, '#00ffff'); // Cyan
-    gradient.addColorStop(0.5, '#ff00ff'); // Magenta
-    gradient.addColorStop(1, '#f9a826'); // Gold
-
-    // Draw the background bar (dimmed)
+    // Background
     ctx.fillStyle = 'rgba(0, 255, 255, 0.1)';
-    ctx.fillRect(x, y, barWidth, barHeight);
+    ctx.fillRect(0, 0, w, h);
 
-    // Draw the volume bar
+    // Volume bar (fills from bottom)
     ctx.fillStyle = gradient;
-    ctx.fillRect(x, y, currentWidth, barHeight);
+    ctx.fillRect(0, h - barHeight, w, barHeight);
 
-    // Add a subtle glow effect
+    // Glow
     ctx.shadowColor = '#00ffff';
-    ctx.shadowBlur = 10;
-    ctx.fillRect(x, y, currentWidth, barHeight);
+    ctx.shadowBlur = 6;
+    ctx.fillRect(0, h - barHeight, w, barHeight);
     ctx.shadowBlur = 0;
-
-    // Draw border
-    ctx.strokeStyle = '#00ffff';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(x, y, barWidth, barHeight);
 }
 
 /**

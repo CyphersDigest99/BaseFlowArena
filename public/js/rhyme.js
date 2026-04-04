@@ -475,21 +475,22 @@ function showFeedbackCard(baseWord, rejectedWord) {
     remark.placeholder = 'Quick note (optional)...';
     card.appendChild(remark);
 
-    // Escape key handler
-    const escHandler = (e) => {
+    // Keyboard handler: Escape to dismiss, Enter to submit
+    const keyHandler = (e) => {
         if (e.key === 'Escape') {
             closeFeedbackCard(true);
-            document.removeEventListener('keydown', escHandler);
+        } else if (e.key === 'Enter') {
+            closeFeedbackCard(true);
         }
     };
-    document.addEventListener('keydown', escHandler);
+    document.addEventListener('keydown', keyHandler);
 
     // Store references for closeFeedbackCard
     backdrop._feedbackState = {
         rejectedWordLower,
         selectedReasons,
         remarkInput: remark,
-        escHandler,
+        keyHandler,
     };
 
     backdrop.appendChild(card);
@@ -501,8 +502,8 @@ function closeFeedbackCard(saveFeedback) {
     if (!backdrop) return;
 
     // Always clean up escape handler
-    if (backdrop._feedbackState?.escHandler) {
-        document.removeEventListener('keydown', backdrop._feedbackState.escHandler);
+    if (backdrop._feedbackState?.keyHandler) {
+        document.removeEventListener('keydown', backdrop._feedbackState.keyHandler);
     }
 
     if (saveFeedback && backdrop._feedbackState) {
@@ -524,9 +525,30 @@ function closeFeedbackCard(saveFeedback) {
             skipCounter++;
             updateSkipBadge();
         }
+
+        showRejectionToast();
     }
 
     backdrop.remove();
+}
+
+function showRejectionToast() {
+    // Remove any existing toast
+    const old = document.querySelector('.rejection-toast');
+    if (old) old.remove();
+
+    const totalRejections = state.rejectionLog.length + tempRejected.size;
+
+    const toast = document.createElement('div');
+    toast.className = 'rejection-toast';
+    toast.innerHTML = `Rejection feedback received <span class="rejection-toast-count">#${totalRejections}</span>`;
+    document.body.appendChild(toast);
+
+    // Auto-remove after 3s — slide up and out
+    setTimeout(() => {
+        toast.classList.add('rejection-toast-exit');
+        setTimeout(() => toast.remove(), 400);
+    }, 1500);
 }
 
 function updateSkipBadge() {
@@ -758,7 +780,7 @@ function displayRhymeList(baseWordLower) {
     if (rhymeSortMode === 'alpha') {
         rhymesToDisplay = [...rhymesToDisplay].sort((a, b) => a.localeCompare(b));
     } else if (rhymeSortMode === 'phonetic') {
-        rhymesToDisplay = sortByPhoneticEnding(rhymesToDisplay);
+        rhymesToDisplay = sortByPhoneticEnding(rhymesToDisplay, baseWordLower);
     } else if (rhymeSortMode === 'similarity') {
         rhymesToDisplay = sortByRhymeSimilarity(rhymesToDisplay, state.currentWord);
     }
@@ -893,23 +915,35 @@ function getTierLabel(tier) {
 }
 
 // --- Phonetic Ending Sort ---
-function sortByPhoneticEnding(words) {
-    // Group by last 1-2 phonemes
-    const groups = {};
+function sortByPhoneticEnding(words, baseWord) {
+    // Get the base word's rhyming part (from last stressed vowel onwards)
+    const basePhonemes = getPhonemes(baseWord);
+    const baseEnding = basePhonemes ? extractRhymingPart(basePhonemes) : null;
+    const baseEndingKey = baseEnding ? baseEnding.map(p => p.replace(/[012]$/, '')).join('-') : null;
+
+    function getEndingKey(word) {
+        const phonemes = getPhonemes(word.toLowerCase());
+        if (!phonemes) return null;
+        const ending = extractRhymingPart(phonemes);
+        return ending ? ending.map(p => p.replace(/[012]$/, '')).join('-') : null;
+    }
+
+    // Partition: exact ending match vs others
+    const exact = [];
+    const others = [];
     for (const word of words) {
-        const pattern = getRhymePattern(word);
-        let ending = pattern ? pattern.slice(-2).join('-') : 'unknown';
-        if (!groups[ending]) groups[ending] = [];
-        groups[ending].push(word);
+        if (baseEndingKey && getEndingKey(word) === baseEndingKey) {
+            exact.push(word);
+        } else {
+            others.push(word);
+        }
     }
-    // Sort groups by size descending, then alphabetize within
-    const sortedGroups = Object.entries(groups)
-        .sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0]));
-    let result = [];
-    for (const [, group] of sortedGroups) {
-        result = result.concat(group.sort((a, b) => a.localeCompare(b)));
-    }
-    return result;
+
+    // Sort each group alphabetically
+    exact.sort((a, b) => a.localeCompare(b));
+    others.sort((a, b) => a.localeCompare(b));
+
+    return [...exact, ...others];
 }
 
 // --- Slant Rhymes State ---
@@ -1119,6 +1153,8 @@ export function addManualRhyme() {
     if (state.manualRhymes[baseWordLower].has(suggestedWord)) { return; }
     state.manualRhymes[baseWordLower].add(suggestedWord);
     storage.saveSettings();
+    // Update rhyme list so selectRhymeWordFromModal can find the new word
+    state.currentRhymeList = getValidRhymesForWord(baseWord);
     // Refresh the displayed list
     displayRhymeList(baseWordLower); // Re-render list
     ui.showFeedback(`"${suggestedWord}" added to manual rhymes for "${baseWord}".`);

@@ -3667,6 +3667,11 @@ body.screen-shaking {
 .feedback-phoneme-section {
     margin-bottom: 12px;
     overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.feedback-phoneme-section::-webkit-scrollbar {
+    display: none;
 }
 
 .feedback-phoneme-row {
@@ -3807,4 +3812,40 @@ body.screen-shaking {
     color: var(--text-color);
     opacity: 0.6;
     font-family: var(--font-main);
+}
+
+/* Rejection confirmation toast */
+.rejection-toast {
+    position: fixed;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--panel-bg-opaque);
+    border: 1px solid var(--primary-accent);
+    border-radius: 6px;
+    padding: 8px 16px;
+    color: var(--text-color);
+    font-family: var(--font-main);
+    font-size: 0.95em;
+    z-index: 1200;
+    box-shadow: 0 0 12px rgba(0, 0, 0, 0.5), var(--phosphor-glow);
+    animation: feedback-fade-in 0.15s ease-out;
+    pointer-events: none;
+}
+
+.rejection-toast-exit {
+    animation: rejection-slide-out 0.4s ease-in forwards;
+}
+
+@keyframes rejection-slide-out {
+    to {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-50px);
+    }
+}
+
+.rejection-toast-count {
+    margin-left: 8px;
+    opacity: 0.5;
+    font-size: 0.85em;
 }

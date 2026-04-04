@@ -1,6 +1,21 @@
 # Changelog
 
 ## 2026-04-03
+- Remove Flow Meter panel from layout (HTML, CSS, JS) — feature was unused
+- Remove test harness files (test-flow-meter.html, test-audio-visualizer.html)
+- Convert mic visualizer from full-width horizontal panel to compact 18×60 vertical meter inside Live Feed margin
+- Wire audio visualizer to voice match mode via getUserMedia — mic meter now reacts to sound
+- Rewrite audio visualizer draw loop to fill bottom-to-top for vertical orientation
+- Expand Live Feed height to 350px, remove max-width cap, word display to 400px tall
+- Fix layout: reduce body/header padding, increase arena max-width to 1800px, narrow side panels to 240px
+- Add blacklist button to rhyme modal header (upper-left of vowel sounds box)
+- Make base word uppercase in rhyme modal header
+- Rewrite phonetic sort: exact ending matches (same rhyming phonemes as base word) float to top, rest alphabetical
+- Fix sticky "Match: %" tooltips in rhyme modal — switch to mouseover/mouseout delegation with eager cleanup
+- Replace × text character with fa-times icon across all modal close buttons
+- Remove High/Medium/Low/Not Used frequency legend from rhyme modal
+- Fix focus outline (white border stuck on buttons after click) with :focus:not(:focus-visible) global rule
+
 - Replace binary rhyme matching with continuous 0.0-1.0 phoneme similarity scorer
 - Add 15x15 vowel similarity matrix based on IPA articulatory distance
 - Add consonant similarity scoring with manner, place, and voicing heuristics

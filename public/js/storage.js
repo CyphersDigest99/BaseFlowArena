@@ -21,6 +21,7 @@
 import { state } from './state.js';
 import * as ui from './ui.js';
 import { updateGrid } from './bpm.js'; // For updating grid visuals after load/reset
+import * as phonetics from './phonetics.js';
 
 const STORAGE_KEY = 'freestyleArenaSettings_v6'; // Increment version for word list persistence
 
@@ -85,6 +86,8 @@ export function saveSettings() {
             slantRhymes: serializeNestedSets(state.slantRhymes),
             wordList: state.wordList, // NEW: Save the word list
             wordListFile: state.wordListFile, // Selected word list file
+            runtimePatterns: state.runtimePatterns,
+            rejectionLog: state.rejectionLog,
         };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(settingsToSave));
         // console.log('Settings saved.');
@@ -144,6 +147,9 @@ export function loadSettings() {
 
              // Load selected word list file
              state.wordListFile = parsedData.wordListFile || 'word-list.txt';
+             // Load runtime patterns cache and rejection log
+             state.runtimePatterns = parsedData.runtimePatterns || {};
+             state.rejectionLog = Array.isArray(parsedData.rejectionLog) ? parsedData.rejectionLog : [];
 
              console.log('Settings loaded successfully.');
              applyLoadedSettingsToUI();
@@ -178,6 +184,37 @@ function applyLoadedSettingsToUI() {
     });
 }
 
+// --- Retroactive Enrichment ---
+// On first load after the consonant-context update, enrich existing rejections
+// with phonetic context data and populate the rejection log.
+export function enrichExistingRejections() {
+    if (!state.rhymeData && !state.cmuLookup) return;
+    // Skip if already enriched (rejectionLog has entries)
+    if (state.rejectionLog.length > 0) return;
+
+    const log = [];
+    for (const [baseWord, rejectedSet] of Object.entries(state.rejectedRhymes)) {
+        if (!(rejectedSet instanceof Set) || rejectedSet.size === 0) continue;
+        const baseContext = phonetics.getVowelContext(baseWord);
+        for (const rejected of rejectedSet) {
+            const rejectedContext = phonetics.getVowelContext(rejected);
+            log.push({
+                base: baseWord,
+                rejected: rejected,
+                base_context: baseContext,
+                rejected_context: rejectedContext,
+                timestamp: new Date().toISOString().split('T')[0],
+                retroactive: true
+            });
+        }
+    }
+    if (log.length > 0) {
+        state.rejectionLog = log;
+        saveSettings();
+        console.log(`Retroactively enriched ${log.length} rejection entries with phonetic context.`);
+    }
+}
+
 // --- Reset Function ---
 /**
  * Resets all settings and state to defaults. Optionally saves after reset.
@@ -201,6 +238,8 @@ export function resetToDefaults(saveAfterReset = true) {
     state.rejectedRhymes = {};
     state.manualRhymes = {};
     state.slantRhymes = {};
+    state.runtimePatterns = {};
+    state.rejectionLog = [];
     // Note: Don't reset wordList here - let wordManager handle that
 
     applyLoadedSettingsToUI();
@@ -244,6 +283,8 @@ export function exportSettings() {
                 manualRhymes: serializeNestedSets(state.manualRhymes),
                 slantRhymes: serializeNestedSets(state.slantRhymes),
                 wordList: state.wordList,
+                runtimePatterns: state.runtimePatterns,
+                rejectionLog: state.rejectionLog,
             }
         };
         
@@ -295,7 +336,9 @@ export function importSettings(jsonData) {
         state.rejectedRhymes = settings.rejectedRhymes ? deserializeNestedSets(settings.rejectedRhymes) : {};
         state.manualRhymes = settings.manualRhymes ? deserializeNestedSets(settings.manualRhymes) : {};
         state.slantRhymes = settings.slantRhymes ? deserializeNestedSets(settings.slantRhymes) : {};
-        
+        state.runtimePatterns = settings.runtimePatterns || {};
+        state.rejectionLog = Array.isArray(settings.rejectionLog) ? settings.rejectionLog : [];
+
         if (Array.isArray(settings.wordList) && settings.wordList.length > 0) {
             state.wordList = settings.wordList;
         }
