@@ -22,6 +22,7 @@ let isPausing = false;
 let pauseTimer = null;
 let isModalOpen = false;
 let isActiveMode = false;
+let pauseGeneration = 0;
 
 // --- Data Management ---
 function loadData() {
@@ -71,7 +72,9 @@ function tick() {
     if (xPos < -getTextWidth()) {
         isPausing = true;
         rafId = null;
+        const gen = pauseGeneration;
         pauseTimer = setTimeout(() => {
+            if (pauseGeneration !== gen) return;
             isPausing = false;
             loadNextEntry();
             rafId = requestAnimationFrame(tick);
@@ -94,6 +97,7 @@ function startAnimation() {
 }
 
 function stopAnimation() {
+    pauseGeneration++;
     if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
     if (pauseTimer) { clearTimeout(pauseTimer); pauseTimer = null; }
     isPausing = false;
@@ -195,8 +199,8 @@ function openModal() {
         elements.fillerTickerGap.value = data.gap;
         if (elements.fillerTickerGapValue) elements.fillerTickerGapValue.textContent = `${data.gap}s`;
     }
-    renderList();
     if (elements.fillerTickerModal) elements.fillerTickerModal.style.display = 'block';
+    renderList();
 }
 
 function closeModal() {

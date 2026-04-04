@@ -4189,7 +4189,6 @@ body.screen-shaking {
     color: var(--primary-accent);
     text-shadow: 0 0 6px var(--primary-accent);
     position: absolute;
-    will-change: transform;
 }
 
 /* Modal add row */
