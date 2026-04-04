@@ -1,3 +1,5 @@
 google-credentials.json
 # Ignore backup directories
 BaseFlowArena-1/
+# Git worktrees
+.worktrees/
