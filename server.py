@@ -69,7 +69,8 @@ ADDRESS = "localhost"  # Default: localhost only (secure)
 # ADDRESS = "0.0.0.0"  # Uncomment to allow network access (less secure)
 
 # --- SERVER INITIALIZATION ---
-# Create the TCP server with our custom handler
+# allow_reuse_address prevents "port already in use" after a crash/restart
+socketserver.TCPServer.allow_reuse_address = True
 httpd = socketserver.TCPServer((ADDRESS, PORT), Handler)
 
 # --- SERVER STARTUP ---

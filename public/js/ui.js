@@ -873,8 +873,8 @@ export function updateTooltipView(synonyms = null, definition = null) {
 export function initializeThemeSystem() {
     // Load saved theme preference or set default
     const savedTheme = localStorage.getItem('preferred-theme');
-    const defaultTheme = savedTheme || 'classic';
-    document.body.setAttribute('data-theme', defaultTheme);
+    const defaultTheme = savedTheme || 'dark';
+    document.documentElement.setAttribute('data-theme', defaultTheme);
     
     // Add event listeners for theme buttons
     if (elements.themeDarkButton) {
@@ -914,7 +914,7 @@ export function initializeThemeSystem() {
 
 // Switch between themes
 export function switchTheme(theme) {
-    document.body.setAttribute('data-theme', theme);
+    document.documentElement.setAttribute('data-theme', theme);
     updateThemeButtonStates();
     
     // Update color previews in randomize dropdown
@@ -928,7 +928,7 @@ export function switchTheme(theme) {
 
 // Update theme button active states
 function updateThemeButtonStates() {
-    const currentTheme = document.body.getAttribute('data-theme') || 'classic';
+    const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
     
     if (elements.themeDarkButton) {
         elements.themeDarkButton.classList.toggle('active', currentTheme === 'dark');
