@@ -180,8 +180,6 @@ function onRecognitionError(event) {
 function onRecognitionEnd() {
     const wasMicActive = state.isMicActive; // Capture state before update
     state.isMicActive = false;
-    state.recentWords = [];
-    ui.updateRecentWordsTray();
     console.log('Speech recognition hardware ended.');
     ui.updateActivationUI(); // Update button visual state immediately
 
@@ -206,6 +204,9 @@ function onRecognitionEnd() {
         }, 500); // Delay before restart attempt
     } else {
          console.log('Mic ended intentionally or mode changed.');
+         // Only clear tray when truly stopping (not during auto-restart)
+         state.recentWords = [];
+         ui.updateRecentWordsTray();
     }
 }
 

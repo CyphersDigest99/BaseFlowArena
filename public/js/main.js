@@ -265,7 +265,7 @@ function attachEventListeners() {
         const word = pill.textContent.trim();
         if (!word) return;
         ui.clearTranscriptSelection();       // clears feed selection + resets state.transcriptSelectedWord
-        state.transcriptSelectedWord = word;
+        state.transcriptSelectedWord = word.toLowerCase();
         ui.updateRecentWordsTray();          // re-render tray with new pill highlighted
         wordManager.setActiveWord(word);
     });
