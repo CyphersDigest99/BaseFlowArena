@@ -257,6 +257,19 @@ function attachEventListeners() {
         // Set as active word (also handles turning off timed mode if active)
         wordManager.setActiveWord(word);
     });
+
+    // Recent words tray click handler
+    document.getElementById('recent-words-tray')?.addEventListener('click', (e) => {
+        const pill = e.target.closest('.recent-word-pill');
+        if (!pill) return;
+        const word = pill.textContent.trim();
+        if (!word) return;
+        ui.clearTranscriptSelection();       // clears feed selection + resets state.transcriptSelectedWord
+        state.transcriptSelectedWord = word;
+        ui.updateRecentWordsTray();          // re-render tray with new pill highlighted
+        wordManager.setActiveWord(word);
+    });
+
     ui.elements.favoriteButton?.addEventListener('click', wordManager.toggleFavorite);
     ui.elements.findRhymesButton?.addEventListener('click', openRhymeFinderModalWithSort);
 

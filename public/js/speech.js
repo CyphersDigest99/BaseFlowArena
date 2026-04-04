@@ -180,6 +180,8 @@ function onRecognitionError(event) {
 function onRecognitionEnd() {
     const wasMicActive = state.isMicActive; // Capture state before update
     state.isMicActive = false;
+    state.recentWords = [];
+    ui.updateRecentWordsTray();
     console.log('Speech recognition hardware ended.');
     ui.updateActivationUI(); // Update button visual state immediately
 
