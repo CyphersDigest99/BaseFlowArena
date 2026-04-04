@@ -3970,6 +3970,26 @@ body.screen-shaking {
     flex-shrink: 0;
 }
 
+/* Octave start key — subtle top accent line */
+.kf-octave-start {
+    border-top: 2px solid color-mix(in srgb, var(--primary-accent) 35%, transparent);
+}
+
+/* Octave number badge in top-left of C key */
+.kf-key {
+    position: relative;
+}
+
+.kf-oct-num {
+    position: absolute;
+    top: 5px;
+    left: 4px;
+    font-size: 8px;
+    color: color-mix(in srgb, var(--primary-accent) 50%, transparent);
+    line-height: 1;
+    pointer-events: none;
+}
+
 /* Hint */
 .kf-hint {
     font-size: 11px;
