@@ -969,7 +969,7 @@ input[type="range"] {
     font-family: var(--font-display);
     font-size: 5em; /* Base font size - will be dynamically adjusted by JavaScript */
     font-weight: bold;
-    color: var(--text-bright);
+    color: rgb(234, 197, 118);
     text-shadow: var(--phosphor-glow);
     text-transform: uppercase;
     letter-spacing: 0.05em;
@@ -1990,11 +1990,14 @@ input[type="range"] {
 }
 
 /* Ticker inline in Live Feed h2 */
-.transcript-area .led-ticker-canvas {
+.transcript-area .led-ticker-wrap {
     flex: 1;
     height: 24px;
     margin-bottom: 0;
     border-radius: 3px;
+}
+.transcript-area .led-ticker-wrap .ticker-belt {
+    font-size: 10px;
 }
 
 #new-transcript {
@@ -2531,8 +2534,13 @@ label.checkbox-label {
     justify-content: center;
 }
 
-.close-button:hover, .close-button:focus { 
-    color: var(--primary-accent); 
+.close-button:hover, .close-button:focus {
+    color: var(--primary-accent);
+}
+
+#close-rhyme-modal {
+    font-size: 34px;
+    font-family: Arial, sans-serif;
 }
 
 #favorites-list { 
@@ -2631,6 +2639,15 @@ label.checkbox-label {
     opacity: 1;
 }
 
+#rhyme-header-prev {
+    font-size: 8px;
+}
+
+#rhyme-header-word {
+    font-size: 41px;
+    font-family: Arial, sans-serif;
+}
+
 .vowel-pattern-block {
     display: inline-block;
     background-color: rgba(0, 0, 0, 0.3);
@@ -2693,6 +2710,21 @@ label.checkbox-label {
 .rhyme-legend .rhyme-freq-med { color: var(--highlight-color); background-color: rgba(249, 168, 38, 0.2);}
 .rhyme-legend .rhyme-freq-low { color: var(--green-color); background-color: rgba(0, 255, 0, 0.15);}
 .rhyme-legend .rhyme-freq-none { color: var(--text-color); opacity: 0.8; background-color: rgba(128,128,128, 0.1);}
+
+#rhyme-results-list::-webkit-scrollbar {
+    width: 6px;
+}
+#rhyme-results-list::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.3);
+}
+#rhyme-results-list::-webkit-scrollbar-thumb {
+    background: var(--primary-accent);
+    opacity: 0.5;
+    border-radius: 3px;
+}
+#rhyme-results-list::-webkit-scrollbar-thumb:hover {
+    opacity: 1;
+}
 
 #rhyme-results-list {
     position: relative;
@@ -3553,6 +3585,69 @@ body.screen-shaking {
     text-shadow: 0 0 6px var(--highlight-color);
 }
 
+/* --- Rhyme Rating Selector --- */
+.rhyme-rating-selector {
+    display: none;
+    position: absolute;
+    left: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    flex-direction: row;
+    gap: 2px;
+    z-index: 2;
+}
+
+#rhyme-results-list li:hover:not(.rejected) .rhyme-rating-selector {
+    display: flex;
+}
+
+.rhyme-rating-btn {
+    font-size: 0.58em;
+    padding: 1px 4px;
+    border-radius: 2px;
+    cursor: pointer;
+    opacity: 0.45;
+    border: 1px solid currentColor;
+    user-select: none;
+    line-height: 1.5;
+    font-family: monospace;
+    letter-spacing: 0;
+    transition: opacity 0.1s;
+}
+
+.rhyme-rating-btn:hover { opacity: 1; }
+
+.rhyme-rating-btn[data-rating="stretch"] { color: #888; }
+.rhyme-rating-btn[data-rating="slant"]   { color: var(--secondary-accent); }
+.rhyme-rating-btn[data-rating="rhyme"]   { color: var(--primary-accent); }
+.rhyme-rating-btn[data-rating="dope"]    { color: #ffb000; }
+.rhyme-rating-btn[data-rating="perfect"] { color: #FFD700; }
+
+.rhyme-rating-btn.active {
+    opacity: 1;
+    background: rgba(255, 255, 255, 0.12);
+}
+
+/* Per-tier li border indicator */
+#rhyme-results-list li.user-rating-stretch { border-left: 3px solid #666; }
+#rhyme-results-list li.user-rating-slant   { border-left: 3px solid var(--secondary-accent); font-style: italic; }
+#rhyme-results-list li.user-rating-rhyme   { border-left: 3px solid var(--primary-accent); }
+#rhyme-results-list li.user-rating-dope    { border-left: 3px solid #ffb000; }
+#rhyme-results-list li.user-rating-perfect { border-left: 3px solid #FFD700; }
+
+/* Edit input in filler ticker list */
+.filler-ticker-edit-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--primary-accent);
+    color: var(--text-bright);
+    font-size: inherit;
+    font-family: inherit;
+    outline: none;
+    min-width: 0;
+}
+
 /* Shimmer Animations for Rhyme Tiers */
 @keyframes shimmer-gold {
     0% { left: -100%; }
@@ -4254,9 +4349,14 @@ body.screen-shaking {
 
 /* ===== FILLER TICKER ===== */
 
-/* LED Ticker Canvas — installed-panel look */
-.led-ticker-canvas {
+/* LED Ticker — compositor-thread CSS animation for stutter-free scrolling */
+@keyframes led-ticker-scroll {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-50%); }
+}
+.led-ticker-wrap {
     display: block;
+    overflow: hidden;
     width: 100%;
     height: 40px;
     background: #050506;
@@ -4264,6 +4364,26 @@ body.screen-shaking {
     border-radius: 4px;
     box-shadow: inset 0 0 12px rgba(0,0,0,0.95), 0 0 6px rgba(0,0,0,0.5);
     margin-bottom: 10px;
+}
+.ticker-inner {
+    display: flex;
+    align-items: center;
+    height: 100%;
+    width: max-content;
+    will-change: transform;
+    animation: led-ticker-scroll linear infinite;
+    animation-duration: 10s; /* overridden by JS */
+}
+.ticker-belt {
+    display: inline-block;
+    white-space: pre;
+    color: var(--primary-accent);
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 12px;
+    font-weight: bold;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    text-shadow: none;
 }
 
 .led-ticker-preview {
