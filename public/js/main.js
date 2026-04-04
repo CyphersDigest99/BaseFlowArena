@@ -608,6 +608,14 @@ function attachEventListeners() {
     ui.elements.clearWordFrequenciesButton?.addEventListener('click', modal.clearWordFrequencies);
     ui.elements.resetAllSettingsButton?.addEventListener('click', modal.resetAllSettings);
 
+    // Rejection Log
+    document.getElementById('view-rejection-log-button')?.addEventListener('click', modal.showRejectionLogModal);
+    document.getElementById('export-rejection-log-button')?.addEventListener('click', modal.exportRejectionLog);
+    document.getElementById('clear-rejection-log-button')?.addEventListener('click', modal.clearRejectionLog);
+    document.getElementById('close-rejection-log-modal')?.addEventListener('click', () => {
+        document.getElementById('rejection-log-modal').style.display = 'none';
+    });
+
     // Save BPM button - Allows saving detected BPM to current beat track
     const saveBpmBtn = document.getElementById('save-bpm-button');
     const bpmDisplay = document.getElementById('bpm-display');

@@ -34,6 +34,7 @@ export const state = {
     // Lists & Data - User preferences and word relationships
     blacklist: new Set(), // Words user has chosen to exclude
     favorites: new Set(), // Words user has marked as favorites
+    ignoredFeedWords: new Set(), // Words banned from the recent-words tray
     wordFrequencies: {}, // Tracks how often each word has been used
     rhymeData: null, // Loaded rhyme dictionary data
     rejectedRhymes: {}, // { baseWord: Set('rejected1', 'rejected2'), ... }
@@ -58,6 +59,7 @@ export const state = {
     voiceRhymeMode: false, // Controls whether voice matches should navigate rhymes
     transcriptSelectedWord: null, // Currently selected word from transcript (string or null)
     recentWords: [],              // Recently spoken unique content words, newest first, max 20, session-only
+    ignoredFeedWords: new Set(), // Words marked "ignore in feed" by the user via filler ticker
 
     // BPM / Rhythm - Beat detection and timing
     bpm: 0, // Current detected beats per minute

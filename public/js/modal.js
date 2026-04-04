@@ -24,6 +24,7 @@ import * as ui from './ui.js';
 import * as wordManager from './wordManager.js'; // Needed for word list editor save/state
 import * as storage from './storage.js'; // Needed for saving favorites changes
 import { persistTempRejections } from './rhyme.js'; // Needed for persisting temp rejections
+import * as phonetics from './phonetics.js'; // Needed for rejection log score recomputation
 
 // --- Generic Modal Controls ---
 /**
@@ -692,4 +693,169 @@ export function importAllSettings() {
         reader.readAsText(file);
     };
     input.click();
+}
+
+// --- Rejection Log ---
+
+const REASON_LABELS = {
+    stressed_vowel:    'Stressed sounds don\'t match',
+    ending_different:  'Endings sound different',
+    syllable_mismatch: 'Syllable count off',
+    beginning_different: 'Beginnings sound different',
+    not_a_word:        'Not a real word',
+    sounds_wrong:      'Just sounds wrong',
+};
+
+const TIER_PERFECT  = 0.85;
+const TIER_STRONG   = 0.65;
+const TIER_STANDARD = 0.50;
+
+function scoreTier(score) {
+    if (score >= TIER_PERFECT)  return 'Perfect';
+    if (score >= TIER_STRONG)   return 'Strong';
+    if (score >= TIER_STANDARD) return 'Standard';
+    return 'Slant';
+}
+
+export function showRejectionLogModal() {
+    const modal = document.getElementById('rejection-log-modal');
+    if (!modal) return;
+
+    const content = document.getElementById('rejection-log-content');
+    content.innerHTML = buildRejectionLogHTML();
+
+    // Wire export button inside modal
+    document.getElementById('rejection-log-export-btn')?.addEventListener('click', exportRejectionLog);
+
+    modal.style.display = 'block';
+}
+
+function buildRejectionLogHTML() {
+    const log = state.rejectionLog;
+    if (!log || log.length === 0) {
+        return '<p>No rejections logged yet. Reject some rhymes in the rhyme finder to start collecting data.</p>';
+    }
+
+    // --- Stats ---
+    const total = log.length;
+    const withFeedback = log.filter(e => !e.skipped).length;
+    const skipped = log.filter(e => e.skipped).length;
+
+    // --- Reason counts ---
+    const reasonCounts = {};
+    for (const entry of log) {
+        for (const r of (entry.reasons || [])) {
+            reasonCounts[r] = (reasonCounts[r] || 0) + 1;
+        }
+    }
+    const sortedReasons = Object.entries(reasonCounts).sort((a, b) => b[1] - a[1]);
+
+    // --- Score tier distribution (recompute scores) ---
+    const tierCounts = { Perfect: 0, Strong: 0, Standard: 0, Slant: 0 };
+    const scoredEntries = [];
+    for (const entry of log) {
+        const score = phonetics.rhymeScore(entry.base, entry.rejected);
+        const tier = scoreTier(score);
+        tierCounts[tier]++;
+        scoredEntries.push({ ...entry, score, tier });
+    }
+
+    // --- Top surprises: highest-scored rejections (scorer most confident, user disagreed) ---
+    const topSurprises = [...scoredEntries]
+        .filter(e => !e.skipped)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 10);
+
+    // --- Remarks ---
+    const remarks = log.filter(e => e.remark && e.remark.trim()).slice(-10).reverse();
+
+    // Build HTML
+    let html = `
+    <div class="rl-stats-row">
+        <div class="rl-stat"><span class="rl-num">${total}</span><span class="rl-label">Total</span></div>
+        <div class="rl-stat"><span class="rl-num">${withFeedback}</span><span class="rl-label">With feedback</span></div>
+        <div class="rl-stat"><span class="rl-num">${skipped}</span><span class="rl-label">Skipped</span></div>
+    </div>`;
+
+    // Reason breakdown
+    if (sortedReasons.length > 0) {
+        const maxCount = sortedReasons[0][1];
+        html += `<div class="rl-section"><h3>Rejection reasons</h3>`;
+        for (const [code, count] of sortedReasons) {
+            const label = REASON_LABELS[code] || code;
+            const pct = Math.round((count / withFeedback) * 100);
+            const barWidth = Math.round((count / maxCount) * 100);
+            html += `
+            <div class="rl-reason-row">
+                <span class="rl-reason-label">${label}</span>
+                <div class="rl-bar-wrap"><div class="rl-bar" style="width:${barWidth}%"></div></div>
+                <span class="rl-reason-count">${count} (${pct}%)</span>
+            </div>`;
+        }
+        html += `</div>`;
+    }
+
+    // Tier distribution
+    html += `<div class="rl-section"><h3>Score tiers at rejection</h3>
+    <div class="rl-tier-row">`;
+    for (const [tier, count] of Object.entries(tierCounts)) {
+        const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+        html += `<div class="rl-tier rl-tier-${tier.toLowerCase()}"><span class="rl-num">${count}</span><span class="rl-label">${tier} (${pct}%)</span></div>`;
+    }
+    html += `</div></div>`;
+
+    // Top surprises
+    if (topSurprises.length > 0) {
+        html += `<div class="rl-section"><h3>Top surprises <small>(highest-scored rejections)</small></h3><table class="rl-table">
+        <thead><tr><th>Base</th><th>Rejected</th><th>Score</th><th>Tier</th><th>Reasons</th></tr></thead><tbody>`;
+        for (const e of topSurprises) {
+            const reasons = (e.reasons || []).map(r => REASON_LABELS[r] || r).join(', ') || '—';
+            html += `<tr>
+                <td>${e.base}</td>
+                <td>${e.rejected}</td>
+                <td>${e.score.toFixed(2)}</td>
+                <td class="rl-tier-${e.tier.toLowerCase()}">${e.tier}</td>
+                <td class="rl-reasons-cell">${reasons}</td>
+            </tr>`;
+        }
+        html += `</tbody></table></div>`;
+    }
+
+    // Recent remarks
+    if (remarks.length > 0) {
+        html += `<div class="rl-section"><h3>Recent remarks</h3><ul class="rl-remarks">`;
+        for (const e of remarks) {
+            html += `<li><strong>${e.base} / ${e.rejected}</strong>: ${e.remark}</li>`;
+        }
+        html += `</ul></div>`;
+    }
+
+    return html;
+}
+
+export function exportRejectionLog() {
+    const log = state.rejectionLog;
+    if (!log || log.length === 0) {
+        ui.showFeedback('No rejection data to export.', true, 2000);
+        return;
+    }
+    const blob = new Blob([JSON.stringify(log, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `rejection-log-${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+export function clearRejectionLog() {
+    if (state.rejectionLog.length === 0) {
+        ui.showFeedback('Rejection log is already empty.', true, 2000);
+        return;
+    }
+    if (confirm(`Clear all ${state.rejectionLog.length} rejection log entries? This cannot be undone.`)) {
+        state.rejectionLog = [];
+        storage.saveSettings();
+        ui.showFeedback('Rejection log cleared.', false, 2000);
+    }
 }

@@ -171,7 +171,7 @@ export const elements = {
 
     // Filler Ticker
     fillerTickerEl: document.getElementById('filler-ticker'),
-    fillerTickerText: document.getElementById('filler-ticker-text'),
+    fillerTickerPreview: document.getElementById('filler-ticker-preview'),
     fillerTickerButton: document.getElementById('filler-ticker-button'),
     fillerTickerModal: document.getElementById('filler-ticker-modal'),
     closeFillerTickerModal: document.getElementById('close-filler-ticker-modal'),
@@ -180,8 +180,8 @@ export const elements = {
     fillerTickerList: document.getElementById('filler-ticker-list'),
     fillerTickerSpeed: document.getElementById('filler-ticker-speed'),
     fillerTickerSpeedValue: document.getElementById('filler-ticker-speed-val'),
-    fillerTickerGap: document.getElementById('filler-ticker-gap'),
-    fillerTickerGapValue: document.getElementById('filler-ticker-gap-val'),
+    fillerTickerSpacing: document.getElementById('filler-ticker-spacing'),
+    fillerTickerSpacingValue: document.getElementById('filler-ticker-spacing-val'),
 };
 
 // --- UI Update Functions ---
@@ -594,7 +594,7 @@ export function updateTranscript(lineText, isFinal) {
          // Update recent words tray
          lineText.split(/\s+/).forEach(rawWord => {
              const w = rawWord.replace(/[^a-zA-Z'-]/g, '').toLowerCase();
-             if (w.length <= 2 || TRAY_STOPWORDS.has(w)) return;
+             if (w.length <= 2 || TRAY_STOPWORDS.has(w) || state.ignoredFeedWords.has(w)) return;
              if (!state.recentWords.includes(w)) {
                  state.recentWords.unshift(w);
                  if (state.recentWords.length > 20) state.recentWords.pop();
@@ -624,10 +624,19 @@ export function updateRecentWordsTray() {
     state.recentWords.forEach(word => {
         const pill = document.createElement('span');
         pill.className = 'recent-word-pill';
-        pill.textContent = word;
+        pill.dataset.word = word;
         if (word === state.transcriptSelectedWord) {
             pill.classList.add('selected');
         }
+        const label = document.createElement('span');
+        label.className = 'pill-label';
+        label.textContent = word;
+        const ban = document.createElement('span');
+        ban.className = 'pill-ban';
+        ban.title = 'Ignore in feed';
+        ban.textContent = '×';
+        pill.appendChild(label);
+        pill.appendChild(ban);
         tray.appendChild(pill);
     });
 }
@@ -873,7 +882,7 @@ export function updateTooltipView(synonyms = null, definition = null) {
 export function initializeThemeSystem() {
     // Load saved theme preference or set default
     const savedTheme = localStorage.getItem('preferred-theme');
-    const defaultTheme = savedTheme || 'dark';
+    const defaultTheme = savedTheme || 'classic';
     document.documentElement.setAttribute('data-theme', defaultTheme);
     
     // Add event listeners for theme buttons
@@ -928,7 +937,7 @@ export function switchTheme(theme) {
 
 // Update theme button active states
 function updateThemeButtonStates() {
-    const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+    const currentTheme = document.documentElement.getAttribute('data-theme') || 'classic';
     
     if (elements.themeDarkButton) {
         elements.themeDarkButton.classList.toggle('active', currentTheme === 'dark');

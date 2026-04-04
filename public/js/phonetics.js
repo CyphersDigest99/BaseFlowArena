@@ -401,12 +401,26 @@ export function rhymeScore(word1, word2) {
     return Math.max(0, Math.min(1, score));
 }
 
+// Normalize trailing schwa-like vowels to a canonical form.
+// CMU inconsistently uses IH0, AH0 (and rarely UH0) for the same unstressed
+// schwa sound in suffixes like -ed, -es, -ing, -ness.  Normalizing only the
+// last vowel keeps stressed monosyllabics (bit vs but) safely separate.
+function normalizeTrailingSchwa(patternStr) {
+    const parts = patternStr.split('-');
+    if (parts.length < 2) return patternStr; // monosyllabics: don't touch
+    const last = parts[parts.length - 1];
+    if (last === 'IH' || last === 'UH' || last === 'IX') {
+        parts[parts.length - 1] = 'AH';
+    }
+    return parts.join('-');
+}
+
 // --- Build inverted index: patternString -> [word1, word2, ...] ---
 function buildInvertedIndex() {
     const index = {};
     for (const [word, compactValue] of Object.entries(state.cmuLookup)) {
         const pipeIdx = compactValue.lastIndexOf('|');
-        const patternStr = compactValue.substring(0, pipeIdx);
+        const patternStr = normalizeTrailingSchwa(compactValue.substring(0, pipeIdx));
         if (!index[patternStr]) {
             index[patternStr] = [];
         }
@@ -492,7 +506,7 @@ export function getSyllables(word) {
 // --- Get all CMU words with a matching pattern (O(1) via inverted index) ---
 export function getCandidatesForPattern(patternString) {
     if (!state.cmuInvertedIndex || !patternString) return [];
-    return state.cmuInvertedIndex[patternString] || [];
+    return state.cmuInvertedIndex[normalizeTrailingSchwa(patternString)] || [];
 }
 
 // --- Get vowel+consonant context for a word (used by rejection reporting) ---
