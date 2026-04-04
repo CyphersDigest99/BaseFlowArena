@@ -3930,6 +3930,7 @@ body.screen-shaking {
     overflow-x: auto;
     padding: 4px 0 8px;
     margin-bottom: 12px;
+    position: relative;
 }
 
 .kf-key {
@@ -3976,4 +3977,29 @@ body.screen-shaking {
     text-align: center;
     letter-spacing: 1px;
     font-family: 'Courier New', monospace;
+}
+
+/* Black keys — overlaid absolute within piano */
+.kf-black-key {
+    position: absolute;
+    width: 22px;
+    height: 65px;
+    background: #1e1e1e;
+    border: 1px solid #444;
+    border-radius: 0 0 3px 3px;
+    z-index: 1;
+    top: 0;
+    padding-bottom: 0;
+    font-size: 0;
+}
+
+.kf-black-key.kf-key--root {
+    background: var(--primary-accent);
+    border-color: var(--primary-accent);
+    box-shadow: 0 0 12px var(--primary-accent);
+}
+
+.kf-black-key.kf-key--scale {
+    background: color-mix(in srgb, var(--primary-accent) 40%, #111);
+    border-color: color-mix(in srgb, var(--primary-accent) 60%, #555);
 }
