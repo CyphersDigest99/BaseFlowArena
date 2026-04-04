@@ -84,6 +84,7 @@ export function saveSettings() {
             rejectedRhymes: serializeNestedSets(state.rejectedRhymes),
             manualRhymes: serializeNestedSets(state.manualRhymes),
             slantRhymes: serializeNestedSets(state.slantRhymes),
+            rhymeAliases: serializeNestedSets(state.rhymeAliases),
             wordList: state.wordList, // NEW: Save the word list
             wordListFile: state.wordListFile, // Selected word list file
             runtimePatterns: state.runtimePatterns,
@@ -138,7 +139,8 @@ export function loadSettings() {
              state.rejectedRhymes = parsedData.rejectedRhymes ? deserializeNestedSets(parsedData.rejectedRhymes) : {};
              state.manualRhymes = parsedData.manualRhymes ? deserializeNestedSets(parsedData.manualRhymes) : {};
              state.slantRhymes = parsedData.slantRhymes ? deserializeNestedSets(parsedData.slantRhymes) : {};
-             
+             state.rhymeAliases = parsedData.rhymeAliases ? deserializeNestedSets(parsedData.rhymeAliases) : {};
+
              // NEW: Load the word list if available
              if (Array.isArray(parsedData.wordList) && parsedData.wordList.length > 0) {
                  state.wordList = parsedData.wordList;
@@ -238,6 +240,7 @@ export function resetToDefaults(saveAfterReset = true) {
     state.rejectedRhymes = {};
     state.manualRhymes = {};
     state.slantRhymes = {};
+    state.rhymeAliases = {};
     state.runtimePatterns = {};
     state.rejectionLog = [];
     // Note: Don't reset wordList here - let wordManager handle that
@@ -282,6 +285,7 @@ export function exportSettings() {
                 rejectedRhymes: serializeNestedSets(state.rejectedRhymes),
                 manualRhymes: serializeNestedSets(state.manualRhymes),
                 slantRhymes: serializeNestedSets(state.slantRhymes),
+                rhymeAliases: serializeNestedSets(state.rhymeAliases),
                 wordList: state.wordList,
                 runtimePatterns: state.runtimePatterns,
                 rejectionLog: state.rejectionLog,
@@ -336,6 +340,7 @@ export function importSettings(jsonData) {
         state.rejectedRhymes = settings.rejectedRhymes ? deserializeNestedSets(settings.rejectedRhymes) : {};
         state.manualRhymes = settings.manualRhymes ? deserializeNestedSets(settings.manualRhymes) : {};
         state.slantRhymes = settings.slantRhymes ? deserializeNestedSets(settings.slantRhymes) : {};
+        state.rhymeAliases = settings.rhymeAliases ? deserializeNestedSets(settings.rhymeAliases) : {};
         state.runtimePatterns = settings.runtimePatterns || {};
         state.rejectionLog = Array.isArray(settings.rejectionLog) ? settings.rejectionLog : [];
 
