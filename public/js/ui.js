@@ -167,12 +167,12 @@ export const elements = {
     fillerTickerModal: document.getElementById('filler-ticker-modal'),
     closeFillerTickerModal: document.getElementById('close-filler-ticker-modal'),
     fillerTickerInput: document.getElementById('filler-ticker-input'),
-    fillerTickerAddBtn: document.getElementById('filler-ticker-add-btn'),
+    fillerTickerAddButton: document.getElementById('filler-ticker-add-btn'),
     fillerTickerList: document.getElementById('filler-ticker-list'),
     fillerTickerSpeed: document.getElementById('filler-ticker-speed'),
-    fillerTickerSpeedVal: document.getElementById('filler-ticker-speed-val'),
+    fillerTickerSpeedValue: document.getElementById('filler-ticker-speed-val'),
     fillerTickerGap: document.getElementById('filler-ticker-gap'),
-    fillerTickerGapVal: document.getElementById('filler-ticker-gap-val'),
+    fillerTickerGapValue: document.getElementById('filler-ticker-gap-val'),
 };
 
 // --- UI Update Functions ---
