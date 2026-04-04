@@ -425,6 +425,17 @@
                 </div>
             </div> <!-- End of #bpm-panel -->
 
+            <!-- --- KEY FINDER --- -->
+            <div id="key-finder-panel" class="panel">
+                <h3><i class="fas fa-music"></i> Key Finder</h3>
+                <div class="bpm-main-controls">
+                    <button id="open-key-finder-button" class="icon-button large-button" title="Find the key you're humming">
+                        <i class="fas fa-microphone"></i> FIND KEY
+                    </button>
+                </div>
+            </div>
+            <!-- END: Key Finder -->
+
             <!-- --- BPM MULTIPLIER CONTROLS --- -->
             <div class="bpm-multiplier-controls panel">
                 <h3><i class="fas fa-forward"></i> Multiplier</h3>
@@ -463,6 +474,93 @@
             <!-- List of user's favorited words -->
             <ul id="favorites-list"></ul>
             <button id="clear-favorites-button" class="icon-button red-button"><i class="fas fa-trash"></i> Clear All Favorites</button>
+        </div>
+    </div>
+
+    <!-- Key Finder Modal -->
+    <div id="key-finder-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" id="close-key-finder-modal">×</span>
+            <h2><i class="fas fa-music"></i> Key Finder</h2>
+
+            <div class="kf-header">
+                <div class="kf-mic-dot" id="kf-mic-dot"></div>
+                <span class="kf-listening-label">LISTENING</span>
+            </div>
+
+            <div class="kf-detected-row">
+                <div class="kf-big-note" id="kf-detected-note">—</div>
+                <div class="kf-note-meta">
+                    <div class="kf-scale-label">DETECTED KEY</div>
+                    <div class="kf-scale-name" id="kf-scale-name">—</div>
+                </div>
+            </div>
+
+            <div class="kf-visual-row">
+                <div class="kf-piano" id="kf-piano">
+                    <!-- Octave 3 -->
+                    <div class="kf-key kf-octave-start" data-note="C"><span>C3</span></div>
+                    <div class="kf-key" data-note="D"><span>D</span></div>
+                    <div class="kf-key" data-note="E"><span>E</span></div>
+                    <div class="kf-key" data-note="F"><span>F</span></div>
+                    <div class="kf-key" data-note="G"><span>G</span></div>
+                    <div class="kf-key" data-note="A"><span>A</span></div>
+                    <div class="kf-key" data-note="B"><span>B</span></div>
+                    <div class="kf-octave-gap"></div>
+                    <!-- Octave 4 -->
+                    <div class="kf-key kf-octave-start" data-note="C"><span>C4</span></div>
+                    <div class="kf-key" data-note="D"><span>D</span></div>
+                    <div class="kf-key" data-note="E"><span>E</span></div>
+                    <div class="kf-key" data-note="F"><span>F</span></div>
+                    <div class="kf-key" data-note="G"><span>G</span></div>
+                    <div class="kf-key" data-note="A"><span>A</span></div>
+                    <div class="kf-key" data-note="B"><span>B</span></div>
+                    <!-- Black keys octave 3 -->
+                    <div class="kf-key kf-black-key" data-note="C#" style="left:20.5px"></div>
+                    <div class="kf-key kf-black-key" data-note="D#" style="left:53.5px"></div>
+                    <div class="kf-key kf-black-key" data-note="F#" style="left:119.5px"></div>
+                    <div class="kf-key kf-black-key" data-note="G#" style="left:152.5px"></div>
+                    <div class="kf-key kf-black-key" data-note="A#" style="left:185.5px"></div>
+                    <!-- Black keys octave 4 -->
+                    <div class="kf-key kf-black-key" data-note="C#" style="left:264.5px"></div>
+                    <div class="kf-key kf-black-key" data-note="D#" style="left:297.5px"></div>
+                    <div class="kf-key kf-black-key" data-note="F#" style="left:363.5px"></div>
+                    <div class="kf-key kf-black-key" data-note="G#" style="left:396.5px"></div>
+                    <div class="kf-key kf-black-key" data-note="A#" style="left:429.5px"></div>
+                </div>
+
+                <!-- Vertical pitch meter — needle tracks current pitch, C3–C5 -->
+                <div class="kf-pitch-scale" id="kf-pitch-scale">
+                    <div class="kf-scale-row" data-midi="72"><span class="kf-scale-note-label">C5</span><div class="kf-scale-tick"></div></div>
+                    <div class="kf-scale-row" data-midi="71"><span class="kf-scale-note-label">B4</span><div class="kf-scale-tick"></div></div>
+                    <div class="kf-scale-row" data-midi="70"><span class="kf-scale-note-label">A#4</span><div class="kf-scale-tick"></div></div>
+                    <div class="kf-scale-row" data-midi="69"><span class="kf-scale-note-label">A4</span><div class="kf-scale-tick"></div></div>
+                    <div class="kf-scale-row" data-midi="68"><span class="kf-scale-note-label">G#4</span><div class="kf-scale-tick"></div></div>
+                    <div class="kf-scale-row" data-midi="67"><span class="kf-scale-note-label">G4</span><div class="kf-scale-tick"></div></div>
+                    <div class="kf-scale-row" data-midi="66"><span class="kf-scale-note-label">F#4</span><div class="kf-scale-tick"></div></div>
+                    <div class="kf-scale-row" data-midi="65"><span class="kf-scale-note-label">F4</span><div class="kf-scale-tick"></div></div>
+                    <div class="kf-scale-row" data-midi="64"><span class="kf-scale-note-label">E4</span><div class="kf-scale-tick"></div></div>
+                    <div class="kf-scale-row" data-midi="63"><span class="kf-scale-note-label">D#4</span><div class="kf-scale-tick"></div></div>
+                    <div class="kf-scale-row" data-midi="62"><span class="kf-scale-note-label">D4</span><div class="kf-scale-tick"></div></div>
+                    <div class="kf-scale-row" data-midi="61"><span class="kf-scale-note-label">C#4</span><div class="kf-scale-tick"></div></div>
+                    <div class="kf-scale-row" data-midi="60"><span class="kf-scale-note-label">C4</span><div class="kf-scale-tick"></div></div>
+                    <div class="kf-scale-row" data-midi="59"><span class="kf-scale-note-label">B3</span><div class="kf-scale-tick"></div></div>
+                    <div class="kf-scale-row" data-midi="58"><span class="kf-scale-note-label">A#3</span><div class="kf-scale-tick"></div></div>
+                    <div class="kf-scale-row" data-midi="57"><span class="kf-scale-note-label">A3</span><div class="kf-scale-tick"></div></div>
+                    <div class="kf-scale-row" data-midi="56"><span class="kf-scale-note-label">G#3</span><div class="kf-scale-tick"></div></div>
+                    <div class="kf-scale-row" data-midi="55"><span class="kf-scale-note-label">G3</span><div class="kf-scale-tick"></div></div>
+                    <div class="kf-scale-row" data-midi="54"><span class="kf-scale-note-label">F#3</span><div class="kf-scale-tick"></div></div>
+                    <div class="kf-scale-row" data-midi="53"><span class="kf-scale-note-label">F3</span><div class="kf-scale-tick"></div></div>
+                    <div class="kf-scale-row" data-midi="52"><span class="kf-scale-note-label">E3</span><div class="kf-scale-tick"></div></div>
+                    <div class="kf-scale-row" data-midi="51"><span class="kf-scale-note-label">D#3</span><div class="kf-scale-tick"></div></div>
+                    <div class="kf-scale-row" data-midi="50"><span class="kf-scale-note-label">D3</span><div class="kf-scale-tick"></div></div>
+                    <div class="kf-scale-row" data-midi="49"><span class="kf-scale-note-label">C#3</span><div class="kf-scale-tick"></div></div>
+                    <div class="kf-scale-row" data-midi="48"><span class="kf-scale-note-label">C3</span><div class="kf-scale-tick"></div></div>
+                    <div class="kf-scale-needle" id="kf-scale-needle"></div>
+                </div>
+            </div>
+
+            <p class="kf-hint">Hum into your mic · piano shows safe notes · needle tracks pitch</p>
         </div>
     </div>
 

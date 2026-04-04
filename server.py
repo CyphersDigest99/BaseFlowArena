@@ -35,7 +35,7 @@ import socketserver
 import os
 
 # --- SERVER CONFIGURATION ---
-PORT = 8000  # Standard development port
+PORT = int(os.environ.get('PORT', 8000))  # Standard development port
 DIRECTORY = os.path.dirname(__file__)  # Serve from the script's directory
 
 # --- CUSTOM HTTP REQUEST HANDLER ---

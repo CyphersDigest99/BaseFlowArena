@@ -4004,17 +4004,25 @@ body.screen-shaking {
     font-family: 'Courier New', monospace;
 }
 
+/* Piano + meter side by side */
+.kf-visual-row {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    margin-bottom: 12px;
+}
+
 /* Piano keyboard */
 .kf-piano {
     display: flex;
     gap: 3px;
-    overflow-x: auto;
     padding: 4px 0 8px;
-    margin-bottom: 12px;
+    position: relative;
+    flex-shrink: 0;
 }
 
 .kf-key {
-    width: 36px;
+    width: 30px;
     height: 100px;
     background: #1a1a1a;
     border: 1px solid #333;
@@ -4023,14 +4031,13 @@ body.screen-shaking {
     align-items: flex-end;
     justify-content: center;
     padding-bottom: 6px;
-    font-size: 10px;
+    font-size: 9px;
     font-family: 'Courier New', monospace;
     color: #444;
     flex-shrink: 0;
     transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
-/* Root note — bright accent */
 .kf-key--root {
     background: var(--primary-accent);
     border-color: var(--primary-accent);
@@ -4038,7 +4045,6 @@ body.screen-shaking {
     box-shadow: 0 0 12px var(--primary-accent);
 }
 
-/* Scale notes — dim accent */
 .kf-key--scale {
     background: color-mix(in srgb, var(--primary-accent) 25%, #111);
     border-color: color-mix(in srgb, var(--primary-accent) 40%, #333);
@@ -4048,6 +4054,110 @@ body.screen-shaking {
 .kf-octave-gap {
     width: 10px;
     flex-shrink: 0;
+}
+
+.kf-octave-start {
+    border-top: 2px solid color-mix(in srgb, var(--primary-accent) 35%, transparent);
+}
+
+/* Black keys */
+.kf-black-key {
+    position: absolute;
+    width: 22px;
+    height: 65px;
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid color-mix(in srgb, var(--primary-accent) 12%, #333);
+    border-radius: 0 0 3px 3px;
+    z-index: 1;
+    top: 4px;
+    padding-bottom: 0;
+    font-size: 0;
+    box-shadow: inset 0 0 8px color-mix(in srgb, var(--primary-accent) 8%, transparent);
+    backdrop-filter: blur(1px);
+}
+
+.kf-black-key.kf-key--root {
+    background: var(--primary-accent);
+    border-color: var(--primary-accent);
+    box-shadow: 0 0 12px var(--primary-accent);
+}
+
+.kf-black-key.kf-key--scale {
+    background: color-mix(in srgb, var(--primary-accent) 40%, #111);
+    border-color: color-mix(in srgb, var(--primary-accent) 60%, #555);
+}
+
+/* Vertical pitch meter */
+.kf-pitch-scale {
+    position: relative;
+    width: 90px;
+    flex-shrink: 0;
+    margin-top: 4px;
+}
+
+.kf-scale-row {
+    display: flex;
+    align-items: center;
+    height: 12px;
+}
+
+.kf-scale-note-label {
+    width: 30px;
+    padding-right: 5px;
+    font-family: 'Courier New', monospace;
+    font-size: 9px;
+    text-align: right;
+    color: color-mix(in srgb, var(--primary-accent) 22%, transparent);
+    flex-shrink: 0;
+    transition: color 0.2s ease;
+}
+
+.kf-scale-tick {
+    flex: 1;
+    height: 1px;
+    background: color-mix(in srgb, var(--primary-accent) 12%, transparent);
+    transition: background 0.2s ease;
+}
+
+.kf-scale-row--scale .kf-scale-note-label {
+    color: color-mix(in srgb, var(--primary-accent) 60%, transparent);
+}
+.kf-scale-row--scale .kf-scale-tick {
+    background: color-mix(in srgb, var(--primary-accent) 40%, transparent);
+}
+
+.kf-scale-row--root .kf-scale-note-label {
+    color: var(--primary-accent);
+    font-weight: bold;
+}
+.kf-scale-row--root .kf-scale-tick {
+    background: var(--primary-accent);
+    height: 2px;
+    box-shadow: 0 0 4px var(--primary-accent);
+}
+
+/* Moving needle */
+.kf-scale-needle {
+    position: absolute;
+    left: 35px;
+    right: 0;
+    height: 2px;
+    background: var(--primary-accent);
+    box-shadow: 0 0 8px var(--primary-accent);
+    border-radius: 1px;
+    transition: top 0.08s ease-out, opacity 0.15s ease;
+    pointer-events: none;
+    opacity: 0;
+}
+
+.kf-scale-needle::before {
+    content: '';
+    position: absolute;
+    left: -6px;
+    top: -4px;
+    border-top: 5px solid transparent;
+    border-bottom: 5px solid transparent;
+    border-right: 6px solid var(--primary-accent);
 }
 
 /* Hint */
