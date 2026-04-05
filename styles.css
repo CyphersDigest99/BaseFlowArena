@@ -521,6 +521,7 @@ body::after {
 
 .center-stage {
     flex-grow: 1;
+    min-width: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -3589,33 +3590,45 @@ body.screen-shaking {
 .rhyme-rating-selector {
     display: none;
     position: absolute;
-    left: 8px;
-    top: 50%;
-    transform: translateY(-50%);
+    left: 10px;
+    right: 28px;
+    top: 2px;
+    bottom: 2px;
     flex-direction: row;
-    gap: 2px;
-    z-index: 2;
+    align-items: center;
+    justify-content: space-around;
+    background: rgba(0, 0, 0, 0.92);
+    border: 1px solid var(--border-color);
+    border-radius: 3px;
+    z-index: 3;
+    gap: 0;
 }
 
-#rhyme-results-list li:hover:not(.rejected) .rhyme-rating-selector {
+#rhyme-results-list li.rating-open .rhyme-rating-selector {
     display: flex;
 }
 
-.rhyme-rating-btn {
-    font-size: 0.58em;
-    padding: 1px 4px;
-    border-radius: 2px;
-    cursor: pointer;
-    opacity: 0.45;
-    border: 1px solid currentColor;
-    user-select: none;
-    line-height: 1.5;
-    font-family: monospace;
-    letter-spacing: 0;
-    transition: opacity 0.1s;
+#rhyme-results-list li.rating-open .rhyme-tag {
+    display: none;
 }
 
-.rhyme-rating-btn:hover { opacity: 1; }
+.rhyme-rating-btn {
+    flex: 1;
+    text-align: center;
+    font-size: 0.75em;
+    padding: 2px 3px;
+    cursor: pointer;
+    opacity: 0.75;
+    border-right: 1px solid rgba(255,255,255,0.08);
+    user-select: none;
+    line-height: 1.6;
+    font-family: monospace;
+    letter-spacing: 0;
+    transition: opacity 0.1s, background 0.1s;
+}
+
+.rhyme-rating-btn:last-child { border-right: none; }
+.rhyme-rating-btn:hover { opacity: 1; background: rgba(255,255,255,0.08); }
 
 .rhyme-rating-btn[data-rating="stretch"] { color: #888; }
 .rhyme-rating-btn[data-rating="slant"]   { color: var(--secondary-accent); }
@@ -3625,7 +3638,8 @@ body.screen-shaking {
 
 .rhyme-rating-btn.active {
     opacity: 1;
-    background: rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.14);
+    font-weight: bold;
 }
 
 /* Per-tier li border indicator */
@@ -3634,6 +3648,76 @@ body.screen-shaking {
 #rhyme-results-list li.user-rating-rhyme   { border-left: 3px solid var(--primary-accent); }
 #rhyme-results-list li.user-rating-dope    { border-left: 3px solid #ffb000; }
 #rhyme-results-list li.user-rating-perfect { border-left: 3px solid #FFD700; }
+
+/* Rating group headers in rhyme list */
+.rhyme-rating-group-header {
+    font-size: 0.68em;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    padding: 5px 10px 2px;
+    opacity: 0.7;
+}
+
+.rhyme-rating-unrated-divider {
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border-color), transparent);
+    margin: 6px 0 4px;
+}
+
+/* ===== RHYME PIN FEATURE ===== */
+
+/* Pin button in rhyme modal header */
+#rhyme-header-pin {
+    top: 8px;
+    right: 8px;
+}
+#rhyme-header-pin.active {
+    color: var(--primary-accent);
+    opacity: 1;
+}
+
+/* Pinned section header */
+.rhyme-pin-section-header {
+    display: block;
+    text-align: center;
+    font-size: 0.75em;
+    font-weight: bold;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--primary-accent);
+    opacity: 0.85;
+    margin: 4px 0;
+    flex-basis: 100%;
+}
+.rhyme-pin-section-header i {
+    font-size: 0.85em;
+    margin-right: 4px;
+}
+
+/* Divider below pinned section */
+.rhyme-pin-divider {
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--primary-accent), transparent);
+    opacity: 0.3;
+    margin: 6px 0 8px;
+    flex-basis: 100%;
+}
+
+/* Selection mode — clicking items toggles pin */
+#rhyme-results-list.rhyme-list-selection-mode li {
+    cursor: crosshair;
+    user-select: none;
+}
+
+/* Item selected for pinning */
+#rhyme-results-list li.rhyme-pending-pin {
+    color: var(--primary-accent) !important;
+    border-left: 3px solid var(--primary-accent);
+    padding-left: 5px;
+}
 
 /* Edit input in filler ticker list */
 .filler-ticker-edit-input {
