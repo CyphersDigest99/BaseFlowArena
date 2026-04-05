@@ -147,6 +147,7 @@ function createModalHeaderHTML(baseWord, rhymeSortMode, rhymeList) {
     const isBlacklisted = state.blacklist.has(baseWord.toUpperCase());
     return `
         <button id="rhyme-header-blacklist" class="word-action-icon blacklist-icon${isBlacklisted ? ' active' : ''}" title="Blacklist Word"><i class="fas fa-ban"></i></button>
+        <button id="rhyme-header-pin" class="word-action-icon pin-mode-btn${isSelectionMode ? ' active' : ''}" title="${isSelectionMode ? 'Seal selections' : 'Pin rhymes to top'}"><i class="fas fa-star"></i></button>
         <div>${countLabel} ${wordText}</div>
         <div>sound like the</div>
         <div style="margin: 8px 0;">${patternDisplay}</div>
@@ -176,8 +177,11 @@ export function getValidRhymesForWord(baseWord) {
     // Track seen words for dedup (lowercase -> { word, score })
     const seen = new Map();
 
-    // Score candidates from inverted index
-    if (wordPattern) {
+    // Score candidates from inverted index.
+    // Skipped when a "sounds like" alias is set — the alias fully replaces the
+    // base word's native phoneme pool. Manual rhymes (manualSet) are still kept.
+    const aliasSet = state.rhymeAliases[baseWordLower];
+    if (wordPattern && !aliasSet) {
         const patternString = wordPattern.join('-');
         const candidates = phonetics.getCandidatesForPattern(patternString);
 
@@ -196,7 +200,6 @@ export function getValidRhymesForWord(baseWord) {
     }
 
     // Alias candidates: for each alias, pull its candidates and score against the alias word
-    const aliasSet = state.rhymeAliases[baseWordLower];
     if (aliasSet) {
         for (const aliasWord of aliasSet) {
             const aliasPattern = getRhymePattern(aliasWord);
@@ -290,6 +293,35 @@ function attachRhymeSortListeners() {
 // --- Temporary Rejection State (modal-local) ---
 let tempRejected = new Set();
 
+// --- Pin Selection State (modal-local) ---
+let isSelectionMode = false;
+let pendingPins = new Set();
+
+// --- Plural Collapse Map (rebuilt each displayRhymeList call) ---
+// Maps wordLower → display string (e.g. "critic" → "critic/s")
+let currentPluralMap = new Map();
+
+// Scans a word list for singular/plural pairs and returns:
+//   skipSet   — plural forms to hide (their base handles display)
+//   displayMap — base word → display string with /s or /es suffix
+function buildPluralMap(words) {
+    const wordSet = new Set(words.map(w => w.toLowerCase()));
+    const skipSet = new Set();
+    const displayMap = new Map();
+    for (const word of words) {
+        const wl = word.toLowerCase();
+        if (skipSet.has(wl)) continue;
+        if (wordSet.has(wl + 's')) {
+            skipSet.add(wl + 's');
+            displayMap.set(wl, word + '/s');
+        } else if (wordSet.has(wl + 'es')) {
+            skipSet.add(wl + 'es');
+            displayMap.set(wl, word + '/es');
+        }
+    }
+    return { skipSet, displayMap };
+}
+
 // --- Feedback Card State (session-local, not persisted) ---
 let pendingFeedback = new Map();   // rejectedWord -> { reasons: [], remark: '' }
 let lastCardDismissTime = 0;
@@ -302,6 +334,8 @@ const RAPID_FIRE_MS = 5000;
 // --- Enhanced Modal Open with Sorting ---
 export function openRhymeFinderModalWithSort() {
     tempRejected = new Set();
+    isSelectionMode = false;
+    pendingPins = new Set();
     pendingFeedback = new Map();
     lastCardDismissTime = 0;
     lastCardHadFeedback = false;
@@ -638,19 +672,37 @@ function createRhymeListItem(rhymeWord, baseWordLower, tierInfo = null) {
     if (!ui.elements.rhymeResultsList) return;
     const wordLower = rhymeWord.toLowerCase();
     const li = document.createElement('li');
-    li.textContent = rhymeWord;
+    const displayText = currentPluralMap.get(wordLower) || rhymeWord;
+    const slashIdx = displayText.indexOf('/');
+    if (slashIdx !== -1) {
+        li.innerHTML = displayText.slice(0, slashIdx) +
+            '<span class="rhyme-plural-suffix">' + displayText.slice(slashIdx + 1) + '</span>';
+    } else {
+        li.textContent = displayText;
+    }
     li.dataset.rhymeWord = rhymeWord;
     
-    // Add click handler to select this rhyme word
+    // Add click handler — toggles pin in selection mode, selects word otherwise
     li.addEventListener('click', (e) => {
-        // Don't trigger if clicking on icons
-        if (e.target.classList.contains('rhyme-x') || e.target.classList.contains('rhyme-tag')) {
+        if (e.target.classList.contains('rhyme-x') || e.target.classList.contains('rhyme-rating-btn')) return;
+
+        if (isSelectionMode) {
+            if (pendingPins.has(wordLower)) {
+                pendingPins.delete(wordLower);
+                li.classList.remove('rhyme-pending-pin');
+            } else {
+                pendingPins.add(wordLower);
+                li.classList.add('rhyme-pending-pin');
+            }
             return;
         }
-        
-        // Select the rhyme word
+
         selectRhymeWordFromModal(rhymeWord);
     });
+
+    if (isSelectionMode && pendingPins.has(wordLower)) {
+        li.classList.add('rhyme-pending-pin');
+    }
     const freq = state.wordFrequencies[wordLower] || 0;
     if (freq >= 5) li.classList.add('rhyme-freq-high');
     else if (freq >= 2) li.classList.add('rhyme-freq-med');
@@ -691,10 +743,14 @@ function createRhymeListItem(rhymeWord, baseWordLower, tierInfo = null) {
         }
     }
     
-    // Check if word is slant tagged
+    // Check user rating (new system) + legacy slant backward compat
+    const currentRating = (state.rhymeRatings[baseWordLower] || {})[wordLower] || null;
     const slantSet = state.slantRhymes[baseWordLower] || new Set();
-    const isSlantTagged = slantSet.has(wordLower);
-    if (isSlantTagged) {
+    const isLegacySlant = !currentRating && slantSet.has(wordLower);
+    if (currentRating) {
+        li.classList.add(`user-rating-${currentRating}`);
+        if (currentRating === 'slant') { li.classList.add('slant-tagged'); li.style.fontStyle = 'italic'; }
+    } else if (isLegacySlant) {
         li.classList.add('slant-tagged');
         li.style.fontStyle = 'italic';
     }
@@ -751,28 +807,62 @@ function createRhymeListItem(rhymeWord, baseWordLower, tierInfo = null) {
         li.appendChild(x);
     }
     
-    // Add the [Tag] icon for slant rhyming
+    // Reclassify star icon (tag button)
+    const RATING_COLORS = { stretch: '#888', slant: 'var(--secondary-accent)', rhyme: 'var(--primary-accent)', dope: '#ffb000', perfect: '#FFD700' };
+    const RATING_ICONS  = { stretch: 'fa-grip-lines', slant: 'fa-slash', rhyme: 'fa-music', dope: 'fa-fire', perfect: 'fa-star' };
     const tag = document.createElement('span');
     tag.className = 'rhyme-tag';
-    tag.textContent = isSlantTagged ? '📌' : '🏷️';
-    tag.title = isSlantTagged ? 'Remove slant rhyme tag' : 'Tag as slant rhyme';
+    const starIcon = document.createElement('i');
+    starIcon.className = currentRating ? `fas ${RATING_ICONS[currentRating]}` : 'far fa-star';
+    if (currentRating) tag.style.color = RATING_COLORS[currentRating];
+    tag.appendChild(starIcon);
+    tag.title = currentRating ? `${currentRating} rhyme — click to reclassify` : 'Rate this rhyme';
     tag.onclick = (e) => {
         e.stopPropagation();
-        if (!state.slantRhymes[baseWordLower]) state.slantRhymes[baseWordLower] = new Set();
-        if (isSlantTagged) {
-            state.slantRhymes[baseWordLower].delete(wordLower);
-            if (state.slantRhymes[baseWordLower].size === 0) {
-                delete state.slantRhymes[baseWordLower];
-            }
-        } else {
-            state.slantRhymes[baseWordLower].add(wordLower);
+        const isOpen = li.classList.contains('rating-open');
+        document.querySelectorAll('#rhyme-results-list li.rating-open').forEach(el => el.classList.remove('rating-open'));
+        if (!isOpen) {
+            li.classList.add('rating-open');
+            const closeOnOutside = (evt) => {
+                if (!li.contains(evt.target)) {
+                    li.classList.remove('rating-open');
+                    document.removeEventListener('click', closeOnOutside, { capture: true });
+                }
+            };
+            setTimeout(() => document.addEventListener('click', closeOnOutside, { capture: true }), 0);
         }
-        storage.saveSettings();
-        // Re-render
-        const currentBaseWordLower = state.currentWord?.toLowerCase();
-        displayRhymeList(currentBaseWordLower);
     };
     li.appendChild(tag);
+
+    // 5-option rating selector (overlay, shown when .rating-open)
+    const RATINGS = ['stretch', 'slant', 'rhyme', 'dope', 'perfect'];
+    const ICONS   = { stretch: 'fa-grip-lines', slant: 'fa-slash', rhyme: 'fa-music', dope: 'fa-fire', perfect: 'fa-star' };
+    const selector = document.createElement('div');
+    selector.className = 'rhyme-rating-selector';
+    RATINGS.forEach(rating => {
+        const btn = document.createElement('span');
+        btn.className = 'rhyme-rating-btn' + (currentRating === rating ? ' active' : '');
+        btn.dataset.rating = rating;
+        const btnIcon = document.createElement('i');
+        btnIcon.className = `fas ${ICONS[rating]}`;
+        btn.appendChild(btnIcon);
+        btn.title = rating.charAt(0).toUpperCase() + rating.slice(1) + ' rhyme';
+        btn.onclick = (e) => {
+            e.stopPropagation();
+            if (!state.rhymeRatings[baseWordLower]) state.rhymeRatings[baseWordLower] = {};
+            if (currentRating === rating) {
+                delete state.rhymeRatings[baseWordLower][wordLower];
+                if (!Object.keys(state.rhymeRatings[baseWordLower]).length) delete state.rhymeRatings[baseWordLower];
+            } else {
+                state.rhymeRatings[baseWordLower][wordLower] = rating;
+            }
+            li.classList.remove('rating-open');
+            storage.saveSettings();
+            displayRhymeList(state.currentWord?.toLowerCase());
+        };
+        selector.appendChild(btn);
+    });
+    li.appendChild(selector);
     
     ui.elements.rhymeResultsList.appendChild(li);
 }
@@ -851,63 +941,113 @@ function displayRhymeList(baseWordLower) {
     }
     rhymesToDisplay._totalBeforeCap = totalBeforeCap;
 
+    // Collapse singular/plural pairs — "critic" + "critics" → display "critic/s", hide "critics"
+    const { skipSet: pluralSkipSet, displayMap: pluralDisplayMap } = buildPluralMap(rhymesToDisplay);
+    currentPluralMap = pluralDisplayMap;
+    rhymesToDisplay = rhymesToDisplay.filter(w => !pluralSkipSet.has(w.toLowerCase()));
+    rhymesToDisplay._totalBeforeCap = totalBeforeCap;
+
     // Update header with accurate count
     if (ui.elements.rhymeModalDynamicHeading) {
         ui.elements.rhymeModalDynamicHeading.innerHTML = createModalHeaderHTML(state.currentWord, rhymeSortMode, rhymesToDisplay);
         attachHeaderNavHandlers();
     }
     
-    // Move tempRejected words to end
+    // Split out temp-rejected
     const normal = [], rejected = [];
     for (const word of rhymesToDisplay) {
         if (tempRejected.has(word.toLowerCase())) rejected.push(word);
         else normal.push(word);
     }
-    const finalList = [...normal, ...rejected];
-    
+
+    // Separate user-rated words from unrated
+    const RATING_ORDER = ['perfect', 'dope', 'rhyme', 'slant', 'stretch'];
+    const RATING_LABELS = { perfect: 'Perfect Rhyme', dope: 'Dope Rhyme', rhyme: 'Rhyme', slant: 'Slant Rhyme', stretch: 'Stretch Rhyme' };
+    const RATING_COLORS = { perfect: '#FFD700', dope: '#ffb000', rhyme: 'var(--primary-accent)', slant: 'var(--secondary-accent)', stretch: '#888' };
+    const userRatings = state.rhymeRatings[baseWordLower] || {};
+    const ratedByTier = {};
+    RATING_ORDER.forEach(r => { ratedByTier[r] = []; });
+    const unratedNormal = [];
+    for (const word of normal) {
+        const rating = userRatings[word.toLowerCase()];
+        if (rating && ratedByTier[rating]) ratedByTier[rating].push(word);
+        else unratedNormal.push(word);
+    }
+    const hasRated = RATING_ORDER.some(r => ratedByTier[r].length > 0);
+
     ui.elements.rhymeResultsList.innerHTML = '';
     setupRhymeTooltipDelegation(ui.elements.rhymeResultsList);
 
-    if (finalList.length > 0) {
+    // Selection mode styling
+    ui.elements.rhymeResultsList.classList.toggle('rhyme-list-selection-mode', isSelectionMode);
+
+    const pinnedSet = state.pinnedRhymes[baseWordLower] || new Set();
+    const filterPinned = (arr) => isSelectionMode ? arr : arr.filter(w => !pinnedSet.has(w.toLowerCase()));
+
+    if (rhymesToDisplay.length > 0) {
+        // Pinned section — shown above everything else when not in selection mode
+        if (!isSelectionMode && pinnedSet.size > 0) {
+            const pinnedInList = rhymesToDisplay.filter(w => pinnedSet.has(w.toLowerCase()));
+            if (pinnedInList.length > 0) {
+                const pinHeader = document.createElement('div');
+                pinHeader.className = 'rhyme-pin-section-header';
+                pinHeader.innerHTML = '<i class="fas fa-star"></i> Pinned';
+                ui.elements.rhymeResultsList.appendChild(pinHeader);
+                pinnedInList.forEach(word => createRhymeListItem(word, baseWordLower, rhymeSortMode === 'similarity' ? getTierInfo(word, baseWordLower) : null));
+                const pinDivider = document.createElement('div');
+                pinDivider.className = 'rhyme-pin-divider';
+                ui.elements.rhymeResultsList.appendChild(pinDivider);
+            }
+        }
+
+        // Render user-rated groups at top
+        if (hasRated) {
+            RATING_ORDER.forEach(rating => {
+                const words = filterPinned(ratedByTier[rating]);
+                if (!words.length) return;
+                addRatingGroupHeader(rating, RATING_LABELS[rating], RATING_COLORS[rating]);
+                words.forEach(word => createRhymeListItem(word, baseWordLower, rhymeSortMode === 'similarity' ? getTierInfo(word, baseWordLower) : null));
+            });
+            // Divider before unrated section
+            if (filterPinned(unratedNormal).length) {
+                const divider = document.createElement('div');
+                divider.className = 'rhyme-rating-unrated-divider';
+                ui.elements.rhymeResultsList.appendChild(divider);
+            }
+        }
+
+        // Render unrated words with existing sort logic
+        const unratedToRender = filterPinned(unratedNormal);
         if (rhymeSortMode === 'similarity') {
-            // For similarity mode, add tier separators and tier info
             let currentTier = null;
             let lastTier = null;
-            
-            for (const word of finalList) {
-                const wordLower = word.toLowerCase();
+            for (const word of unratedToRender) {
                 const tierInfo = getTierInfo(word, baseWordLower);
-                
-                // Add separator if tier changes
                 if (currentTier && currentTier !== tierInfo.tier && lastTier !== tierInfo.tier) {
                     addTierSeparator(tierInfo.tier);
                     lastTier = currentTier;
                 }
-                
                 createRhymeListItem(word, baseWordLower, tierInfo);
                 currentTier = tierInfo.tier;
             }
-            
-            // Trigger initial shimmer for gold and silver tiers
+            // Shimmer for gold/silver tiers
             setTimeout(() => {
-                const perfectItems = ui.elements.rhymeResultsList.querySelectorAll('.rhyme-tier-perfect');
-                const strongItems = ui.elements.rhymeResultsList.querySelectorAll('.rhyme-tier-strong');
-                
-                perfectItems.forEach(item => {
+                ui.elements.rhymeResultsList.querySelectorAll('.rhyme-tier-perfect').forEach(item => {
                     item.classList.add('shimmer-active');
                     setTimeout(() => item.classList.remove('shimmer-active'), 1500);
                 });
-                
-                strongItems.forEach(item => {
+                ui.elements.rhymeResultsList.querySelectorAll('.rhyme-tier-strong').forEach(item => {
                     item.classList.add('shimmer-active');
                     setTimeout(() => item.classList.remove('shimmer-active'), 1500);
                 });
-            }, 300); // Small delay to ensure elements are rendered
+            }, 300);
         } else {
-            // For other modes, just create items normally
-            finalList.forEach(match => createRhymeListItem(match, baseWordLower));
+            unratedToRender.forEach(match => createRhymeListItem(match, baseWordLower));
         }
-        
+
+        // Render rejected at end
+        rejected.forEach(word => createRhymeListItem(word, baseWordLower, rhymeSortMode === 'similarity' ? getTierInfo(word, baseWordLower) : null));
+
         if (ui.elements.rhymeNoResults) ui.elements.rhymeNoResults.style.display = 'none';
     } else {
         if (ui.elements.rhymeNoResults) ui.elements.rhymeNoResults.style.display = 'block';
@@ -941,6 +1081,16 @@ function getTierInfo(word, baseWordLower) {
     if (score >= TIER_STRONG) return { tier: 'strong', score };
     if (score >= TIER_STANDARD) return { tier: 'standard', score };
     return { tier: 'slant', score };
+}
+
+// Add a user-rating group header to the rhyme list
+function addRatingGroupHeader(rating, label, color) {
+    if (!ui.elements.rhymeResultsList) return;
+    const header = document.createElement('div');
+    header.className = 'rhyme-rating-group-header';
+    header.textContent = label;
+    header.style.color = color;
+    ui.elements.rhymeResultsList.appendChild(header);
 }
 
 // Helper function to add tier separators
@@ -1124,6 +1274,33 @@ function attachHeaderNavHandlers() {
             if (mainBtn) mainBtn.classList.toggle('active', state.blacklist.has(word));
         });
     }
+
+    const pinBtn = document.getElementById('rhyme-header-pin');
+    if (pinBtn) {
+        pinBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const baseWordLower = state.currentWord?.toLowerCase();
+            if (!baseWordLower) return;
+
+            if (!isSelectionMode) {
+                // Enter selection mode — pre-populate with existing pins
+                isSelectionMode = true;
+                pendingPins = new Set(state.pinnedRhymes[baseWordLower] || []);
+            } else {
+                // Seal — commit pending pins
+                if (pendingPins.size > 0) {
+                    state.pinnedRhymes[baseWordLower] = new Set(pendingPins);
+                } else {
+                    delete state.pinnedRhymes[baseWordLower];
+                }
+                isSelectionMode = false;
+                pendingPins = new Set();
+                storage.saveSettings();
+            }
+            displayRhymeList(baseWordLower);
+        });
+    }
 }
 
 // --- Navigate Word In Modal ---
@@ -1150,6 +1327,10 @@ function navigateWordInModal(direction) {
 
     // Update the main display behind the modal
     ui.displayWord(newWord);
+
+    // Reset selection mode when navigating to a new word
+    isSelectionMode = false;
+    pendingPins = new Set();
 
     // Refresh modal content
     updateModalHeader();

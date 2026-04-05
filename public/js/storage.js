@@ -86,6 +86,8 @@ export function saveSettings() {
             manualRhymes: serializeNestedSets(state.manualRhymes),
             slantRhymes: serializeNestedSets(state.slantRhymes),
             rhymeAliases: serializeNestedSets(state.rhymeAliases),
+            rhymeRatings: state.rhymeRatings,
+            pinnedRhymes: serializeNestedSets(state.pinnedRhymes),
             wordList: state.wordList, // NEW: Save the word list
             wordListFile: state.wordListFile, // Selected word list file
             runtimePatterns: state.runtimePatterns,
@@ -142,6 +144,17 @@ export function loadSettings() {
              state.manualRhymes = parsedData.manualRhymes ? deserializeNestedSets(parsedData.manualRhymes) : {};
              state.slantRhymes = parsedData.slantRhymes ? deserializeNestedSets(parsedData.slantRhymes) : {};
              state.rhymeAliases = parsedData.rhymeAliases ? deserializeNestedSets(parsedData.rhymeAliases) : {};
+             state.rhymeRatings = parsedData.rhymeRatings || {};
+             state.pinnedRhymes = parsedData.pinnedRhymes ? deserializeNestedSets(parsedData.pinnedRhymes) : {};
+             // Migrate legacy slantRhymes → rhymeRatings (one-time, non-destructive)
+             for (const [baseWord, rhymeSet] of Object.entries(state.slantRhymes)) {
+                 if (!state.rhymeRatings[baseWord]) state.rhymeRatings[baseWord] = {};
+                 for (const rhymeWord of rhymeSet) {
+                     if (!state.rhymeRatings[baseWord][rhymeWord]) {
+                         state.rhymeRatings[baseWord][rhymeWord] = 'slant';
+                     }
+                 }
+             }
 
              // NEW: Load the word list if available
              if (Array.isArray(parsedData.wordList) && parsedData.wordList.length > 0) {
@@ -243,6 +256,7 @@ export function resetToDefaults(saveAfterReset = true) {
     state.manualRhymes = {};
     state.slantRhymes = {};
     state.rhymeAliases = {};
+    state.rhymeRatings = {};
     state.runtimePatterns = {};
     state.rejectionLog = [];
     // Note: Don't reset wordList here - let wordManager handle that
@@ -288,6 +302,8 @@ export function exportSettings() {
                 manualRhymes: serializeNestedSets(state.manualRhymes),
                 slantRhymes: serializeNestedSets(state.slantRhymes),
                 rhymeAliases: serializeNestedSets(state.rhymeAliases),
+                rhymeRatings: state.rhymeRatings,
+                pinnedRhymes: serializeNestedSets(state.pinnedRhymes),
                 wordList: state.wordList,
                 runtimePatterns: state.runtimePatterns,
                 rejectionLog: state.rejectionLog,
@@ -343,6 +359,8 @@ export function importSettings(jsonData) {
         state.manualRhymes = settings.manualRhymes ? deserializeNestedSets(settings.manualRhymes) : {};
         state.slantRhymes = settings.slantRhymes ? deserializeNestedSets(settings.slantRhymes) : {};
         state.rhymeAliases = settings.rhymeAliases ? deserializeNestedSets(settings.rhymeAliases) : {};
+        state.rhymeRatings = settings.rhymeRatings || {};
+        state.pinnedRhymes = settings.pinnedRhymes ? deserializeNestedSets(settings.pinnedRhymes) : {};
         state.runtimePatterns = settings.runtimePatterns || {};
         state.rejectionLog = Array.isArray(settings.rejectionLog) ? settings.rejectionLog : [];
 

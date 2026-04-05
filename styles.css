@@ -3719,6 +3719,14 @@ body.screen-shaking {
     padding-left: 5px;
 }
 
+/* Plural suffix — small raised "s" beside the word */
+.rhyme-plural-suffix {
+    font-size: 0.6em;
+    vertical-align: baseline;
+    opacity: 0.55;
+    margin-left: 1px;
+}
+
 /* Edit input in filler ticker list */
 .filler-ticker-edit-input {
     flex: 1;
