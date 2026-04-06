@@ -60,8 +60,8 @@ export const state = {
     timedInterval: null, // Interval for timed word cycling
     voiceRhymeMode: false, // Controls whether voice matches should navigate rhymes
     transcriptSelectedWord: null, // Currently selected word from transcript (string or null)
-    recentWords: [],              // Recently spoken unique content words, newest first, max 20, session-only
-    ignoredFeedWords: new Set(), // Words marked "ignore in feed" by the user via filler ticker
+    traySlots: new Array(20).fill(null), // Fixed-size pill tray: null = empty, { word, age } = occupied
+    trayAgeCounter: 0,                    // Monotonic counter for slot insertion ordering
 
     // BPM / Rhythm - Beat detection and timing
     bpm: 0, // Current detected beats per minute

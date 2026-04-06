@@ -2017,7 +2017,15 @@ input[type="range"] {
     overflow-y: auto;
     border: 1px solid rgba(0, 80, 0, 0.7);
     box-shadow: inset 0 0 10px rgba(0, 255, 0, 0.2);
+    scrollbar-color: rgba(255,255,255,0.15) transparent;
 }
+#new-transcript::-webkit-scrollbar { width: 6px; }
+#new-transcript::-webkit-scrollbar-track { background: transparent; }
+#new-transcript::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.15);
+    border-radius: 3px;
+}
+#new-transcript::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.25); }
 
 #new-transcript div {
     margin-bottom: 3px;
@@ -2054,51 +2062,120 @@ input[type="range"] {
 }
 
 /* Recent Words Tray */
+/* Fixed-slot pill tray — flex-wrap, variable-width pills */
 #recent-words-tray {
-    display: none;
+    display: flex;
     flex-wrap: wrap;
-    gap: 5px;
-    padding: 7px 10px;
+    align-content: flex-start;
+    gap: 2px;
+    padding: 2px 4px;
+    height: 50px;
+    min-height: 50px;
+    max-height: 50px;
+    overflow: hidden;
     border-top: 1px solid rgba(0, 80, 0, 0.4);
     background: rgba(0, 0, 0, 0.3);
 }
 
-.recent-word-pill {
+/* Slot base */
+.tray-slot {
+    height: 22px;
+    line-height: 20px;
+    border-radius: 11px;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.8em;
+    box-sizing: border-box;
+    user-select: none;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    padding: 0 6px;
+    transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.6s ease;
+}
+
+/* Empty placeholder — collapsed, takes no space */
+.tray-slot--empty {
+    display: none;
+}
+
+/* Occupied slot */
+.tray-slot--occupied {
     cursor: pointer;
-    padding: 3px 10px;
-    border-radius: 14px;
     border: 1px solid rgba(51, 255, 51, 0.3);
     background: rgba(51, 255, 51, 0.05);
     color: var(--green-color);
-    font-family: 'Courier New', Courier, monospace;
-    font-size: 0.85em;
-    transition: background 0.15s ease, border-color 0.15s ease;
-    user-select: none;
 }
 
-.recent-word-pill:hover {
+.tray-slot--occupied:hover {
     background: rgba(51, 255, 51, 0.15);
     border-color: rgba(51, 255, 51, 0.6);
 }
-
-.recent-word-pill.selected {
+.tray-slot--occupied.selected {
     background: rgba(51, 255, 51, 0.5);
     border-color: rgba(51, 255, 51, 0.9);
     color: #000;
     font-weight: bold;
 }
 
-.pill-label {
-    pointer-events: none;
+/* Most-recent pill — persistent subtle indicator */
+.tray-slot--newest {
+    border-color: rgba(255, 255, 255, 0.5);
 }
 
+/* Heat flash on new pill — fades from bright to subtle over 2s */
+@keyframes pill-heat {
+    0%   { box-shadow: 0 0 8px 2px rgba(255, 200, 60, 0.9); border-color: rgba(255, 200, 60, 0.9); }
+    40%  { box-shadow: 0 0 5px 1px rgba(255, 200, 60, 0.5); border-color: rgba(255, 200, 60, 0.6); }
+    100% { box-shadow: none; border-color: rgba(255, 255, 255, 0.5); }
+}
+.tray-slot--hot {
+    animation: pill-heat 2s ease-out forwards;
+}
+
+/* POS color tints */
+.pos-noun    { border-color: rgba(100, 180, 255, 0.4); background: rgba(100, 180, 255, 0.08); }
+.pos-noun:hover    { border-color: rgba(100, 180, 255, 0.7); background: rgba(100, 180, 255, 0.18); }
+.pos-verb    { border-color: rgba(255, 180, 80, 0.4);  background: rgba(255, 180, 80, 0.08); }
+.pos-verb:hover    { border-color: rgba(255, 180, 80, 0.7);  background: rgba(255, 180, 80, 0.18); }
+.pos-adjective { border-color: rgba(200, 130, 255, 0.4); background: rgba(200, 130, 255, 0.08); }
+.pos-adjective:hover { border-color: rgba(200, 130, 255, 0.7); background: rgba(200, 130, 255, 0.18); }
+.pos-adverb  { border-color: rgba(80, 220, 200, 0.4);  background: rgba(80, 220, 200, 0.08); }
+.pos-adverb:hover  { border-color: rgba(80, 220, 200, 0.7);  background: rgba(80, 220, 200, 0.18); }
+
+/* Newest indicator overrides POS border when hot/newest */
+.tray-slot--hot, .tray-slot--newest { border-color: rgba(255, 255, 255, 0.5); }
+
+/* Pill inner elements */
+.pill-label {
+    pointer-events: none;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 1;
+    min-width: 0;
+}
+.pill-ban {
+    margin-left: 3px;
+    opacity: 0;
+    font-size: 0.8em;
+    line-height: 1;
+    transition: opacity 0.15s ease;
+}
+.tray-slot--occupied:hover .pill-ban { opacity: 0.4; }
+.pill-ban:hover { opacity: 1 !important; color: #ff4444; }
+
+/* Feed footer */
 .feed-footer {
     display: flex;
     justify-content: flex-end;
-    padding: 4px 8px 2px;
+    padding: 0 8px;
+    height: 0;
+    overflow: visible;
+    position: relative;
 }
-
 .feed-clear-btn {
+    position: absolute;
+    right: 4px;
+    bottom: 4px;
     background: none;
     border: none;
     color: rgba(51, 255, 51, 0.3);
@@ -2108,34 +2185,14 @@ input[type="range"] {
     border-radius: 3px;
     transition: color 0.15s ease;
 }
+.feed-clear-btn:hover { color: rgba(51, 255, 51, 0.8); }
 
-.feed-clear-btn:hover {
-    color: rgba(51, 255, 51, 0.8);
-}
-
-.pill-ban {
-    margin-left: 5px;
-    opacity: 0;
-    font-size: 0.85em;
-    line-height: 1;
-    transition: opacity 0.15s ease;
-}
-
-.recent-word-pill:hover .pill-ban {
-    opacity: 0.4;
-}
-
-.pill-ban:hover {
-    opacity: 1 !important;
-    color: #ff4444;
-}
-
-/* Transcript body layout — transcript + mic meter side by side */
+/* Transcript body layout — transcript + mic meters side by side */
 .transcript-body {
     display: flex;
     flex: 1;
     min-height: 0;
-    gap: 8px;
+    gap: 4px;
 }
 
 .transcript-body #new-transcript {
@@ -2143,19 +2200,25 @@ input[type="range"] {
     min-width: 0;
 }
 
-/* Compact vertical mic level meters — left and right side margins */
-#mic-visualizer-canvas,
-#mic-visualizer-canvas-left {
+/* Segmented VU-style mic level meters */
+.mic-meter {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
     width: 8px;
-    height: 250px;
     flex-shrink: 0;
-    align-self: flex-end;
-    background-color: rgba(0, 0, 0, 0.3);
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-    display: block;
-    box-sizing: border-box;
+    padding: 4px 0;
 }
+.mic-meter-seg {
+    flex: 1;
+    min-height: 2px;
+    border-radius: 1px;
+    background: rgba(255, 255, 255, 0.06);
+    transition: background 0.06s, box-shadow 0.06s;
+}
+.mic-meter-seg.lit-green  { background: #33ff33; box-shadow: 0 0 3px #33ff33; }
+.mic-meter-seg.lit-yellow { background: #ffdd00; box-shadow: 0 0 3px #ffdd00; }
+.mic-meter-seg.lit-red    { background: #ff2222; box-shadow: 0 0 4px #ff2222; }
 
 
 /* BPM Panel */
@@ -2625,6 +2688,70 @@ label.checkbox-label {
     max-width: 95%;
     margin-left: auto;
     margin-right: auto;
+}
+
+/* Etymology section */
+.etymology-section {
+    text-align: center;
+    margin-bottom: 10px;
+}
+.etymology-toggle {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--secondary-accent);
+    cursor: pointer;
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-size: 0.75em;
+    opacity: 0.7;
+    transition: opacity 0.2s, border-color 0.2s;
+}
+.etymology-toggle:hover { opacity: 1; border-color: var(--primary-accent); }
+.etymology-toggle.active { opacity: 1; color: var(--primary-accent); border-color: var(--primary-accent); }
+.etymology-content {
+    text-align: left;
+    margin-top: 8px;
+    padding: 10px;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 0.85em;
+    line-height: 1.5;
+    color: var(--text-color);
+    max-height: 200px;
+    overflow-y: auto;
+}
+.etymology-family { margin-bottom: 8px; }
+.etymology-family-label {
+    font-size: 0.7em;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--secondary-accent);
+    margin-bottom: 4px;
+}
+.etymology-family-words {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+.etymology-family-word {
+    padding: 2px 6px;
+    background: rgba(0,255,255,0.08);
+    border: 1px solid var(--border-color);
+    border-radius: 3px;
+    font-size: 0.9em;
+    color: var(--text-bright);
+}
+.etymology-origin-label {
+    font-size: 0.7em;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--secondary-accent);
+    margin-bottom: 4px;
+}
+.etymology-origin-text {
+    font-style: italic;
+    color: var(--text-color);
 }
 
 #rhyme-header-blacklist {

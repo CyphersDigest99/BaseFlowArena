@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-04-06
+- Filter ~1300 proper names from word-list.txt via NLTK names corpus (filter_names.py)
+- Collapse singular/plural pairs in rhyme modal (critic + critics → critic with small baseline s)
+- Guard +es plural matching to only words ending in s/sh/ch/x/z/o to prevent false collapses
+- Alias "sounds like" now replaces native rhyme candidates instead of adding alongside them
+- Fix interim transcript promotion: only promote complete words, not mid-word fragments
+- Fixed-slot pill tray: in-place slot updates with POS-based coloring, no more pill shifting on hover
+- Dual mic level meters (left + right side of transcript area)
+
 ## 2026-04-03
 - feat: Key Finder — real-time mic pitch detection with piano keyboard scale display
 - Remove Flow Meter panel from layout (HTML, CSS, JS) — feature was unused

@@ -35,8 +35,15 @@ const TRAY_STOPWORDS = new Set([
     'this','than','then','when','who','what','how','all','just','like'
 ]);
 
-// Hover-pause flag: when tray is hovered, defer new pill inserts until mouseleave
-let trayLeavePending = false;
+// POS suffix heuristic — purely visual coloring for pill tray
+function classifyPOS(word) {
+    const w = word.toLowerCase();
+    if (w.endsWith('ly')) return 'adverb';
+    if (w.endsWith('ing') || w.endsWith('ed') || w.endsWith('ize') || w.endsWith('ise') || w.endsWith('ify') || w.endsWith('ate')) return 'verb';
+    if (w.endsWith('ful') || w.endsWith('less') || w.endsWith('ous') || w.endsWith('ive') || w.endsWith('able') || w.endsWith('ible') || w.endsWith('al') || w.endsWith('ish') || w.endsWith('ic')) return 'adjective';
+    if (w.endsWith('tion') || w.endsWith('sion') || w.endsWith('ment') || w.endsWith('ness') || w.endsWith('ity') || w.endsWith('er') || w.endsWith('or') || w.endsWith('ist') || w.endsWith('ism')) return 'noun';
+    return 'other';
+}
 
 // Callback for when displayed word changes (for tooltip updates)
 let onDisplayedWordChangeCallback = null;
@@ -594,14 +601,21 @@ export function updateTranscript(lineText, isFinal) {
              elements.transcriptContainer.removeChild(elements.transcriptContainer.lastChild);
          }
 
-         // Update recent words tray
+         // Update fixed-slot pill tray
          lineText.split(/\s+/).forEach(rawWord => {
              const w = rawWord.replace(/[^a-zA-Z'-]/g, '').toLowerCase();
              if (w.length <= 2 || TRAY_STOPWORDS.has(w) || state.ignoredFeedWords.has(w)) return;
-             if (!state.recentWords.includes(w)) {
-                 state.recentWords.unshift(w);
-                 if (state.recentWords.length > 20) state.recentWords.pop();
+             // Skip if word already occupies a slot
+             if (state.traySlots.some(s => s && s.word === w)) return;
+             // Find target: first empty slot, else oldest occupied
+             let target = state.traySlots.indexOf(null);
+             if (target === -1) {
+                 let minAge = Infinity;
+                 state.traySlots.forEach((s, i) => {
+                     if (s && s.age < minAge) { minAge = s.age; target = i; }
+                 });
              }
+             state.traySlots[target] = { word: w, age: ++state.trayAgeCounter };
          });
          updateRecentWordsTray();
 
@@ -614,60 +628,84 @@ export function clearTranscript() {
     if (elements.transcriptContainer) elements.transcriptContainer.innerHTML = '';
 }
 
-// Renders the recent-words pill tray from state.recentWords
+// Initialize fixed-slot tray with hidden placeholder divs
+export function initTraySlots() {
+    const tray = document.getElementById('recent-words-tray');
+    if (!tray) return;
+    tray.innerHTML = '';
+    for (let i = 0; i < state.traySlots.length; i++) {
+        const slot = document.createElement('div');
+        slot.className = 'tray-slot tray-slot--empty';
+        slot.dataset.slotIndex = i;
+        slot.dataset.word = '';
+        tray.appendChild(slot);
+    }
+}
+
+// Sync tray DOM to state.traySlots — in-place updates, no shifting
 export function updateRecentWordsTray() {
     const tray = document.getElementById('recent-words-tray');
     if (!tray) return;
-    if (!state.recentWords.length) {
-        tray.style.display = 'none';
-        tray.innerHTML = '';
-        return;
-    }
-    tray.style.display = 'flex';
+    const slots = tray.querySelectorAll('.tray-slot');
 
-    // Build map of currently rendered pills
-    const rendered = new Map();
-    tray.querySelectorAll('.recent-word-pill').forEach(el => rendered.set(el.dataset.word, el));
+    // Find the newest age to mark the hot pill
+    let maxAge = 0;
+    state.traySlots.forEach(s => { if (s && s.age > maxAge) maxAge = s.age; });
 
-    // Remove pills for words no longer in state (banned/cleared)
-    const wordSet = new Set(state.recentWords);
-    rendered.forEach((el, word) => { if (!wordSet.has(word)) el.remove(); });
+    slots.forEach((el, i) => {
+        const data = state.traySlots[i];
+        const currentWord = el.dataset.word || '';
 
-    // Prepend new pills — but pause while tray is hovered to avoid position shifts
-    const toAdd = state.recentWords.filter(w => !rendered.has(w));
-    if (toAdd.length) {
-        if (tray.matches(':hover')) {
-            // Register a one-shot mouseleave to backfill as soon as hover ends
-            if (!trayLeavePending) {
-                trayLeavePending = true;
-                tray.addEventListener('mouseleave', () => {
-                    trayLeavePending = false;
-                    updateRecentWordsTray();
-                }, { once: true });
+        if (!data) {
+            // Slot should be empty (hidden)
+            if (currentWord) {
+                el.innerHTML = '';
+                el.className = 'tray-slot tray-slot--empty';
+                el.dataset.word = '';
             }
-            // Skip the prepend — existing pills stay put
-        } else {
-            [...toAdd].reverse().forEach(word => {
-                const pill = document.createElement('span');
-                pill.className = 'recent-word-pill';
-                pill.dataset.word = word;
-                const label = document.createElement('span');
-                label.className = 'pill-label';
-                label.textContent = word;
-                const ban = document.createElement('span');
-                ban.className = 'pill-ban';
-                ban.title = 'Ignore in feed';
-                ban.textContent = '×';
-                pill.appendChild(label);
-                pill.appendChild(ban);
-                tray.insertBefore(pill, tray.firstChild);
-            });
+            return;
         }
-    }
 
-    // Update selected state in-place
-    tray.querySelectorAll('.recent-word-pill').forEach(el => {
-        el.classList.toggle('selected', el.dataset.word === state.transcriptSelectedWord);
+        const isNewest = data.age === maxAge;
+
+        if (data.word === currentWord) {
+            // Same word — update selected + newest state
+            el.classList.toggle('selected', data.word === state.transcriptSelectedWord);
+            el.classList.toggle('tray-slot--newest', isNewest);
+            // Don't re-trigger hot animation if word hasn't changed
+            return;
+        }
+
+        // Different word — populate (replacing old content or filling empty slot)
+        const pos = classifyPOS(data.word);
+        el.innerHTML = '';
+        el.className = `tray-slot tray-slot--occupied pos-${pos}`;
+        el.dataset.word = data.word;
+
+        const label = document.createElement('span');
+        label.className = 'pill-label';
+        label.textContent = data.word;
+        const ban = document.createElement('span');
+        ban.className = 'pill-ban';
+        ban.title = 'Ignore in feed';
+        ban.textContent = '\u00d7';
+        el.appendChild(label);
+        el.appendChild(ban);
+
+        el.classList.toggle('selected', data.word === state.transcriptSelectedWord);
+
+        // Heat indicator on newest pill
+        if (isNewest) {
+            el.classList.add('tray-slot--newest', 'tray-slot--hot');
+        }
+    });
+
+    // Clear hot/newest from non-newest pills
+    slots.forEach((el, i) => {
+        const data = state.traySlots[i];
+        if (!data || data.age !== maxAge) {
+            el.classList.remove('tray-slot--newest', 'tray-slot--hot');
+        }
     });
 }
 

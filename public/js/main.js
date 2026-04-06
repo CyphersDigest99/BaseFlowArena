@@ -99,6 +99,7 @@ async function initializeApp() {
 
     // 2. Load Settings, Rhyme Data, CMU Lookup, CMU Phonemes, Word List
     storage.loadSettings(); // Loads ALL settings, applies defaults, updates relevant UI
+    ui.initTraySlots();     // Pre-fill fixed-slot pill tray with placeholders
     await Promise.all([rhyme.loadRhymeData(), phonetics.loadCmuLookup(), phonetics.loadCmuPhonemes(), wordManager.loadRhymeVocabulary()]);
     await wordManager.loadWords(); // Applies filters based on loaded blacklist
 
@@ -258,23 +259,24 @@ function attachEventListeners() {
         wordManager.setActiveWord(word);
     });
 
-    // Recent words tray click handler
+    // Recent words tray click handler (fixed-slot system)
     document.getElementById('recent-words-tray')?.addEventListener('click', (e) => {
-        const pill = e.target.closest('.recent-word-pill');
-        if (!pill) return;
-        const word = pill.dataset.word;
+        const slot = e.target.closest('.tray-slot--occupied');
+        if (!slot) return;
+        const word = slot.dataset.word;
         if (!word) return;
 
         // Ban button — ignore this word in future feed results
         if (e.target.closest('.pill-ban')) {
+            const idx = parseInt(slot.dataset.slotIndex, 10);
             state.ignoredFeedWords.add(word);
-            state.recentWords = state.recentWords.filter(w => w !== word);
+            state.traySlots[idx] = null;
             ui.updateRecentWordsTray();
             storage.saveSettings();
             return;
         }
 
-        // Regular pill click — set as active word
+        // Regular slot click — set as active word
         ui.clearTranscriptSelection();
         state.transcriptSelectedWord = word;
         ui.updateRecentWordsTray();
@@ -288,7 +290,8 @@ function attachEventListeners() {
     });
     clearFeedBtn?.addEventListener('dblclick', () => {
         ui.clearTranscript();
-        state.recentWords = [];
+        state.traySlots.fill(null);
+        state.trayAgeCounter = 0;
         ui.updateRecentWordsTray();
     });
 

@@ -84,12 +84,21 @@ function startInterimPromotion() {
         const newText = fullText.substring(_promotedCharCount).trim();
         if (!newText) return;
 
-        _promotedCharCount = fullText.length;
+        // Only promote up to the last complete word boundary (space).
+        // This prevents splitting mid-word fragments like "eff" / "icacious"
+        // when the API is still processing a longer word.
+        const lastSpace = newText.lastIndexOf(' ');
+        if (lastSpace <= 0) return; // single word fragment — let final result handle it
 
-        // Push the new portion as a final clickable line (don't remove interim —
+        const toPromote = newText.substring(0, lastSpace).trim();
+        if (!toPromote) return;
+
+        _promotedCharCount += lastSpace + 1;
+
+        // Push the complete words as a final clickable line (don't remove interim —
         // the API will keep updating it with more text)
-        ui.updateTranscript(newText, true);
-        wordManager.updateFrequencies(newText);
+        ui.updateTranscript(toPromote, true);
+        wordManager.updateFrequencies(toPromote);
     }, INTERIM_PROMOTE_MS);
 }
 

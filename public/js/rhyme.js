@@ -1240,6 +1240,132 @@ function sortByRhymeSimilarity(words, baseWord) {
     return wordScores.map(ws => ws.word);
 }
 
+// --- Etymology / Word Family ---
+let etymologyCache = new Map();
+
+function findWordFamily(baseWord) {
+    const word = baseWord.toLowerCase();
+    // Common suffixes, longest first so we strip the most specific match
+    const suffixes = [
+        'ation', 'ating', 'ator', 'ators', 'ated', 'ates',
+        'tion', 'sion', 'ment', 'ness', 'able', 'ible',
+        'ful', 'less', 'ous', 'ive', 'ism', 'ist',
+        'ing', 'ings', 'ed', 'er', 'ers', 'es', 'est', 'ly', 'al', 's'
+    ];
+    let stem = word;
+    for (const sfx of suffixes) {
+        if (word.endsWith(sfx) && word.length - sfx.length >= 3) {
+            stem = word.slice(0, word.length - sfx.length);
+            break;
+        }
+    }
+    // Handle trailing 'e' that gets dropped (e.g. emulate → emulat → search "emulat")
+    const stems = [stem];
+    if (!stem.endsWith('e')) stems.push(stem + 'e');
+
+    const family = [];
+    const seen = new Set([word]);
+    for (const w of state.wordList) {
+        const lower = w.toLowerCase();
+        if (seen.has(lower)) continue;
+        for (const s of stems) {
+            if (lower.startsWith(s) && lower.length <= s.length + 8) {
+                family.push(w);
+                seen.add(lower);
+                break;
+            }
+        }
+        if (family.length >= 15) break;
+    }
+    return family;
+}
+
+async function fetchEtymology(word) {
+    const lower = word.toLowerCase();
+    if (etymologyCache.has(lower)) return etymologyCache.get(lower);
+    try {
+        const resp = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(lower)}`);
+        if (!resp.ok) { etymologyCache.set(lower, null); return null; }
+        const data = await resp.json();
+        const entry = data?.[0];
+        const result = {
+            origin: entry?.origin || null,
+            meanings: (entry?.meanings || []).slice(0, 3).map(m => ({
+                partOfSpeech: m.partOfSpeech,
+                definition: m.definitions?.[0]?.definition || ''
+            }))
+        };
+        etymologyCache.set(lower, result);
+        return result;
+    } catch {
+        etymologyCache.set(lower, null);
+        return null;
+    }
+}
+
+function setupEtymologySection(baseWord) {
+    const section = document.getElementById('etymology-section');
+    const toggleBtn = document.getElementById('etymology-toggle');
+    const content = document.getElementById('etymology-content');
+    const familyEl = document.getElementById('etymology-family');
+    const originEl = document.getElementById('etymology-origin');
+    if (!section || !toggleBtn || !content) return;
+
+    // Show the section, reset state
+    section.style.display = '';
+    content.style.display = 'none';
+    toggleBtn.classList.remove('active');
+    familyEl.innerHTML = '';
+    originEl.innerHTML = '';
+
+    // Remove old listener by cloning
+    const newBtn = toggleBtn.cloneNode(true);
+    toggleBtn.parentNode.replaceChild(newBtn, toggleBtn);
+
+    newBtn.addEventListener('click', async () => {
+        const isOpen = content.style.display !== 'none';
+        if (isOpen) {
+            content.style.display = 'none';
+            newBtn.classList.remove('active');
+            return;
+        }
+        content.style.display = '';
+        newBtn.classList.add('active');
+
+        // Word family (synchronous)
+        const family = findWordFamily(baseWord);
+        if (family.length > 0) {
+            familyEl.innerHTML = `
+                <div class="etymology-family-label">Word Family</div>
+                <div class="etymology-family-words">
+                    ${family.map(w => `<span class="etymology-family-word">${w}</span>`).join('')}
+                </div>`;
+        } else {
+            familyEl.innerHTML = '<div class="etymology-family-label">Word Family</div><div style="opacity:0.5">No related forms found in word list</div>';
+        }
+
+        // Etymology (async fetch)
+        originEl.innerHTML = '<div class="etymology-origin-label">Etymology</div><div style="opacity:0.5">Loading...</div>';
+        const etym = await fetchEtymology(baseWord);
+        if (etym && (etym.origin || etym.meanings.length > 0)) {
+            let html = '<div class="etymology-origin-label">Etymology</div>';
+            if (etym.origin) {
+                html += `<div class="etymology-origin-text">${etym.origin}</div>`;
+            }
+            if (etym.meanings.length > 0) {
+                html += '<div style="margin-top:6px">';
+                for (const m of etym.meanings) {
+                    html += `<div><strong style="color:var(--secondary-accent)">${m.partOfSpeech}</strong>: ${m.definition}</div>`;
+                }
+                html += '</div>';
+            }
+            originEl.innerHTML = html;
+        } else {
+            originEl.innerHTML = '<div class="etymology-origin-label">Etymology</div><div style="opacity:0.5">No etymology data available</div>';
+        }
+    });
+}
+
 // --- Update Modal Header ---
 // Updates the modal header based on current sort mode
 function updateModalHeader() {
@@ -1360,6 +1486,7 @@ function navigateWordInModal(direction) {
     // Refresh modal content
     updateModalHeader();
     displayRhymeList(newWord.toLowerCase());
+    setupEtymologySection(newWord);
 }
 
 // --- Get Currently Displayed Word ---
@@ -1427,6 +1554,9 @@ export function showRhymeFinder() {
     // Populate List
     displayRhymeList(baseWordLower); // Calls internal helper which calls getValidRhymesForWord
 
+    // Set up etymology section for current word
+    setupEtymologySection(baseWord);
+
     modal.openModal(ui.elements.rhymeFinderModal);
 }
 
@@ -1465,10 +1595,20 @@ export function addManualRhyme() {
         if (!state.manualRhymes[baseWordLower]) state.manualRhymes[baseWordLower] = new Set();
         if (state.manualRhymes[baseWordLower].has(suggestedWord)) { return; }
         state.manualRhymes[baseWordLower].add(suggestedWord);
+
+        // If word isn't on the main word list, add it as a new entry
+        const suggestedUpper = suggestedWord.toUpperCase();
+        const onList = state.wordList.some(w => w.toUpperCase() === suggestedUpper);
+        if (!onList) {
+            state.wordList.push(suggestedWord);
+            console.log(`"${suggestedWord}" added to word list (${state.wordList.length} words)`);
+        }
+
         storage.saveSettings();
         state.currentRhymeList = getValidRhymesForWord(baseWord);
         displayRhymeList(baseWordLower);
-        ui.showFeedback(`"${suggestedWord}" added to manual rhymes for "${baseWord}".`);
+        const extra = onList ? '' : ' (also added to word list)';
+        ui.showFeedback(`"${suggestedWord}" added to manual rhymes for "${baseWord}"${extra}.`);
     }
     ui.elements.manualRhymeInput.value = '';
 }
