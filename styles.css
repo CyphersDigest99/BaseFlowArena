@@ -1998,7 +1998,10 @@ input[type="range"] {
     border-radius: 3px;
 }
 .transcript-area .led-ticker-wrap .ticker-belt {
-    font-size: 10px;
+    font-size: 22px;
+    font-family: 'Roboto', sans-serif;
+    color: rgb(217, 140, 89);
+    background-color: rgb(72, 5, 40);
 }
 
 #new-transcript {
@@ -2140,10 +2143,11 @@ input[type="range"] {
     min-width: 0;
 }
 
-/* Compact vertical mic level meter */
-#mic-visualizer-canvas {
-    width: 18px;
-    height: 60px;
+/* Compact vertical mic level meters — left and right side margins */
+#mic-visualizer-canvas,
+#mic-visualizer-canvas-left {
+    width: 8px;
+    height: 250px;
     flex-shrink: 0;
     align-self: flex-end;
     background-color: rgba(0, 0, 0, 0.3);

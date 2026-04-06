@@ -314,7 +314,7 @@ function buildPluralMap(words) {
         if (wordSet.has(wl + 's')) {
             skipSet.add(wl + 's');
             displayMap.set(wl, word + '/s');
-        } else if (wordSet.has(wl + 'es')) {
+        } else if (/(?:s|sh|ch|x|z|o)$/.test(wl) && wordSet.has(wl + 'es')) {
             skipSet.add(wl + 'es');
             displayMap.set(wl, word + '/es');
         }
@@ -1138,10 +1138,26 @@ function getTierLabel(tier) {
 
 // --- Phonetic Ending Sort ---
 function sortByPhoneticEnding(words, baseWord) {
-    // Get the base word's rhyming part (from last stressed vowel onwards)
+    // Extract orthographic rhyming suffix (from last non-silent vowel onwards)
+    function getSpelledEnding(word) {
+        const w = word.toLowerCase();
+        const vowels = 'aeiouy';
+        // Trailing silent 'e': if word ends in consonant + 'e', exclude it when searching
+        let searchEnd = w.length;
+        if (w.length > 2 && w[w.length - 1] === 'e' && !vowels.includes(w[w.length - 2])) {
+            searchEnd = w.length - 1;
+        }
+        for (let i = searchEnd - 1; i >= 0; i--) {
+            if (vowels.includes(w[i])) return w.slice(i);
+        }
+        return w;
+    }
+
+    // Get the base word's rhyming phoneme key and spelled ending
     const basePhonemes = getPhonemes(baseWord);
     const baseEnding = basePhonemes ? extractRhymingPart(basePhonemes) : null;
     const baseEndingKey = baseEnding ? baseEnding.map(p => p.replace(/[012]$/, '')).join('-') : null;
+    const baseSpelledEnding = getSpelledEnding(baseWord);
 
     function getEndingKey(word) {
         const phonemes = getPhonemes(word.toLowerCase());
@@ -1150,7 +1166,7 @@ function sortByPhoneticEnding(words, baseWord) {
         return ending ? ending.map(p => p.replace(/[012]$/, '')).join('-') : null;
     }
 
-    // Partition: exact ending match vs others
+    // Partition: exact phonetic ending match vs others
     const exact = [];
     const others = [];
     for (const word of words) {
@@ -1161,8 +1177,17 @@ function sortByPhoneticEnding(words, baseWord) {
         }
     }
 
-    // Sort each group alphabetically
-    exact.sort((a, b) => a.localeCompare(b));
+    // Within exact group: base word's spelling first, then alphabetically by spelled ending, then by full word
+    exact.sort((a, b) => {
+        const aEnd = getSpelledEnding(a);
+        const bEnd = getSpelledEnding(b);
+        const aIsBase = aEnd === baseSpelledEnding ? 0 : 1;
+        const bIsBase = bEnd === baseSpelledEnding ? 0 : 1;
+        if (aIsBase !== bIsBase) return aIsBase - bIsBase;
+        if (aEnd !== bEnd) return aEnd.localeCompare(bEnd);
+        return a.localeCompare(b);
+    });
+
     others.sort((a, b) => a.localeCompare(b));
 
     return [...exact, ...others];

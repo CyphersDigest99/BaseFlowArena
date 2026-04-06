@@ -20,6 +20,8 @@ let analyser = null;
 let source = null;
 let canvas = null;
 let ctx = null;
+let canvasLeft = null;
+let ctxLeft = null;
 let animationId = null;
 let isActive = false;
 let volumeHistory = []; // Track recent volume levels for adaptive sensitivity
@@ -39,18 +41,19 @@ const config = {
  */
 export async function initAudioVisualizer(stream) {
     try {
-        // Get canvas element
+        // Get canvas elements
         canvas = document.getElementById('mic-visualizer-canvas');
         if (!canvas) {
             console.error('Mic visualizer canvas not found');
             return false;
         }
-        
         ctx = canvas.getContext('2d');
         if (!ctx) {
             console.error('Could not get 2D context for mic visualizer canvas');
             return false;
         }
+        canvasLeft = document.getElementById('mic-visualizer-canvas-left');
+        ctxLeft = canvasLeft ? canvasLeft.getContext('2d') : null;
 
         // Create audio context
         audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -76,9 +79,11 @@ export async function initAudioVisualizer(stream) {
         draw();
         
         // Add visual indicator that visualizer is active
-        if (canvas) {
-            canvas.style.borderColor = '#00ffff';
-            canvas.style.boxShadow = '0 0 10px rgba(0, 255, 255, 0.5)';
+        for (const c of [canvas, canvasLeft]) {
+            if (c) {
+                c.style.borderColor = '#00ffff';
+                c.style.boxShadow = '0 0 10px rgba(0, 255, 255, 0.5)';
+            }
         }
         
         console.log('Audio visualizer initialized successfully');
@@ -105,26 +110,21 @@ export function stopAudioVisualizer() {
         source.disconnect();
         source = null;
     }
-    
+
     if (analyser) {
         analyser.disconnect();
         analyser = null;
     }
-    
+
     if (audioContext && audioContext.state !== 'closed') {
         audioContext.close();
         audioContext = null;
     }
-    
-    // Clear the canvas
-    if (ctx && canvas) {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-    }
-    
-    // Remove visual indicator
-    if (canvas) {
-        canvas.style.borderColor = '';
-        canvas.style.boxShadow = '';
+
+    // Clear canvases and remove visual indicators
+    for (const [c, cx] of [[canvas, ctx], [canvasLeft, ctxLeft]]) {
+        if (cx && c) cx.clearRect(0, 0, c.width, c.height);
+        if (c) { c.style.borderColor = ''; c.style.boxShadow = ''; }
     }
     
     // Reset volume history
@@ -185,11 +185,13 @@ function draw() {
         // Clamp to 0-1 range
         normalizedVolume = Math.max(0, Math.min(1, normalizedVolume));
         
-        // Clear canvas
+        // Clear and draw on both canvases
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        
-        // Draw the volume bar
-        drawVolumeBar(normalizedVolume);
+        drawVolumeBar(ctx, canvas, normalizedVolume);
+        if (ctxLeft && canvasLeft) {
+            ctxLeft.clearRect(0, 0, canvasLeft.width, canvasLeft.height);
+            drawVolumeBar(ctxLeft, canvasLeft, normalizedVolume);
+        }
         
         // Continue the animation loop
         animationId = requestAnimationFrame(draw);
@@ -197,19 +199,22 @@ function draw() {
         console.error('Error in audio visualizer draw loop:', error);
         // Stop the visualizer if there's an error
         isActive = false;
-        if (canvas) {
-            canvas.style.borderColor = '';
-            canvas.style.boxShadow = '';
+        for (const c of [canvas, canvasLeft]) {
+            if (c) { c.style.borderColor = ''; c.style.boxShadow = ''; }
         }
     }
 }
 
 /**
- * Draw a vertical volume bar on the canvas (fills bottom-to-top)
+ * Draw a vertical volume bar on a canvas (fills bottom-to-top)
+ * @param {CanvasRenderingContext2D} cx - 2D context to draw on
+ * @param {HTMLCanvasElement} cv - Canvas element
  * @param {number} volume - Normalized volume (0-1)
  */
-function drawVolumeBar(volume) {
-    if (!ctx || !canvas) return;
+function drawVolumeBar(cx, cv, volume) {
+    if (!cx || !cv) return;
+    const ctx = cx;
+    const canvas = cv;
 
     const w = canvas.width;
     const h = canvas.height;
