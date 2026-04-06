@@ -226,10 +226,18 @@ async function handleDetectBpmClick() {
 function attachEventListeners() {
     // Word Navigation & Actions
     ui.elements.prevWordButton?.addEventListener('click', () => {
+        if (state.autoCyclePaused) {
+            state.autoCyclePaused = false;
+            ui.showFeedback('Auto-cycle resumed', false, 1500);
+        }
         ui.clearTranscriptSelection();
         wordManager.previousWord();
     });
     ui.elements.nextWordButton?.addEventListener('click', () => {
+        if (state.autoCyclePaused) {
+            state.autoCyclePaused = false;
+            ui.showFeedback('Auto-cycle resumed', false, 1500);
+        }
         ui.clearTranscriptSelection();
         wordManager.nextWord();
     });
@@ -276,11 +284,26 @@ function attachEventListeners() {
             return;
         }
 
-        // Regular slot click — set as active word
-        ui.clearTranscriptSelection();
-        state.transcriptSelectedWord = word;
-        ui.updateRecentWordsTray();
-        wordManager.setActiveWord(word);
+        // Regular slot click — set as active word with auto-cycle pause
+        const wasPaused = state.autoCyclePaused;
+        const sameWord = state.transcriptSelectedWord === word;
+
+        if (wasPaused && sameWord) {
+            // Same pill clicked again — resume auto-cycle
+            state.autoCyclePaused = false;
+            state.transcriptSelectedWord = null;
+            ui.updateRecentWordsTray();
+            ui.showFeedback('Auto-cycle resumed', false, 1500);
+        } else {
+            // First click or different pill — pause auto-cycle, set word
+            state.autoCyclePaused = true;
+            state.transcriptSelectedWord = word;
+            ui.updateRecentWordsTray();
+            wordManager.setActiveWord(word);
+            if (state.activationMode === 'voice') {
+                ui.showFeedback('Auto-cycle paused', false, 1500);
+            }
+        }
     });
 
     // Clear feed button — single click clears transcript, double-click also clears word tray
@@ -290,8 +313,9 @@ function attachEventListeners() {
     });
     clearFeedBtn?.addEventListener('dblclick', () => {
         ui.clearTranscript();
-        state.traySlots.fill(null);
+        state.traySlots = [];
         state.trayAgeCounter = 0;
+        state.trayCapacity = Infinity;
         ui.updateRecentWordsTray();
     });
 

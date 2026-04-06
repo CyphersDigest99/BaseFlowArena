@@ -59,9 +59,11 @@ export const state = {
     transcriptTimeout: null, // Timer for clearing transcript
     timedInterval: null, // Interval for timed word cycling
     voiceRhymeMode: false, // Controls whether voice matches should navigate rhymes
+    autoCyclePaused: false, // When true, voice match still runs but doesn't advance the word
     transcriptSelectedWord: null, // Currently selected word from transcript (string or null)
-    traySlots: new Array(20).fill(null), // Fixed-size pill tray: null = empty, { word, age } = occupied
-    trayAgeCounter: 0,                    // Monotonic counter for slot insertion ordering
+    traySlots: [],          // Dynamic pill tray: { word, age } entries, grows until tray overflows
+    trayAgeCounter: 0,      // Monotonic counter for slot insertion ordering
+    trayCapacity: Infinity, // Set when overflow first detected; replacement kicks in after this
 
     // BPM / Rhythm - Beat detection and timing
     bpm: 0, // Current detected beats per minute

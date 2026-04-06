@@ -50,6 +50,14 @@ export function setupSpeechRecognition() {
     state.recognition.onerror = onRecognitionError;
     state.recognition.onend = onRecognitionEnd;
 
+    // Recover STT when tab regains visibility (browser suspends recognition in background)
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden && state.activationMode === 'voice' && !state.isMicActive) {
+            console.log('Tab visible again, restarting speech recognition...');
+            scheduleRecognitionRestart(300);
+        }
+    });
+
     console.log("Speech Recognition initialized.");
     return true; // Indicate success
 }
@@ -187,33 +195,39 @@ function onRecognitionError(event) {
 
 // Handles the end of speech recognition hardware (intentional or not)
 function onRecognitionEnd() {
-    const wasMicActive = state.isMicActive; // Capture state before update
     state.isMicActive = false;
     console.log('Speech recognition hardware ended.');
-    ui.updateActivationUI(); // Update button visual state immediately
+    ui.updateActivationUI();
 
-    const micShouldBeActiveIntent = (state.activationMode === 'voice');
-
-    // Only attempt restart if it was active and SHOULD be active (mode is still 'voice')
-    if (wasMicActive && micShouldBeActiveIntent && state.recognition) {
-        console.log('Recognition ended unexpectedly, attempting restart...');
-        // Use a small delay to prevent rapid-fire restarts on some errors
-        setTimeout(() => {
-            if (state.activationMode === 'voice' && !state.isMicActive) { // Check state again before restarting
-                try {
-                    startRecognition(); // Attempt to restart
-                } catch (err) {
-                     console.error('Error restarting recognition hardware:', err);
-                     // Potentially call setActivationMode('manual') here if restart fails critically
-                     ui.showFeedback("Failed to restart mic.", true, 4000);
-                }
-            } else {
-                console.log('Activation mode changed or mic restarted during timeout. Not restarting.');
-            }
-        }, 500); // Delay before restart attempt
+    // If voice mode is still active, always attempt restart
+    if (state.activationMode === 'voice' && state.recognition) {
+        console.log('Recognition ended while voice mode active, restarting...');
+        scheduleRecognitionRestart();
     } else {
-         console.log('Mic ended intentionally or mode changed.');
+        console.log('Mic ended intentionally or mode changed.');
     }
+}
+
+// Robust restart with verification — retries if start() silently fails
+let _restartTimer = null;
+function scheduleRecognitionRestart(delay = 500) {
+    if (_restartTimer) clearTimeout(_restartTimer);
+    _restartTimer = setTimeout(() => {
+        _restartTimer = null;
+        if (state.activationMode !== 'voice' || state.isMicActive) return;
+        try {
+            startRecognition();
+        } catch (err) {
+            console.error('Error restarting recognition:', err);
+        }
+        // Verify it actually started — if onstart doesn't fire within 2s, retry
+        setTimeout(() => {
+            if (state.activationMode === 'voice' && !state.isMicActive) {
+                console.warn('Recognition start() may have failed silently, retrying...');
+                try { startRecognition(); } catch (e) { /* give up */ }
+            }
+        }, 2000);
+    }, delay);
 }
 
 // --- Control Functions ---
@@ -303,6 +317,11 @@ function checkForWordMatch(utterance) {
 
          // Check similarity AND ensure it's not the same match we just processed
          if (similarity >= state.LEVENSHTEIN_THRESHOLD && targetWord !== state.lastMatchedWord) {
+              // When auto-cycle is paused, ignore the match entirely (no score, no effects)
+              if (state.autoCyclePaused) {
+                  break;
+              }
+
               console.log(`MATCH: "${spokenWord}" (${similarity.toFixed(2)}) vs "${targetWord}"`);
               state.lastMatchedWord = targetWord; // Debounce - set immediately
 
@@ -314,28 +333,19 @@ function checkForWordMatch(utterance) {
               utils.triggerPixelBlockEffect(); // Use new pixel block effect
 
               // TIMING COORDINATION: Schedule the next word change with a longer delay
-              // This allows the dissolve animation to complete before the new word appears
-              // The animation effect waits for the word change to happen naturally
               setTimeout(() => {
-                  // Double-check the mode hasn't changed during the timeout
                   if (state.activationMode === 'voice' && targetWord === state.lastMatchedWord) {
                       ui.clearTranscriptSelection();
-                      // Check if we should navigate rhymes or get a random word
                       if (state.voiceRhymeMode) {
-                          // Try to navigate to next rhyme, fallback to random word if no more rhymes
                           const rhymeNavigated = wordManager.navigateNextRhymeForVoice();
                           if (!rhymeNavigated) {
-                              // No more rhymes, get next random word
                               wordManager.changeWord('next', false, true);
                           }
                       } else {
-                          // Normal behavior - get next random word
                           wordManager.changeWord('next', false, true);
                       }
-                  } else {
-                      console.warn("Mode changed or word advanced before match timeout completed.");
                   }
-              }, 800); // Increased delay to allow dissolve animation to complete
+              }, 800);
 
               break; // Match found for this utterance, stop checking words
          }
