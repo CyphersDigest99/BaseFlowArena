@@ -302,7 +302,7 @@ function checkForWordMatch(utterance) {
      }
 
      // Get the currently displayed word (could be base word or rhyme)
-     const displayedWord = ui.elements.wordDisplay?.textContent;
+     const displayedWord = ui.elements.wordDisplay?.dataset.word || ui.elements.wordDisplay?.textContent;
      const targetWord = displayedWord?.toLowerCase(); // Safely access displayed word
      if (!targetWord || targetWord === "no words!" || targetWord === "loading..." || targetWord === "error" || targetWord.length < 2) {
          return; // Exit if no valid target word
@@ -368,7 +368,14 @@ function processVoiceCommands(utterance) {
         ui.showFeedback("Next word!", false, 1500);
         return true;
     }
-    
+
+    // Command: "blacklist"
+    if (lowerUtterance.includes('blacklist')) {
+        console.log('Voice command detected: "blacklist"');
+        wordManager.toggleBlacklist();
+        return true;
+    }
+
     // Command: "show rhymes"
     if (lowerUtterance.includes('show rhymes')) {
         console.log('Voice command detected: "show rhymes"');
@@ -398,7 +405,7 @@ function processVoiceCommands(utterance) {
 // --- Helper function for showing definition ---
 // Fetches and displays the definition for the currently displayed word
 async function showDefinitionForCurrentWord() {
-    const currentDisplayedWord = ui.elements.wordDisplay?.textContent;
+    const currentDisplayedWord = ui.elements.wordDisplay?.dataset.word || ui.elements.wordDisplay?.textContent;
     if (!currentDisplayedWord || currentDisplayedWord === "NO WORDS!" || currentDisplayedWord === "LOADING..." || currentDisplayedWord === "ERROR") {
         ui.showFeedback("No word available for definition", true, 2000);
         return;
@@ -432,7 +439,8 @@ function containsCommandKeywords(utterance) {
     // Check for exact command phrases, not just individual words
     const commandPhrases = [
         'next word',
-        'show rhymes', 
+        'blacklist',
+        'show rhymes',
         'hide rhymes',
         'show definition'
     ];

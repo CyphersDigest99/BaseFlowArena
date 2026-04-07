@@ -50,7 +50,7 @@ let tooltipCurrentWord = ''; // Tracks which word the tooltip is currently showi
 
 // Helper function to get the currently displayed word (moved to module scope)
 function getCurrentlyDisplayedWord() {
-    return ui.elements.wordDisplay?.textContent || state.currentWord;
+    return ui.elements.wordDisplay?.dataset.word || ui.elements.wordDisplay?.textContent || state.currentWord;
 }
 
 // Prefetch synonyms/definition for the current word to improve tooltip responsiveness

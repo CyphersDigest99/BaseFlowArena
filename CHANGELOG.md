@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-04-07
+- Move feedback notification to thin sliver between header and word-display-unit (12px uppercase, vertically centered)
+- Word display: Roboto 28px font (per PromptPad annotation)
+- Rhymes button: Verdana 13px, green on black (per PromptPad annotation)
+- Selectable word display — invisible overlay span lets users highlight/right-click the full word for web search while keeping per-letter split-flap tile visuals
+- Switch all word-reads from `wordDisplay.textContent` to `wordDisplay.dataset.word` to avoid double-text from overlay (fixes blacklist showing "wordword", voice match cycling, definition lookup)
+- Add "blacklist" voice command
+- Plural collapse: only apply +es matching to words ending in s/sh/ch/x/z/o (fixes false "mobil" + "es" → "mobiles" collapse)
+
 ## 2026-04-06
 - Filter ~1300 proper names from word-list.txt via NLTK names corpus (filter_names.py)
 - Collapse singular/plural pairs in rhyme modal (critic + critics → critic with small baseline s)

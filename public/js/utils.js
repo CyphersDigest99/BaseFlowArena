@@ -114,14 +114,14 @@ export function triggerHorizontalSwipe(direction = 'right', newWord = null) {
     
     if (!wordDisplay) return;
 
-    const currentWord = wordDisplay.textContent;
+    const currentWord = wordDisplay.dataset.word || wordDisplay.textContent;
     if (!currentWord || currentWord === "NO WORDS!" || currentWord === "LOADING..." || currentWord === "ERROR") {
         return;
     }
 
     // For now, just update the word display directly since we don't have the slot system
     if (newWord) {
-        wordDisplay.textContent = newWord;
+        wordDisplay.dataset.word = newWord;
     }
 }
 
@@ -132,17 +132,17 @@ export function triggerHorizontalSwipe(direction = 'right', newWord = null) {
  */
 export function triggerVerticalSwipe(direction = 'down', newWord = null) {
     const wordDisplay = document.getElementById('word-display');
-    
+
     if (!wordDisplay) return;
 
-    const currentWord = wordDisplay.textContent;
+    const currentWord = wordDisplay.dataset.word || wordDisplay.textContent;
     if (!currentWord || currentWord === "NO WORDS!" || currentWord === "LOADING..." || currentWord === "ERROR") {
         return;
     }
 
     // For now, just update the word display directly since we don't have the slot system
     if (newWord) {
-        wordDisplay.textContent = newWord;
+        wordDisplay.dataset.word = newWord;
     }
 }
 
@@ -155,7 +155,7 @@ export function triggerPixelBlockEffect() {
     const wordDisplay = document.getElementById('word-display');
     if (!wordDisplay) return;
 
-    const currentWord = wordDisplay.textContent;
+    const currentWord = wordDisplay.dataset.word || wordDisplay.textContent;
     if (!currentWord || currentWord === "NO WORDS!" || currentWord === "LOADING..." || currentWord === "ERROR") {
         return;
     }

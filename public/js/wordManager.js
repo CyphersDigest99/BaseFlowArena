@@ -582,7 +582,7 @@ export function setActiveWord(word) {
 // --- Word Actions (Blacklist/Favorite) ---
 // Toggles blacklist status of displayed word (base word or rhyme)
 export function toggleBlacklist() {
-    const wordToToggle = ui.elements.wordDisplay?.textContent; // Act on DISPLAYED word
+    const wordToToggle = ui.elements.wordDisplay?.dataset.word || ui.elements.wordDisplay?.textContent;
     if (!wordToToggle || wordToToggle === "NO WORDS!" || wordToToggle === "LOADING..." || wordToToggle === "ERROR") {
         console.warn("Cannot blacklist invalid displayed word."); return;
     }
@@ -681,7 +681,7 @@ export function toggleBlacklist() {
 
 // Toggles favorite status of displayed word (base word or rhyme)
 export function toggleFavorite() {
-    const wordToToggle = ui.elements.wordDisplay?.textContent; // Act on DISPLAYED word
+    const wordToToggle = ui.elements.wordDisplay?.dataset.word || ui.elements.wordDisplay?.textContent;
     if (!wordToToggle || wordToToggle === "NO WORDS!" || wordToToggle === "LOADING..." || wordToToggle === "ERROR") {
         console.warn("Cannot favorite invalid displayed word."); return;
     }

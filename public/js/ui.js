@@ -263,13 +263,11 @@ window.addEventListener('resize', () => {
     clearTimeout(resizeTimeout);
     resizeTimeout = setTimeout(() => {
         // Only recalculate if there's a current word displayed
-        if (elements.wordDisplay && elements.wordDisplay.textContent && 
-            elements.wordDisplay.textContent !== 'LOADING...' && 
-            elements.wordDisplay.textContent !== 'NO WORDS!') {
-            
+        const resizeWord = elements.wordDisplay?.dataset.word || elements.wordDisplay?.textContent;
+        if (resizeWord && resizeWord !== 'LOADING...' && resizeWord !== 'NO WORDS!') {
+
             console.log('Window resized, recalculating font size for current word');
-            // Re-display the current word to trigger font size recalculation
-            const currentWord = elements.wordDisplay.textContent;
+            const currentWord = resizeWord;
             displayWord(currentWord);
         }
     }, 250); // Wait 250ms after resize stops before recalculating
@@ -293,11 +291,14 @@ export function displayWord(word, direction = null) { // word is the word to dis
         return;
     }
 
-    const previousWord = elements.wordDisplay.textContent || elements.wordDisplay.innerText;
+    const previousWord = elements.wordDisplay.dataset.word || '';
     console.log(`displayWord called: "${previousWord}" -> "${word}"`);
 
     // Use provided direction, or fall back to last set direction
     const flipDir = direction || lastFlipDirection;
+
+    // Store canonical word in data attribute (textContent is unreliable with overlay)
+    elements.wordDisplay.dataset.word = word;
 
     // Split-flap display animation - all letters flip from same direction
     if (previousWord && previousWord !== word) {
@@ -314,9 +315,21 @@ export function displayWord(word, direction = null) { // word is the word to dis
         void elements.wordDisplay.offsetWidth;
         elements.wordDisplay.classList.add(flipDir === 'top' ? 'flip-from-top' : 'flip-from-bottom');
     } else {
-        // No animation for initial load or same word
-        elements.wordDisplay.textContent = word;
+        // No animation for initial load or same word — still use flip-letter spans
+        elements.wordDisplay.innerHTML = word.split('').map((letter) => {
+            const displayChar = letter === ' ' ? '&nbsp;' : letter;
+            return `<span class="flip-letter" style="opacity:1">${displayChar}</span>`;
+        }).join('');
     }
+
+    // Add invisible selectable overlay so the full word can be highlighted/right-clicked
+    let overlay = elements.wordDisplay.querySelector('.word-select-overlay');
+    if (!overlay) {
+        overlay = document.createElement('span');
+        overlay.className = 'word-select-overlay';
+        elements.wordDisplay.appendChild(overlay);
+    }
+    overlay.textContent = word;
 
     // Verify the text was actually set
     console.log(`After setting textContent, wordDisplay.textContent: "${elements.wordDisplay.textContent}"`);
