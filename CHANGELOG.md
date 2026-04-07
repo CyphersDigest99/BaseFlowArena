@@ -1,6 +1,8 @@
 # Changelog
 
 ## 2026-04-07
+- Timed cycle minimum speed lowered from 3s to 1s (slider + internal clamp)
+- Fix layout shift on book-icon hover: synonym/definition grid rows changed from minmax(20px, auto) to fixed 60px height
 - Move feedback notification to thin sliver between header and word-display-unit (12px uppercase, vertically centered)
 - Word display: Roboto 28px font (per PromptPad annotation)
 - Rhymes button: Verdana 13px, green on black (per PromptPad annotation)

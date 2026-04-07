@@ -43,6 +43,7 @@ import * as reverseSearch from './reverseSearch.js'; // Import the reverse searc
 import * as phonetics from './phonetics.js';
 import * as fillerTicker from './fillerTicker.js';
 import * as keyFinder from './keyFinder.js';
+import * as helpDrawer from './helpDrawer.js';
 
 // Cached word data for tooltip display and performance optimization
 let lastWordData = { synonyms: '', definition: '', word: '' };
@@ -139,6 +140,9 @@ async function initializeApp() {
     // 10. Initialize filler ticker
     fillerTicker.init();
 
+    // 11. Initialize help drawer (scaffold mode)
+    helpDrawer.init();
+
     console.log("--- Initialization Complete ---");
 }
 
@@ -168,7 +172,7 @@ function setActivationMode(newMode) {
 function startTimedCycleInternal() {
     if (state.timedInterval) clearInterval(state.timedInterval);
     if (!ui.elements.cycleSpeedInput) return;
-    state.cycleSpeed = Math.max(3, Math.min(parseInt(ui.elements.cycleSpeedInput.value, 10) || state.cycleSpeed, 30));
+    state.cycleSpeed = Math.max(1, Math.min(parseInt(ui.elements.cycleSpeedInput.value, 10) || state.cycleSpeed, 30));
     ui.elements.cycleSpeedInput.value = state.cycleSpeed;
     if (ui.elements.cycleSpeedSlider) ui.elements.cycleSpeedSlider.value = state.cycleSpeed;
     console.log(`Starting timed cycle. Interval: ${state.cycleSpeed}s.`);
@@ -562,7 +566,7 @@ function attachEventListeners() {
 
     // Timed Mode Speed Controls - Manages automatic word cycling speed
     const handleCycleSpeedChange = () => {
-        const speed = Math.max(3, Math.min(parseInt(ui.elements.cycleSpeedInput.value, 10) || 10, 30));
+        const speed = Math.max(1, Math.min(parseInt(ui.elements.cycleSpeedInput.value, 10) || 10, 30));
         if (state.cycleSpeed !== speed) {
             state.cycleSpeed = speed;
             if (document.activeElement !== ui.elements.cycleSpeedInput && ui.elements.cycleSpeedInput) ui.elements.cycleSpeedInput.value = speed;
