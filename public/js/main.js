@@ -1293,21 +1293,7 @@ function selectRhymeWord(word) {
 
 // --- Beat Player Conditional Initialization ---
 async function checkBeatsAndInitPlayer() {
-    const playlist = getPlaylist();
-    if (!playlist || playlist.length === 0) {
-        hideBeatPlayerBar();
-        return;
-    }
-    // Try to fetch the first beat file to see if it exists
-    try {
-        const response = await fetch(playlist[0].file, { method: 'HEAD' });
-        if (!response.ok) throw new Error('Not found');
-        // At least one beat exists
-        initializeBeatPlayer();
-        showBeatPlayerBar();
-    } catch (e) {
-        hideBeatPlayerBar();
-    }
+    hideBeatPlayerBar();
 }
 
 function hideBeatPlayerBar() {
