@@ -43,7 +43,7 @@ export function setOnHostChange(callback) {
 export function connect(instanceId, userId) {
   _userId = userId;
 
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     _socket = new PartySocket({
       host: PARTYKIT_HOST,
       room: instanceId,
@@ -60,6 +60,7 @@ export function connect(instanceId, userId) {
 
     _socket.addEventListener('error', (err) => {
       console.error('[session] WebSocket error:', err);
+      reject(new Error('[session] WebSocket connection failed'));
     });
 
     _socket.addEventListener('close', () => {

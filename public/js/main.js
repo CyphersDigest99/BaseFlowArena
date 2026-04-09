@@ -103,16 +103,12 @@ async function initDiscordSession() {
       sessionStorage.setItem(SESSION_KEY, userId);
     }
 
-    await session.connect(discordSdk.instanceId, userId);
-
-    // Wire up host-change callback: update UI whenever host status changes
+    // Register callback before connect() so ROOM_STATE fires it correctly during connect()
     session.setOnHostChange((isHostNow) => {
       roles.applyRoleUI(isHostNow);
     });
 
-    // Apply initial role UI (session.connect resolves after ROOM_STATE is received,
-    // so isHost() is accurate here)
-    roles.applyRoleUI(session.isHost());
+    await session.connect(discordSdk.instanceId, userId);
 
   } catch (err) {
     console.error('[discord] Session init failed, continuing in standalone mode:', err);
