@@ -58,18 +58,64 @@ export function setupSpeechRecognition() {
         }
     });
 
+    initSttSliders();
     console.log("Speech Recognition initialized.");
     return true; // Indicate success
+}
+
+// Wire up the Flush Interval and Min Chars sliders in the Live Feed gear modal,
+// and restore saved values from localStorage.
+const STT_SETTINGS_KEY = 'sttCycleSettings';
+
+function initSttSliders() {
+    // Load saved settings
+    try {
+        const saved = JSON.parse(localStorage.getItem(STT_SETTINGS_KEY) || '{}');
+        if (saved.cycleMs)   CYCLE_RESTART_MS = saved.cycleMs;
+        if (saved.minChars)  CYCLE_MIN_INTERIM_CHARS = saved.minChars;
+    } catch (e) { /* ignore corrupt data */ }
+
+    const msSlider  = document.getElementById('stt-cycle-ms');
+    const msLabel   = document.getElementById('stt-cycle-ms-val');
+    const chSlider  = document.getElementById('stt-min-chars');
+    const chLabel   = document.getElementById('stt-min-chars-val');
+
+    if (msSlider) {
+        msSlider.value = CYCLE_RESTART_MS;
+        if (msLabel) msLabel.textContent = CYCLE_RESTART_MS + 'ms';
+        msSlider.addEventListener('input', () => {
+            CYCLE_RESTART_MS = parseInt(msSlider.value, 10);
+            if (msLabel) msLabel.textContent = CYCLE_RESTART_MS + 'ms';
+            localStorage.setItem(STT_SETTINGS_KEY,
+                JSON.stringify({ cycleMs: CYCLE_RESTART_MS, minChars: CYCLE_MIN_INTERIM_CHARS }));
+        });
+    }
+    if (chSlider) {
+        chSlider.value = CYCLE_MIN_INTERIM_CHARS;
+        if (chLabel) chLabel.textContent = CYCLE_MIN_INTERIM_CHARS;
+        chSlider.addEventListener('input', () => {
+            CYCLE_MIN_INTERIM_CHARS = parseInt(chSlider.value, 10);
+            if (chLabel) chLabel.textContent = CYCLE_MIN_INTERIM_CHARS;
+            localStorage.setItem(STT_SETTINGS_KEY,
+                JSON.stringify({ cycleMs: CYCLE_RESTART_MS, minChars: CYCLE_MIN_INTERIM_CHARS }));
+        });
+    }
 }
 
 // --- Speech Recognition Event Handlers ---
 // Handles the start of speech recognition hardware
 function onRecognitionStart() {
+    const wasCycleRestart = state.intentionalCycleRestart;
+    state.intentionalCycleRestart = false; // Reset flag now that we've read it
     state.isMicActive = true;
-    console.log('Mic hardware ON.');
+    console.log(wasCycleRestart ? 'Mic hardware ON (cycle restart).' : 'Mic hardware ON.');
     ui.updateActivationUI(); // Update button visual state
     if (state.activationMode === 'voice') {
-        ui.showFeedback("Voice Mode Activated", false, 2000);
+        // Only show activation toast on a true user-initiated start, not on cycle restarts
+        if (!wasCycleRestart) {
+            ui.showFeedback("Voice Mode Activated", false, 2000);
+        }
+        scheduleCycleRestart();
     }
 }
 
@@ -116,6 +162,57 @@ function stopInterimPromotion() {
         _interimPromoteInterval = null;
     }
     _promotedCharCount = 0;
+}
+
+// --- Forced STT Restart Cycle ---
+// Chrome's webkitSpeechRecognition decides when to flip interim→final based on
+// voice-activity detection. When rapping continuously with no pauses, it never
+// trips the "end of phrase" detector and the grey interim block grows unbounded.
+// Fix: periodically call recognition.stop(), which forces Chrome to flush its
+// buffer as a final result. onend then immediately restarts recognition.
+//
+// Tunable via the gear icon sliders in the Live Feed panel.
+// Lower CYCLE_RESTART_MS = smaller grey block, more mic gaps.
+// Higher CYCLE_MIN_INTERIM_CHARS = only flush when there's a lot of grey text.
+let CYCLE_RESTART_MS = 2500;
+let CYCLE_MIN_INTERIM_CHARS = 30;
+// Delay before start() after our intentional stop(). Chrome throws
+// "recognition has already started" if called synchronously inside onend.
+const CYCLE_RESTART_GAP_MS = 50;
+
+function scheduleCycleRestart() {
+    if (state.cycleRestartTimer) clearTimeout(state.cycleRestartTimer);
+    state.cycleRestartTimer = setTimeout(() => {
+        state.cycleRestartTimer = null;
+        // Only cycle if still in voice mode and mic is active
+        if (state.activationMode !== 'voice' || !state.isMicActive || !state.recognition) return;
+
+        // Skip the cycle if there's not enough grey text to make it worthwhile.
+        // The browser will keep accumulating naturally; we just check again on the next tick.
+        const interimEl = document.getElementById('new-transcript')?.querySelector('.interim');
+        const interimLen = interimEl?.textContent?.trim().length || 0;
+        if (interimLen < CYCLE_MIN_INTERIM_CHARS) {
+            scheduleCycleRestart(); // Defer — try again next cycle window
+            return;
+        }
+
+        try {
+            state.intentionalCycleRestart = true;
+            state.recognition.stop(); // Flushes interim → final, triggers onend
+        } catch (err) {
+            console.warn('Cycle restart stop() error:', err);
+            state.intentionalCycleRestart = false;
+            scheduleCycleRestart(); // Try again next cycle
+        }
+    }, CYCLE_RESTART_MS);
+}
+
+function cancelCycleRestart() {
+    if (state.cycleRestartTimer) {
+        clearTimeout(state.cycleRestartTimer);
+        state.cycleRestartTimer = null;
+    }
+    state.intentionalCycleRestart = false;
 }
 
 // Handles speech recognition results (final and interim)
@@ -196,9 +293,26 @@ function onRecognitionError(event) {
 // Handles the end of speech recognition hardware (intentional or not)
 function onRecognitionEnd() {
     state.isMicActive = false;
-    console.log('Speech recognition hardware ended.');
     ui.updateActivationUI();
 
+    // If this onend was triggered by our cycle-restart timer, bounce back up fast.
+    // Use a small gap (CYCLE_RESTART_GAP_MS) because Chrome throws if start() is
+    // called synchronously inside onend.
+    if (state.intentionalCycleRestart && state.activationMode === 'voice' && state.recognition) {
+        setTimeout(() => {
+            if (state.activationMode !== 'voice' || state.isMicActive) return;
+            try {
+                state.recognition.start();
+            } catch (err) {
+                console.warn('Cycle restart start() error, falling back to scheduled restart:', err);
+                state.intentionalCycleRestart = false;
+                scheduleRecognitionRestart(200);
+            }
+        }, CYCLE_RESTART_GAP_MS);
+        return;
+    }
+
+    console.log('Speech recognition hardware ended.');
     // If voice mode is still active, always attempt restart
     if (state.activationMode === 'voice' && state.recognition) {
         console.log('Recognition ended while voice mode active, restarting...');
@@ -264,6 +378,7 @@ export function startRecognition() {
 // Stops speech recognition hardware
 export function stopRecognition(isModeChange = false) { // `isModeChange` suppresses feedback msg
     stopInterimPromotion(); // Clean up the promotion interval
+    cancelCycleRestart(); // Kill any pending cycle restart (so it doesn't fire after user stops)
     stopAudioVisualizer();
     if (state._micStream) {
         state._micStream.getTracks().forEach(t => t.stop());

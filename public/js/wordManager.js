@@ -348,19 +348,32 @@ export function changeWord(direction = 'next', isInitial = false, isVoiceMatch =
     // --- Determine Next Index (in filteredWordList) ---
     let nextIndex = state.currentWordIndex;
     if (direction === 'previous') {
-        if (state.history.length > 0) { nextIndex = state.history.pop(); }
+        if (state.history.length > 0) {
+            if (state.currentWordIndex >= 0) state.forwardHistory.push(state.currentWordIndex);
+            nextIndex = state.history.pop();
+        }
         else { ui.showFeedback("No more history", true, 1000); return; }
     } else if (direction === 'next') {
-        switch (state.wordOrderMode) {
-            case 'random':
-                if (state.filteredWordList.length > 1) {
-                    let tempIndex;
-                    do { tempIndex = Math.floor(Math.random() * state.filteredWordList.length); }
-                    while (tempIndex === state.currentWordIndex);
-                    nextIndex = tempIndex;
-                } else { nextIndex = 0; } break;
-            case 'alphabetical': case 'sequential': default:
-                nextIndex = (state.currentWordIndex === -1) ? 0 : (state.currentWordIndex + 1) % state.filteredWordList.length; break;
+        let usedForward = false;
+        if (state.forwardHistory.length > 0) {
+            const candidateIndex = state.forwardHistory.pop();
+            if (candidateIndex >= 0 && candidateIndex < state.filteredWordList.length) {
+                nextIndex = candidateIndex;
+                usedForward = true;
+            }
+        }
+        if (!usedForward) {
+            switch (state.wordOrderMode) {
+                case 'random':
+                    if (state.filteredWordList.length > 1) {
+                        let tempIndex;
+                        do { tempIndex = Math.floor(Math.random() * state.filteredWordList.length); }
+                        while (tempIndex === state.currentWordIndex);
+                        nextIndex = tempIndex;
+                    } else { nextIndex = 0; } break;
+                case 'alphabetical': case 'sequential': default:
+                    nextIndex = (state.currentWordIndex === -1) ? 0 : (state.currentWordIndex + 1) % state.filteredWordList.length; break;
+            }
         }
     } else if (direction === 'stay') {
          nextIndex = (state.currentWordIndex === -1 && state.filteredWordList.length > 0) ? 0 : state.currentWordIndex;
@@ -566,6 +579,7 @@ export function setActiveWord(word) {
 
     state.currentWord = cleanWord;
     state.currentWordIndex = -1; // Not from the word list
+    state.forwardHistory = [];
     state.lastMatchedWord = null;
 
     state.currentRhymeList = rhyme.getValidRhymesForWord(cleanWord);
@@ -605,10 +619,21 @@ export function toggleBlacklist() {
         // Word was just blacklisted - advance to next word immediately
         // Store current state before filtering
         const currentIndex = state.currentWordIndex;
-        
+
+        // Capture forwardHistory target WORD (not index) before filter shifts indices.
+        // This preserves the "after skipping back, blacklisting shows the one you skipped from"
+        // behavior instead of generating a random word.
+        let forwardTargetWord = null;
+        if (state.forwardHistory.length > 0) {
+            const fwdIdx = state.forwardHistory[state.forwardHistory.length - 1];
+            if (fwdIdx >= 0 && fwdIdx < state.filteredWordList.length) {
+                forwardTargetWord = state.filteredWordList[fwdIdx];
+            }
+        }
+
         // Apply filters (this will remove the blacklisted word)
         applyFiltersAndSort();
-        
+
         // If the filtered list is empty, show "NO WORDS!"
         if (state.filteredWordList.length === 0) {
             state.currentWord = "NO WORDS!";
@@ -619,30 +644,42 @@ export function toggleBlacklist() {
             ui.showFeedback("Word list empty or fully blacklisted!", true, 3000);
             return;
         }
-        
-        // Advance to next word based on current word order mode
+
+        // Determine next word: prefer forward history if available
         let nextIndex;
-        switch (state.wordOrderMode) {
-            case 'random':
-                if (state.filteredWordList.length > 1) {
-                    let tempIndex;
-                    do { tempIndex = Math.floor(Math.random() * state.filteredWordList.length); }
-                    while (tempIndex === currentIndex && state.filteredWordList.length > 1);
-                    nextIndex = tempIndex;
-                } else { 
-                    nextIndex = 0; 
-                } 
-                break;
-            case 'alphabetical': 
-            case 'sequential': 
-            default:
-                // For sequential modes, try to maintain position or move to next
-                if (currentIndex >= 0 && currentIndex < state.filteredWordList.length) {
-                    nextIndex = currentIndex % state.filteredWordList.length;
-                } else {
-                    nextIndex = 0;
-                }
-                break;
+        let usedForward = false;
+        if (forwardTargetWord) {
+            const newIdx = state.filteredWordList.indexOf(forwardTargetWord);
+            if (newIdx !== -1) {
+                nextIndex = newIdx;
+                state.forwardHistory.pop(); // Consume the forward history entry
+                usedForward = true;
+            }
+        }
+
+        if (!usedForward) {
+            switch (state.wordOrderMode) {
+                case 'random':
+                    if (state.filteredWordList.length > 1) {
+                        let tempIndex;
+                        do { tempIndex = Math.floor(Math.random() * state.filteredWordList.length); }
+                        while (tempIndex === currentIndex && state.filteredWordList.length > 1);
+                        nextIndex = tempIndex;
+                    } else {
+                        nextIndex = 0;
+                    }
+                    break;
+                case 'alphabetical':
+                case 'sequential':
+                default:
+                    // For sequential modes, try to maintain position or move to next
+                    if (currentIndex >= 0 && currentIndex < state.filteredWordList.length) {
+                        nextIndex = currentIndex % state.filteredWordList.length;
+                    } else {
+                        nextIndex = 0;
+                    }
+                    break;
+            }
         }
         
         // Update state with new word

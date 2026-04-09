@@ -28,13 +28,15 @@ export const state = {
     currentWordIndex: -1, // Position of current word in filtered list
     wordOrderMode: 'random', // 'random', 'alphabetical', 'sequential'
     wordListFile: 'word-list.txt', // Currently selected word list file
-    history: [], // Recent words that have been displayed
+    history: [], // Recent words that have been displayed (back stack)
+    forwardHistory: [], // Words to revisit when going forward after back (redo stack)
     MAX_HISTORY: 20, // Maximum number of words to keep in history
 
     // Lists & Data - User preferences and word relationships
     blacklist: new Set(), // Words user has chosen to exclude
     favorites: new Set(), // Words user has marked as favorites
     ignoredFeedWords: new Set(), // Words banned from the recent-words tray
+    fillerPhrases: [],       // Lowercased filler ticker phrases for transcript penalty highlighting
     wordFrequencies: {}, // Tracks how often each word has been used
     rhymeData: null, // Loaded rhyme dictionary data
     rejectedRhymes: {}, // { baseWord: Set('rejected1', 'rejected2'), ... }
@@ -57,6 +59,8 @@ export const state = {
     finalTranscript: '', // Completed speech recognition text
     interimTranscript: '', // Ongoing speech recognition text
     transcriptTimeout: null, // Timer for clearing transcript
+    cycleRestartTimer: null, // Timer ID for forced STT restart cycle (shrinks interim grey block)
+    intentionalCycleRestart: false, // True when onend was triggered by our cycle timer (not a crash)
     timedInterval: null, // Interval for timed word cycling
     voiceRhymeMode: false, // Controls whether voice matches should navigate rhymes
     autoCyclePaused: false, // When true, voice match still runs but doesn't advance the word

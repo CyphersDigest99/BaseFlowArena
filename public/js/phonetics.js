@@ -241,10 +241,18 @@ const VOWEL_SIM = {};
     }
 })();
 
+// Rule 6: Unstressed schwa equivalence — AH0/IH0/UH0 are perceptually
+// identical in English suffixes (-ed, -es, -ing, -ness, etc.).
+// "forest" (AH0) vs "florist" (IH0) share the same schwa sound.
+const UNSTRESSED_SCHWA = new Set(['AH', 'IH', 'UH', 'IX']);
+
 function vowelSimilarity(p1, p2) {
     const v1 = p1.replace(/[012]$/, '');
     const v2 = p2.replace(/[012]$/, '');
     if (v1 === v2) return 1.0;
+    if (/0$/.test(p1) && /0$/.test(p2) && UNSTRESSED_SCHWA.has(v1) && UNSTRESSED_SCHWA.has(v2)) {
+        return 1.0;
+    }
     const key = v1 < v2 ? `${v1}-${v2}` : `${v2}-${v1}`;
     return VOWEL_SIM[key] ?? 0.1;
 }
@@ -286,6 +294,11 @@ function consonantSimilarity(p1, p2) {
     const c1 = p1.replace(/[012]$/, '');
     const c2 = p2.replace(/[012]$/, '');
     if (c1 === c2) return 1.0;
+
+    // Rule 5: L and R share the "liquid" articulatory class but English speakers
+    // hear them as perceptually distinct phonemes — treat as substantially
+    // different despite the manner overlap.
+    if ((c1 === 'L' && c2 === 'R') || (c1 === 'R' && c2 === 'L')) return 0.5;
 
     const m1 = MANNER[c1], m2 = MANNER[c2];
     if (!m1 || !m2) return 0.1;
@@ -333,6 +346,31 @@ function scoreAligned(seg1, seg2) {
     let weightedSum = 0;
     let weightedCount = 0;
 
+    // Rule 7: Find the "rime anchor" — consonant immediately after the stressed
+    // vowel. This consonant joins onto the rime nucleus and gives the syllable
+    // its character (the R in for-est/tor-rent/war-rant). Weight it 2x.
+    // In forward alignment the anchor is after the stressed vowel; in reverse
+    // alignment the stressed vowel ends up last, so we look before it instead.
+    function findRimeAnchorIdx(seg) {
+        let stressedIdx = -1;
+        for (let i = 0; i < seg.length; i++) {
+            if (/[AEIOU]/.test(seg[i][0]) && /[12]$/.test(seg[i])) {
+                stressedIdx = i;
+                break;
+            }
+        }
+        if (stressedIdx === -1) return -1;
+        if (stressedIdx + 1 < seg.length && !/[AEIOU]/.test(seg[stressedIdx + 1][0])) {
+            return stressedIdx + 1;
+        }
+        if (stressedIdx - 1 >= 0 && !/[AEIOU]/.test(seg[stressedIdx - 1][0])) {
+            return stressedIdx - 1;
+        }
+        return -1;
+    }
+    const postIdx1 = findRimeAnchorIdx(seg1);
+    const postIdx2 = findRimeAnchorIdx(seg2);
+
     for (let i = 0; i < minLen; i++) {
         const p1 = seg1[i];
         const p2 = seg2[i];
@@ -348,9 +386,12 @@ function scoreAligned(seg1, seg2) {
             pairScore = 0.0; // vowel-consonant mismatch
         }
 
-        // Stressed vowel pairs count 2x
+        // Stressed vowel pairs count 2x; rime anchor consonant also 2x
         const isStressed = (isVowel1 && /[12]$/.test(p1)) || (isVowel2 && /[12]$/.test(p2));
-        const weight = isStressed ? 2.0 : 1.0;
+        const isPostStressed = (i === postIdx1 || i === postIdx2) && !isVowel1 && !isVowel2;
+        let weight = 1.0;
+        if (isStressed) weight = 2.0;
+        else if (isPostStressed) weight = 2.0;
 
         weightedSum += pairScore * weight;
         weightedCount += weight;
@@ -362,6 +403,67 @@ function scoreAligned(seg1, seg2) {
 
     if (weightedCount === 0) return 0;
     return Math.max(0, Math.min(1, weightedSum / weightedCount));
+}
+
+// --- Helpers for gate rules (Rules 1, 3, 4, 8, 9) ---
+
+// Rule 3: Get the EFFECTIVE final phoneme — strip a final stop when preceded
+// by a continuant consonant (nasal, fricative, or liquid). English rhyme
+// clusters where the trailing stop is structural, not rhyme-defining:
+//   -st (honest/promise), -nt (potent/broken), -nd (opened/broken), -lt (belt)
+const STRIPPABLE_STOPS = new Set(['T', 'D', 'K', 'G', 'P', 'B']);
+const CONTINUANT_PRECEDERS = new Set([
+    'N', 'M', 'NG',                          // nasals
+    'F', 'V', 'S', 'Z', 'SH', 'ZH', 'TH', 'DH', 'HH',  // fricatives
+    'L', 'R',                                 // liquids
+]);
+function getEffectiveFinalPhoneme(phonemes) {
+    if (!phonemes || !phonemes.length) return null;
+    if (phonemes.length < 2) return phonemes[phonemes.length - 1];
+    const last = phonemes[phonemes.length - 1].replace(/[012]$/, '');
+    if (!STRIPPABLE_STOPS.has(last)) return phonemes[phonemes.length - 1];
+    const prev = phonemes[phonemes.length - 2].replace(/[012]$/, '');
+    if (CONTINUANT_PRECEDERS.has(prev)) return phonemes[phonemes.length - 2];
+    return phonemes[phonemes.length - 1];
+}
+
+// Rule 4: Classify ending phoneme hardness.
+// HARD = stop/affricate consonants and velar nasal — feel like a "thunk"
+// SOFT = continuants (nasals, fricatives, liquids) — flow/blend
+// OPEN = vowel (no final consonant) — most permissive
+function endingClass(phoneme) {
+    if (!phoneme) return 'OPEN';
+    const clean = phoneme.replace(/[012]$/, '');
+    if (/[AEIOU]/.test(clean[0])) return 'OPEN';
+    if (['P', 'B', 'T', 'D', 'K', 'G', 'NG', 'CH', 'JH'].includes(clean)) return 'HARD';
+    return 'SOFT';
+}
+
+// Rule 8: Get the consonant immediately after the last stressed vowel
+// (the "rime anchor" — defines the syllable's sonic character).
+function getRimeAnchorPhoneme(phonemes) {
+    if (!phonemes || !phonemes.length) return null;
+    let stressedIdx = -1;
+    for (let i = phonemes.length - 1; i >= 0; i--) {
+        if (/[AEIOU]/.test(phonemes[i][0]) && /[12]$/.test(phonemes[i])) {
+            stressedIdx = i;
+            break;
+        }
+    }
+    if (stressedIdx === -1 || stressedIdx + 1 >= phonemes.length) return null;
+    const next = phonemes[stressedIdx + 1];
+    if (/[AEIOU]/.test(next[0])) return null;
+    return next;
+}
+
+// Inflection exemption: check if `shorter` is a strict phoneme prefix of `longer`.
+// Exempts true inflectional pairs (promise→promised) from the gate rules.
+function isPhonemePrefix(shorter, longer) {
+    if (!shorter || !longer || shorter.length >= longer.length) return false;
+    for (let i = 0; i < shorter.length; i++) {
+        if (shorter[i].replace(/[012]$/, '') !== longer[i].replace(/[012]$/, '')) return false;
+    }
+    return true;
 }
 
 // --- Main scoring function: returns 0.0 to 1.0 ---
@@ -396,6 +498,67 @@ export function rhymeScore(word1, word2) {
     const sylDiff = Math.abs(syl1 - syl2);
     if (sylDiff > 0) {
         score *= Math.max(0.6, 1.0 - sylDiff * 0.15);
+    }
+
+    // --- Gate rules: apply hard caps based on phonetic structure ---
+    // These prevent high alignment scores from inflating structurally
+    // incompatible pairs. All caps are below the 0.45 display threshold.
+
+    // Rule 1: Stressed-vowel context — cap when the consonant class
+    // immediately after the last stressed vowel differs between words.
+    // A strong signal against rhyme quality (stressed syllable defines
+    // the rhyme nucleus character; mismatch = different "flavor").
+    const rimeAnchor1 = getRimeAnchorPhoneme(phonemes1);
+    const rimeAnchor2 = getRimeAnchorPhoneme(phonemes2);
+    if (rimeAnchor1 && rimeAnchor2) {
+        const class1 = classifyConsonant(rimeAnchor1);
+        const class2 = classifyConsonant(rimeAnchor2);
+        if (class1 !== class2) score = Math.min(score, 0.55);
+    }
+
+    // Rules 3, 4, 8, 9: Final-phoneme gate rules.
+    // Exempt strict phoneme-prefix pairs (promise→promised) — those are
+    // inflections, not sound replacements. Truncations (promise→comma) fail.
+    const isPrefixInflection = isPhonemePrefix(phonemes1, phonemes2) ||
+                               isPhonemePrefix(phonemes2, phonemes1);
+
+    if (!isPrefixInflection) {
+        const final1 = getEffectiveFinalPhoneme(phonemes1);
+        const final2 = getEffectiveFinalPhoneme(phonemes2);
+
+        // Rule 4: Cross-class final-phoneme filter.
+        // Any mismatch between HARD/SOFT/OPEN ending classes → filter out.
+        // Same-class slants (S vs N) pass through — those are stretch rhymes.
+        const e1 = endingClass(final1);
+        const e2 = endingClass(final2);
+        if (e1 !== e2) score = Math.min(score, 0.40);
+
+        // Rule 8: Double-mismatch rime cap.
+        // When BOTH the rime anchor AND the effective final consonant are
+        // non-identical, insufficient shared structure to count as a rhyme.
+        if (rimeAnchor1 && rimeAnchor2 && final1 && final2) {
+            const ra1 = rimeAnchor1.replace(/[012]$/, '');
+            const ra2 = rimeAnchor2.replace(/[012]$/, '');
+            const f1 = final1.replace(/[012]$/, '');
+            const f2 = final2.replace(/[012]$/, '');
+            if (ra1 !== f1 && ra2 !== f2 && ra1 !== ra2 && f1 !== f2) {
+                score = Math.min(score, 0.40);
+            }
+        }
+
+        // Rule 9: Liquid-nasal final mismatch cap.
+        // Within the SOFT class, liquid endings (L, R) and nasal endings
+        // (N, M, NG) are perceptually incompatible — the coda sounds
+        // completely different. "swivel" (-ul) vs "driven" (-en) share a
+        // rime anchor but don't rhyme.
+        if (final1 && final2) {
+            const f1n = final1.replace(/[012]$/, '');
+            const f2n = final2.replace(/[012]$/, '');
+            if ((LIQUID.has(f1n) && NASAL.has(f2n)) ||
+                (NASAL.has(f1n) && LIQUID.has(f2n))) {
+                score = Math.min(score, 0.40);
+            }
+        }
     }
 
     return Math.max(0, Math.min(1, score));

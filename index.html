@@ -634,7 +634,7 @@
             <!-- Manual rhyme addition / alias section -->
             <div class="add-rhyme-section">
                 <div class="add-rhyme-row">
-                    <input type="text" id="manual-rhyme-input" placeholder="Add your own rhyme...">
+                    <input type="text" id="manual-rhyme-input" placeholder="rhymes with...">
                     <button id="add-manual-rhyme-button" class="icon-button tiny-button"><i class="fas fa-plus"></i> Add</button>
                 </div>
                 <label class="sounds-like-toggle">
@@ -758,6 +758,27 @@
                     <div class="filler-ticker-slider-row">
                         <input type="range" id="filler-ticker-spacing" min="0" max="30" step="1" value="3" />
                         <span id="filler-ticker-spacing-val">3</span>
+                    </div>
+                </label>
+            </div>
+            <!-- STT Flush Settings -->
+            <hr class="modal-section-divider" />
+            <div class="modal-section-label"><i class="fas fa-microphone"></i> Live Transcript Flush</div>
+            <div class="modal-section-hint">Flush Interval: how often we force grey text to commit. Lower = snappier, but may cut words mid-phrase.</div>
+            <div class="modal-section-hint">Min Chars: how much grey text must build up before a flush triggers. Prevents cutting the mic during silences.</div>
+            <div class="filler-ticker-controls stt-cycle-controls">
+                <label>
+                    Flush Interval
+                    <div class="filler-ticker-slider-row">
+                        <input type="range" id="stt-cycle-ms" min="1000" max="5000" step="500" value="2500" />
+                        <span id="stt-cycle-ms-val">2500ms</span>
+                    </div>
+                </label>
+                <label>
+                    Min Chars Before Flush
+                    <div class="filler-ticker-slider-row">
+                        <input type="range" id="stt-min-chars" min="10" max="80" step="5" value="30" />
+                        <span id="stt-min-chars-val">30</span>
                     </div>
                 </label>
             </div>

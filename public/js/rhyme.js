@@ -24,6 +24,7 @@ import * as ui from './ui.js';
 import * as modal from './modal.js';
 import * as storage from './storage.js'; // Need saveSettings
 import * as phonetics from './phonetics.js';
+import * as wordManager from './wordManager.js'; // For delegating blacklist-from-modal flow (cycle is safe: only accessed at click time)
 
 // --- Score cache: avoids re-scoring in getTierInfo/sort after getValidRhymesForWord ---
 let rhymeScoreCache = new Map();
@@ -379,12 +380,12 @@ export function persistTempRejections() {
 
 // --- Feedback Card Reason Chips ---
 const FEEDBACK_REASONS = [
-    { code: 'stressed_vowel', label: 'Stressed sounds don\'t match' },
+    { code: 'beginning_different', label: 'Beginning throws it off' },
     { code: 'ending_different', label: 'Endings sound different' },
     { code: 'syllable_mismatch', label: 'Wrong syllable count' },
-    { code: 'beginning_different', label: 'Beginning throws it off' },
-    { code: 'not_a_word', label: 'Not a real word' },
-    { code: 'sounds_wrong', label: 'Just sounds wrong' },
+    { code: 'stressed_vowel', label: 'Stressed sounds don\'t match' },
+    { code: 'sounds_wrong', label: 'Just sounds wrong', modifier: 'general' },
+    { code: 'not_a_word', label: 'Not a real word', modifier: 'solo' },
 ];
 
 function renderPhonemeComparison(comparison, baseWord, rejectedWord) {
@@ -421,7 +422,7 @@ function renderPhonemeComparison(comparison, baseWord, rejectedWord) {
             const isVowel = /[AEIOU]/.test(ph1[0]);
             block.className = isVowel ? 'feedback-vowel-block' : 'feedback-consonant-block';
             block.textContent = ph1.replace(/[012]$/, '');
-            block.style.opacity = '0.35';
+            block.style.opacity = '0.6';
             block.style.fontSize = '0.65em';
             row1.appendChild(block);
         } else {
@@ -433,7 +434,7 @@ function renderPhonemeComparison(comparison, baseWord, rejectedWord) {
             const isVowel = /[AEIOU]/.test(ph2[0]);
             block.className = isVowel ? 'feedback-vowel-block' : 'feedback-consonant-block';
             block.textContent = ph2.replace(/[012]$/, '');
-            block.style.opacity = '0.35';
+            block.style.opacity = '0.6';
             block.style.fontSize = '0.65em';
             row2.appendChild(block);
         } else {
@@ -530,7 +531,7 @@ function showFeedbackCard(baseWord, rejectedWord) {
 
     for (const reason of FEEDBACK_REASONS) {
         const chip = document.createElement('button');
-        chip.className = 'feedback-chip';
+        chip.className = reason.modifier ? `feedback-chip feedback-chip-${reason.modifier}` : 'feedback-chip';
         chip.textContent = reason.label;
         chip.type = 'button';
         chip.addEventListener('click', () => {
@@ -541,6 +542,11 @@ function showFeedbackCard(baseWord, rejectedWord) {
                 selectedReasons.add(reason.code);
                 chip.classList.add('active');
             }
+        });
+        chip.addEventListener('dblclick', () => {
+            selectedReasons.add(reason.code);
+            chip.classList.add('active');
+            closeFeedbackCard(true);
         });
         chipsContainer.appendChild(chip);
     }
@@ -703,11 +709,7 @@ function createRhymeListItem(rhymeWord, baseWordLower, tierInfo = null) {
     if (isSelectionMode && pendingPins.has(wordLower)) {
         li.classList.add('rhyme-pending-pin');
     }
-    const freq = state.wordFrequencies[wordLower] || 0;
-    if (freq >= 5) li.classList.add('rhyme-freq-high');
-    else if (freq >= 2) li.classList.add('rhyme-freq-med');
-    else if (freq === 1) li.classList.add('rhyme-freq-low');
-    else li.classList.add('rhyme-freq-none');
+    li.classList.add('rhyme-freq-none');
     
     // Add tier class for similarity sort mode
     if (tierInfo && rhymeSortMode === 'similarity') {
@@ -1245,31 +1247,44 @@ let etymologyCache = new Map();
 
 function findWordFamily(baseWord) {
     const word = baseWord.toLowerCase();
-    // Common suffixes, longest first so we strip the most specific match
-    const suffixes = [
-        'ation', 'ating', 'ator', 'ators', 'ated', 'ates',
-        'tion', 'sion', 'ment', 'ness', 'able', 'ible',
-        'ful', 'less', 'ous', 'ive', 'ism', 'ist',
-        'ing', 'ings', 'ed', 'er', 'ers', 'es', 'est', 'ly', 'al', 's'
-    ];
-    let stem = word;
-    for (const sfx of suffixes) {
-        if (word.endsWith(sfx) && word.length - sfx.length >= 3) {
-            stem = word.slice(0, word.length - sfx.length);
+
+    // Build a set of prefixes to match against — starting with the full baseWord.
+    // Previous approach stripped suffixes aggressively and matched `may` from `mayer`,
+    // pulling in unrelated words like `maybe`, `mayhem`, `mayo`. The new approach only
+    // uses the baseWord itself plus a shorter form that is ITSELF a word in the list
+    // (e.g. "healthy" → also try "health"). This keeps the family tight to actual
+    // derivational siblings.
+    const prefixes = new Set([word]);
+
+    // Build a quick lookup for wordList membership
+    const wordSet = new Set(state.wordList.map(w => w.toLowerCase()));
+
+    // Find the longest proper prefix of baseWord (>= 4 chars) that is itself a word.
+    // Also handle silent-e drop cases: "educating" → stem "educat" + "e" = "educate".
+    for (let len = word.length - 1; len >= 4; len--) {
+        const candidate = word.slice(0, len);
+        if (wordSet.has(candidate)) {
+            prefixes.add(candidate);
+            break;
+        }
+        if (wordSet.has(candidate + 'e')) {
+            // Use the shorter stem (without e) as the prefix so all derived forms
+            // (educating, educated, education) still match. Also add the +e form
+            // so the root word itself appears in the family.
+            prefixes.add(candidate);
+            prefixes.add(candidate + 'e');
             break;
         }
     }
-    // Handle trailing 'e' that gets dropped (e.g. emulate → emulat → search "emulat")
-    const stems = [stem];
-    if (!stem.endsWith('e')) stems.push(stem + 'e');
 
     const family = [];
     const seen = new Set([word]);
     for (const w of state.wordList) {
         const lower = w.toLowerCase();
         if (seen.has(lower)) continue;
-        for (const s of stems) {
-            if (lower.startsWith(s) && lower.length <= s.length + 8) {
+        for (const p of prefixes) {
+            // Full prefix match, with reasonable suffix length (max 6 chars appended)
+            if (lower.startsWith(p) && lower.length <= p.length + 6) {
                 family.push(w);
                 seen.add(lower);
                 break;
@@ -1317,6 +1332,21 @@ function setupEtymologySection(baseWord) {
     toggleBtn.classList.remove('active');
     familyEl.innerHTML = '';
     originEl.innerHTML = '';
+
+    // One-time delegation for word family clicks (bound once per element lifetime)
+    if (!familyEl.dataset.clickBound) {
+        familyEl.dataset.clickBound = 'true';
+        familyEl.addEventListener('click', (e) => {
+            const wordSpan = e.target.closest('.etymology-family-word');
+            if (!wordSpan) return;
+            const clickedWord = wordSpan.textContent.trim();
+            const idx = state.currentRhymeList.indexOf(clickedWord);
+            if (idx !== -1) state.currentRhymeIndex = idx;
+            ui.displayWord(clickedWord);
+            modal.closeModal(ui.elements.rhymeFinderModal);
+            ui.showFeedback(`Selected: ${clickedWord}`, false, 1500);
+        });
+    }
 
     // Remove old listener by cloning
     const newBtn = toggleBtn.cloneNode(true);
@@ -1410,19 +1440,32 @@ function attachHeaderNavHandlers() {
             e.stopPropagation();
             const word = state.currentWord;
             if (!word) return;
-            if (state.blacklist.has(word)) {
+
+            const wasBlacklisted = state.blacklist.has(word);
+
+            if (wasBlacklisted) {
+                // Un-blacklisting — keep modal open, just toggle state
                 state.blacklist.delete(word);
                 blacklistBtn.classList.remove('active');
                 ui.showFeedback(`"${word}" un-blacklisted.`);
-            } else {
-                state.blacklist.add(word);
-                blacklistBtn.classList.add('active');
-                ui.showFeedback(`"${word}" blacklisted!`, true);
+                storage.saveSettings();
+                const mainBtn = document.getElementById('blacklist-word');
+                if (mainBtn) mainBtn.classList.toggle('active', false);
+                return;
             }
-            storage.saveSettings();
-            // Sync the main blacklist button state
-            const mainBtn = document.getElementById('blacklist-word');
-            if (mainBtn) mainBtn.classList.toggle('active', state.blacklist.has(word));
+
+            // Blacklisting: delegate to wordManager.toggleBlacklist which handles
+            // removing the word, advancing to the next (respecting forward history),
+            // and updating the display. Then close the modal.
+            //
+            // toggleBlacklist reads from ui.elements.wordDisplay.dataset.word, so we
+            // ensure the main display shows the word we're blacklisting first.
+            if (ui.elements.wordDisplay) {
+                ui.elements.wordDisplay.dataset.word = word;
+            }
+            wordManager.toggleBlacklist();
+            ui.showFeedback(`"${word}" blacklisted!`, true);
+            modal.closeModal(ui.elements.rhymeFinderModal);
         });
     }
 
@@ -1487,6 +1530,15 @@ function navigateWordInModal(direction) {
     updateModalHeader();
     displayRhymeList(newWord.toLowerCase());
     setupEtymologySection(newWord);
+
+    // Update the manual-rhyme placeholder to reflect the new word
+    if (ui.elements.manualRhymeInput) {
+        const soundsLikeCheckbox = document.getElementById('sounds-like-checkbox');
+        const isAlias = soundsLikeCheckbox?.checked;
+        ui.elements.manualRhymeInput.placeholder = isAlias
+            ? `${newWord} sounds like...`
+            : `${newWord} rhymes with...`;
+    }
 }
 
 // --- Get Currently Displayed Word ---
@@ -1536,7 +1588,10 @@ export function showRhymeFinder() {
     // Clear previous results and input
     if (ui.elements.rhymeResultsList) ui.elements.rhymeResultsList.innerHTML = '';
     if (ui.elements.rhymeNoResults) ui.elements.rhymeNoResults.style.display = 'none';
-    if (ui.elements.manualRhymeInput) ui.elements.manualRhymeInput.value = '';
+    if (ui.elements.manualRhymeInput) {
+        ui.elements.manualRhymeInput.value = '';
+        ui.elements.manualRhymeInput.placeholder = `${baseWord} rhymes with...`;
+    }
 
     // Reset sounds-like checkbox and attach toggle
     const soundsLikeCheckbox = document.getElementById('sounds-like-checkbox');
@@ -1545,8 +1600,8 @@ export function showRhymeFinder() {
         soundsLikeCheckbox.onchange = () => {
             if (ui.elements.manualRhymeInput) {
                 ui.elements.manualRhymeInput.placeholder = soundsLikeCheckbox.checked
-                    ? 'Type a word this sounds like...'
-                    : 'Add your own rhyme...';
+                    ? `${baseWord} sounds like...`
+                    : `${baseWord} rhymes with...`;
             }
         };
     }
@@ -1575,6 +1630,7 @@ export function addManualRhyme() {
 
     if (isAlias) {
         // Alias mode: "this word sounds like suggestedWord"
+        // Also add suggestedWord itself as a manual rhyme so it appears in the list.
         const suggestedLower = suggestedWord.toLowerCase();
         if (!state.rhymeAliases[baseWordLower]) state.rhymeAliases[baseWordLower] = new Set();
         if (state.rhymeAliases[baseWordLower].has(suggestedLower)) {
@@ -1582,7 +1638,19 @@ export function addManualRhyme() {
             return;
         }
         state.rhymeAliases[baseWordLower].add(suggestedLower);
-        console.log(`Added alias: "${baseWord}" sounds like "${suggestedWord}"`);
+
+        // Also register as a manual rhyme so the word itself shows up
+        if (!state.manualRhymes[baseWordLower]) state.manualRhymes[baseWordLower] = new Set();
+        state.manualRhymes[baseWordLower].add(suggestedWord);
+
+        // If word isn't on the main word list, add it as a new entry
+        const suggestedUpper = suggestedWord.toUpperCase();
+        const onList = state.wordList.some(w => w.toUpperCase() === suggestedUpper);
+        if (!onList) {
+            state.wordList.push(suggestedWord);
+        }
+
+        console.log(`Added alias + manual rhyme: "${baseWord}" sounds like "${suggestedWord}"`);
         storage.saveSettings();
         // Refresh rhyme list to show imported matches
         state.currentRhymeList = getValidRhymesForWord(baseWord);

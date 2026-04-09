@@ -40,10 +40,21 @@ function getEnabledEntries() {
     return data.entries.filter(e => e.enabled);
 }
 
+// Returns an array of lowercased filler phrases for transcript penalty matching.
+// Uses ALL entries (not just enabled ones) so the user can keep a phrase out of
+// the scrolling ticker but still get the red/penalty treatment when they say it.
+export function getPenaltyPhrases() {
+    return data.entries.map(e => e.text.toLowerCase().trim()).filter(Boolean);
+}
+
 function updateIgnoredFeedWords() {
     state.ignoredFeedWords = new Set(
         data.entries.filter(e => e.filterFeed).map(e => e.text.toLowerCase())
     );
+    // Keep transcript penalty list in sync — ALL entries, regardless of filterFeed flag,
+    // so the user gets the red/strikethrough treatment even for phrases they want
+    // kept out of the ticker.
+    state.fillerPhrases = data.entries.map(e => e.text.toLowerCase().trim()).filter(Boolean);
 }
 
 // --- Belt Construction ---
@@ -122,6 +133,7 @@ function renderList() {
                 if (newText && newText !== entry.text) {
                     data.entries[i].text = newText;
                     saveData();
+                    updateIgnoredFeedWords();
                     refreshAll();
                 }
                 renderList();
@@ -182,7 +194,9 @@ function addEntry() {
     if (!text) return;
     data.entries.push({ text, enabled: true, filterFeed: false });
     saveData();
+    updateIgnoredFeedWords();
     input.value = '';
+    input.focus();
     renderList();
     refreshAll();
 }

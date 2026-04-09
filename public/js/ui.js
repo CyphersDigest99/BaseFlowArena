@@ -598,13 +598,47 @@ export function updateTranscript(lineText, isFinal) {
          const finalElement = document.createElement('div');
          finalElement.classList.add('final');
 
-         // Split into clickable word spans
-         lineText.split(/\s+/).forEach((rawWord, i) => {
+         // Split into clickable word spans, with filler-phrase detection.
+         // fillerRanges marks [start, end) word-index ranges of filler phrases
+         // so we can apply the penalty class — supports multi-word phrases like
+         // "you know" in addition to single words like "um", "uh", "like".
+         const rawWords = lineText.split(/\s+/);
+         const cleanedWords = rawWords.map(r => r.replace(/[^a-zA-Z'-]/g, '').toLowerCase());
+         const fillerMask = new Array(rawWords.length).fill(false);
+         const phrases = Array.isArray(state.fillerPhrases) ? state.fillerPhrases : [];
+
+         // Sort phrases by word-count descending so longer phrases claim first
+         const sortedPhrases = phrases
+             .map(p => p.split(/\s+/).filter(Boolean))
+             .filter(parts => parts.length > 0)
+             .sort((a, b) => b.length - a.length);
+
+         for (const phraseWords of sortedPhrases) {
+             const plen = phraseWords.length;
+             for (let i = 0; i <= cleanedWords.length - plen; i++) {
+                 // Skip if any of this range is already marked (longer phrase wins)
+                 let alreadyMarked = false;
+                 for (let k = 0; k < plen; k++) {
+                     if (fillerMask[i + k]) { alreadyMarked = true; break; }
+                 }
+                 if (alreadyMarked) continue;
+                 // Check if cleanedWords[i..i+plen] matches phraseWords
+                 let match = true;
+                 for (let k = 0; k < plen; k++) {
+                     if (cleanedWords[i + k] !== phraseWords[k]) { match = false; break; }
+                 }
+                 if (match) {
+                     for (let k = 0; k < plen; k++) fillerMask[i + k] = true;
+                 }
+             }
+         }
+
+         rawWords.forEach((rawWord, i) => {
              const cleaned = rawWord.replace(/[^a-zA-Z'-]/g, '');
              if (cleaned.length < 2) return;
              if (i > 0) finalElement.appendChild(document.createTextNode(' '));
              const span = document.createElement('span');
-             span.className = 'transcript-word';
+             span.className = fillerMask[i] ? 'transcript-word transcript-word-filler' : 'transcript-word';
              span.textContent = cleaned;
              finalElement.appendChild(span);
          });

@@ -2062,8 +2062,7 @@ input[type="range"] {
 }
 
 #new-transcript div.interim {
-    color: rgba(0, 255, 0, 0.6);
-    opacity: 0.8;
+    color: rgba(0, 255, 0, 0.65);
 }
 
 /* Transcript clickable words */
@@ -4826,6 +4825,28 @@ body.screen-shaking {
     color: var(--primary-accent);
     text-align: right;
 }
+
+/* --- STT Flush section inside filler modal --- */
+.modal-section-divider {
+    border: none;
+    border-top: 1px solid var(--border-color);
+    margin: 18px 0 14px;
+}
+.modal-section-label {
+    font-family: monospace;
+    font-size: 0.8em;
+    letter-spacing: 0.08em;
+    color: var(--primary-accent);
+    margin-bottom: 6px;
+}
+.modal-section-hint {
+    font-family: monospace;
+    font-size: 0.75em;
+    color: #1faa1f;
+    margin-bottom: 12px;
+}
+.stt-cycle-controls label:first-child { color: rgb(80, 220, 255); }
+.stt-cycle-controls label:last-child  { color: rgb(80, 255, 190); }
 
 /* --- Rejection Log Analysis Modal --- */
 .rl-stats-row {
