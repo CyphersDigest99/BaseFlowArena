@@ -4982,11 +4982,11 @@ body.screen-shaking {
    HELP DRAWER — slide-out reference panel
    ============================================================ */
 
-/* Floating "?" trigger button — bottom-left, above beat player bar */
+/* Floating "?" trigger button — bottom-left */
 #help-drawer-trigger {
     position: fixed;
     left: 20px;
-    bottom: 75px; /* clear the 60px beat player bar */
+    bottom: 20px;
     z-index: 9000;
     width: 38px;
     height: 38px;
@@ -5113,12 +5113,28 @@ body.screen-shaking {
 }
 .help-section-header:hover { background: rgba(255,255,255,0.03); }
 .help-section-title {
-    font-family: var(--font-display);
-    font-size: 14px;
-    letter-spacing: 1.5px;
+    font-family: system-ui, sans-serif;
+    font-size: 16px;
+    letter-spacing: 0.5px;
     text-transform: uppercase;
     color: var(--primary-accent);
 }
+
+/* Unique color per section header — desaturated, full brightness */
+.help-section:nth-child(1) .help-section-title { color: #7ac4d0; }
+.help-section:nth-child(2) .help-section-title { color: #c8a07a; }
+.help-section:nth-child(3) .help-section-title { color: #c878a0; }
+.help-section:nth-child(4) .help-section-title { color: #a090c8; }
+.help-section:nth-child(5) .help-section-title { color: #88c070; }
+.help-section:nth-child(6) .help-section-title { color: #c8b058; }
+
+/* Body text — same hue, further desaturated, brightness held */
+.help-section:nth-child(1) .help-section-body { color: #90b8c0; }
+.help-section:nth-child(2) .help-section-body { color: #b89880; }
+.help-section:nth-child(3) .help-section-body { color: #b888a0; }
+.help-section:nth-child(4) .help-section-body { color: #9890b8; }
+.help-section:nth-child(5) .help-section-body { color: #88a878; }
+.help-section:nth-child(6) .help-section-body { color: #b8a870; }
 .help-section-arrow {
     font-size: 10px;
     color: var(--text-color);
@@ -5129,13 +5145,14 @@ body.screen-shaking {
     padding: 4px 16px 16px 16px;
     font-size: 14px;
     line-height: 1.45;
+    font-family: Verdana, sans-serif;
+    color: #ccffc2;
 }
 
 /* Content blocks */
 .help-p {
-    color: var(--text-color);
+    color: inherit;
     margin: 0 0 10px 0;
-    opacity: 0.9;
 }
 .help-p:last-child { margin-bottom: 0; }
 
@@ -5157,8 +5174,7 @@ body.screen-shaking {
 .help-ul li {
     position: relative;
     padding: 3px 0 3px 14px;
-    color: var(--text-color);
-    opacity: 0.88;
+    color: inherit;
 }
 .help-ul li::before {
     content: '›';
@@ -5191,8 +5207,7 @@ body.screen-shaking {
     white-space: nowrap;
 }
 .help-cmd-desc {
-    color: var(--text-color);
-    opacity: 0.85;
+    color: inherit;
     font-size: 13px;
 }
 
@@ -5231,8 +5246,7 @@ body.screen-shaking {
     text-shadow: 0 0 3px rgba(51, 255, 51, 0.4);
 }
 .help-kbd-desc {
-    color: var(--text-color);
-    opacity: 0.88;
+    color: inherit;
     font-size: 13px;
 }
 

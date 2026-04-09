@@ -273,6 +273,7 @@ function onRecognitionResult(event) {
 // Handles errors from the speech recognition API
 function onRecognitionError(event) {
     console.error('Speech recognition error:', event.error, event.message);
+    if (event.error === 'aborted') return; // Chrome internal — transient, handled by onend restart
     let errorMsg = `Speech Error: ${event.error}`;
     if (event.error === 'no-speech') errorMsg = 'No speech detected.';
     else if (event.error === 'audio-capture') errorMsg = 'Mic Error. Check permissions/hardware.';

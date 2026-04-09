@@ -656,7 +656,7 @@ export function updateTranscript(lineText, isFinal) {
          }
      } else {
          if (interimElement) interimElement.remove();
-         const prevLineEl = elements.transcriptContainer.firstChild;
+         const prevLineEl = elements.transcriptContainer.firstElementChild;
          const finalElement = document.createElement('div');
          finalElement.classList.add('final');
 

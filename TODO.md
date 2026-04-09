@@ -66,3 +66,7 @@
 
 ---
 *Last Updated: [Current Date] - Slider implementation paused, timed cycling working*
+
+## On Hold
+
+- **Hum-to-lock piano key finder** — Design spec at `docs/superpowers/specs/2026-04-08-hum-to-lock-design.md`. Architecture decided (Option A: state flag in `keyFinder.js`). Ready to implement when prioritized.

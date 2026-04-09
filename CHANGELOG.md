@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-04-09
+- Fix transcript crash: `firstChild` → `firstElementChild` in `updateTranscript` (HTML comment node was crashing interim display)
+- Silence `aborted` STT error toast — Chrome-internal transient event, not user-actionable
+- Fix speech.js regression: remove mic stream teardown from `onRecognitionEnd` (was causing infinite abort loop on voice mode restart)
+- Help drawer: unique per-section header colors, Verdana body text, muted per-section body tones
+- Help `?` button moved from `bottom:75px` to `bottom:20px` (beat bar disabled)
+- TODO: hum-to-lock added to On Hold section
+
 ## 2026-04-07
 - Timed cycle minimum speed lowered from 3s to 1s (slider + internal clamp)
 - Fix layout shift on book-icon hover: synonym/definition grid rows changed from minmax(20px, auto) to fixed 60px height
