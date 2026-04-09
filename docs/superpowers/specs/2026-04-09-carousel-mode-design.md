@@ -20,6 +20,8 @@ The overlay covers the full browser viewport (browser chrome and OS taskbar rema
 **Overlay controls:**
 - **Config button** — top-left, opens the config panel
 - **Exit button** — top-right, closes the overlay and restores the normal app view
+- **Blacklist button** — bottom-center of the overlay, below the carousel ring. Blacklists the word currently on the front card and immediately swaps it for the next word. Uses the same blacklist mechanism as the main app.
+- **Favorite button** — bottom-center, next to the blacklist button. Favorites the word currently on the front card. Uses the same favorites mechanism as the main app.
 
 ---
 
@@ -64,7 +66,9 @@ All settings are grouped into three visual sections: **Rotation**, **Cards**, **
 
 ## Word Sourcing
 
-The carousel calls into the existing `wordManager` for each word swap. It passes its own syllable range as a temporary override. The active word list and blacklist are respected as normal.
+The carousel uses the same word source and ordering as the main app — whatever word list (txt file) is selected in the dropdown and whatever sort order (random, A-Z, etc.) is active at the time carries directly into the carousel. Changes to those settings mid-session are reflected immediately.
+
+The one carousel-specific override is the syllable range from the config panel, which filters the word pool independently of the main app's syllable setting for the duration of the carousel session.
 
 ---
 
