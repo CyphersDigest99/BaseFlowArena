@@ -14,7 +14,7 @@
     <title>Freestyle Flow Arena</title>
     
     <!-- Apply saved theme before first paint to prevent flash of wrong theme -->
-    <script>try{document.documentElement.setAttribute('data-theme',localStorage.getItem('preferred-theme')||'classic')}catch(e){}</script>
+    <script>try{document.documentElement.setAttribute('data-theme',localStorage.getItem('preferred-theme')||'dark')}catch(e){}</script>
     <!-- --- STYLESHEETS --- -->
     <link rel="stylesheet" href="styles.css">
     <!-- Font Awesome for icons - provides comprehensive icon library for UI elements -->
@@ -818,7 +818,7 @@
         width: 100vw;
         height: 60px;
         background: #181c2b;
-        display: flex;
+        display: none;
         align-items: center;
         z-index: 1000; /* High z-index to stay above other content */
         box-shadow: 0 -2px 12px #000a;

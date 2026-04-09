@@ -35,6 +35,67 @@ const TRAY_STOPWORDS = new Set([
     'this','than','then','when','who','what','how','all','just','like'
 ]);
 
+// Fuzzy per-word match for filler phrase detection.
+// Short words (max length < 5) require exact match to avoid false positives on
+// common filler like "um", "uh", "like". Longer words allow 1 edit so STT
+// mishearings like "basicaly" still flag "basically".
+function fuzzyFillerWord(spoken, filler) {
+    if (spoken === filler) return true;
+    const ls = spoken.length, lf = filler.length;
+    if (Math.max(ls, lf) < 5) return false;         // short words: exact only
+    if (Math.abs(ls - lf) > 1) return false;         // length diff > 1 → LD > 1
+    const row = Array.from({ length: lf + 1 }, (_, j) => j);
+    for (let i = 1; i <= ls; i++) {
+        let prev = i;
+        for (let j = 1; j <= lf; j++) {
+            const val = spoken[i - 1] === filler[j - 1]
+                ? row[j - 1]
+                : 1 + Math.min(row[j - 1], row[j], prev);
+            row[j - 1] = prev;
+            prev = val;
+        }
+        row[lf] = prev;
+    }
+    return row[lf] <= 1;
+}
+
+// Retroactively marks spans that form a multi-word filler phrase straddling the
+// boundary between the previous transcript line and the freshly-built new line.
+// Called before the new element is inserted into the DOM.
+function checkCrossBoundaryFillers(prevLineEl, newLineEl, sortedPhrases) {
+    if (!prevLineEl || !sortedPhrases.length) return;
+    const prevSpans = Array.from(prevLineEl.querySelectorAll('.transcript-word'));
+    const newSpans  = Array.from(newLineEl.querySelectorAll('.transcript-word'));
+    if (!prevSpans.length || !newSpans.length) return;
+
+    const maxPhraseLen = Math.max(...sortedPhrases.map(p => p.length));
+    const tailCount = Math.min(maxPhraseLen - 1, prevSpans.length);
+    const headCount = Math.min(maxPhraseLen - 1, newSpans.length);
+    const combined  = [
+        ...prevSpans.slice(prevSpans.length - tailCount),
+        ...newSpans.slice(0, headCount),
+    ];
+    const words = combined.map(s => s.textContent.replace(/[^a-zA-Z'-]/g, '').toLowerCase());
+
+    for (const phraseWords of sortedPhrases) {
+        const plen = phraseWords.length;
+        if (plen < 2) continue; // single-word fillers are already caught per-line
+        for (let i = 0; i <= words.length - plen; i++) {
+            // Only positions that genuinely straddle the boundary
+            if (i >= tailCount || i + plen <= tailCount) continue;
+            let match = true;
+            for (let k = 0; k < plen; k++) {
+                if (!fuzzyFillerWord(words[i + k], phraseWords[k])) { match = false; break; }
+            }
+            if (match) {
+                for (let k = 0; k < plen; k++) {
+                    combined[i + k].className = 'transcript-word transcript-word-filler';
+                }
+            }
+        }
+    }
+}
+
 // POS suffix heuristic — purely visual coloring for pill tray
 function classifyPOS(word) {
     const w = word.toLowerCase();
@@ -595,6 +656,7 @@ export function updateTranscript(lineText, isFinal) {
          }
      } else {
          if (interimElement) interimElement.remove();
+         const prevLineEl = elements.transcriptContainer.firstChild;
          const finalElement = document.createElement('div');
          finalElement.classList.add('final');
 
@@ -622,10 +684,10 @@ export function updateTranscript(lineText, isFinal) {
                      if (fillerMask[i + k]) { alreadyMarked = true; break; }
                  }
                  if (alreadyMarked) continue;
-                 // Check if cleanedWords[i..i+plen] matches phraseWords
+                 // Check if cleanedWords[i..i+plen] matches phraseWords (fuzzy)
                  let match = true;
                  for (let k = 0; k < plen; k++) {
-                     if (cleanedWords[i + k] !== phraseWords[k]) { match = false; break; }
+                     if (!fuzzyFillerWord(cleanedWords[i + k], phraseWords[k])) { match = false; break; }
                  }
                  if (match) {
                      for (let k = 0; k < plen; k++) fillerMask[i + k] = true;
@@ -643,6 +705,7 @@ export function updateTranscript(lineText, isFinal) {
              finalElement.appendChild(span);
          });
 
+         checkCrossBoundaryFillers(prevLineEl, finalElement, sortedPhrases);
          elements.transcriptContainer.insertBefore(finalElement, elements.transcriptContainer.firstChild);
          while (elements.transcriptContainer.children.length > state.MAX_TRANSCRIPT_LINES) {
              elements.transcriptContainer.removeChild(elements.transcriptContainer.lastChild);
@@ -1010,7 +1073,7 @@ export function updateTooltipView(synonyms = null, definition = null) {
 export function initializeThemeSystem() {
     // Load saved theme preference or set default
     const savedTheme = localStorage.getItem('preferred-theme');
-    const defaultTheme = savedTheme || 'classic';
+    const defaultTheme = savedTheme || 'dark';
     document.documentElement.setAttribute('data-theme', defaultTheme);
     
     // Add event listeners for theme buttons
@@ -1065,7 +1128,7 @@ export function switchTheme(theme) {
 
 // Update theme button active states
 function updateThemeButtonStates() {
-    const currentTheme = document.documentElement.getAttribute('data-theme') || 'classic';
+    const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
     
     if (elements.themeDarkButton) {
         elements.themeDarkButton.classList.toggle('active', currentTheme === 'dark');
