@@ -2085,6 +2085,22 @@ input[type="range"] {
     color: var(--text-bright);
 }
 
+/* Filler phrases flagged by the filler ticker — penalty treatment so the user
+   can see the habit words they're trying to drop. Red, strikethrough, and a
+   subtle red underline/background to make them feel "bad". */
+.transcript-word-filler {
+    color: var(--red-color, #ff4500);
+    text-decoration: line-through;
+    text-decoration-thickness: 2px;
+    background: rgba(255, 69, 0, 0.1);
+    border-bottom: 1px solid rgba(255, 69, 0, 0.5);
+    text-shadow: 0 0 4px rgba(255, 69, 0, 0.4);
+}
+
+.transcript-word-filler:hover {
+    background: rgba(255, 69, 0, 0.22);
+}
+
 /* Recent Words Tray */
 /* Fixed-slot pill tray — flex-wrap, variable-width pills */
 #recent-words-tray {
@@ -2612,17 +2628,18 @@ label.checkbox-label {
 }
 
 .close-button {
-    color: #aaa;
+    color: rgb(242, 99, 38);
+    font-family: Arial, sans-serif;
     position: absolute;
     top: 15px;
     right: 20px;
-    font-size: 32px;
+    font-size: 36px;
     font-weight: bold;
     cursor: pointer;
     transition: color 0.2s ease;
     line-height: 1;
-    width: 32px;
-    height: 32px;
+    width: 36px;
+    height: 36px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -2633,7 +2650,7 @@ label.checkbox-label {
 }
 
 #close-rhyme-modal {
-    font-size: 34px;
+    font-size: 36px;
     font-family: Arial, sans-serif;
 }
 
@@ -2767,6 +2784,12 @@ label.checkbox-label {
     border-radius: 3px;
     font-size: 0.9em;
     color: var(--text-bright);
+    cursor: pointer;
+}
+
+.etymology-family-word:hover {
+    background: rgba(0,255,255,0.18);
+    border-color: var(--primary-accent);
 }
 .etymology-origin-label {
     font-size: 0.7em;
@@ -4129,17 +4152,19 @@ body.screen-shaking {
     right: 10px;
     background: none;
     border: none;
-    color: var(--text-color);
-    font-size: 1.4em;
+    color: rgb(242, 99, 38);
+    font-size: 28px;
+    font-family: Arial, sans-serif;
+    font-weight: bold;
     cursor: pointer;
-    opacity: 0.6;
-    transition: opacity 0.2s;
+    opacity: 0.7;
+    transition: opacity 0.2s, color 0.2s;
     line-height: 1;
 }
 
 .feedback-card-close:hover {
     opacity: 1;
-    color: var(--red-color);
+    color: var(--primary-accent);
 }
 
 .feedback-card-header {
@@ -4262,6 +4287,8 @@ body.screen-shaking {
 }
 
 .feedback-chip {
+    flex: 1 1 calc(50% - 3px);
+    text-align: center;
     padding: 4px 10px;
     border: 1px solid var(--primary-accent);
     border-radius: 16px;
@@ -4282,6 +4309,34 @@ body.screen-shaking {
     background: var(--primary-accent);
     color: var(--bg-color);
     font-weight: bold;
+}
+
+/* "Just sounds wrong" — general catch-all, centered and visually separated from the 2x2 grid above */
+.feedback-chip-general {
+    flex: 0 0 calc(50% - 3px);
+    text-align: center;
+    margin: 10px auto 0 auto;
+}
+
+/* "Not a real word" — distinct concern, full-width at the bottom */
+.feedback-chip-solo {
+    flex: 0 0 100%;
+    text-align: center;
+    margin-top: 6px;
+    border-color: var(--red-color);
+    color: var(--red-color);
+    opacity: 0.8;
+}
+
+.feedback-chip-solo:hover {
+    background: rgba(255, 69, 0, 0.12);
+    opacity: 1;
+}
+
+.feedback-chip-solo.active {
+    background: var(--red-color);
+    color: var(--bg-color);
+    opacity: 1;
 }
 
 /* Remark input */
@@ -4741,9 +4796,17 @@ body.screen-shaking {
     display: flex;
     flex-direction: column;
     gap: 6px;
-    font-family: var(--font-main);
+    font-family: monospace;
     font-size: 0.9em;
     color: var(--text-color);
+}
+
+.filler-ticker-controls label:first-child {
+    color: rgb(221, 158, 255);
+}
+
+.filler-ticker-controls label:last-child {
+    color: rgb(255, 168, 219);
 }
 
 .filler-ticker-slider-row {
