@@ -40,28 +40,36 @@ export function setOnHostChange(callback) {
  * @param {string} instanceId - The Discord Activity instanceId (used as room key).
  * @param {string} userId - A stable ID for this browser session (from sessionStorage).
  */
-export async function connect(instanceId, userId) {
+export function connect(instanceId, userId) {
   _userId = userId;
 
-  _socket = new PartySocket({
-    host: PARTYKIT_HOST,
-    room: instanceId,
-    query: { userId },
-  });
+  return new Promise((resolve) => {
+    _socket = new PartySocket({
+      host: PARTYKIT_HOST,
+      room: instanceId,
+      query: { userId },
+    });
 
-  _socket.addEventListener('message', (event) => {
-    handleMessage(JSON.parse(event.data));
-  });
+    _socket.addEventListener('message', (event) => {
+      const msg = JSON.parse(event.data);
+      // Resolve the connect() promise on first ROOM_STATE so callers can
+      // read isHost() immediately after awaiting connect().
+      if (msg.type === 'ROOM_STATE') resolve();
+      handleMessage(msg);
+    });
 
-  _socket.addEventListener('error', (err) => {
-    console.error('[session] WebSocket error:', err);
-  });
+    _socket.addEventListener('error', (err) => {
+      console.error('[session] WebSocket error:', err);
+    });
 
-  _socket.addEventListener('close', () => {
-    console.log('[session] Connection closed');
+    _socket.addEventListener('close', () => {
+      console.log('[session] Connection closed');
+    });
   });
 }
 
+// NOTE: Assumes phonetics data (CMU lookup + inverted index) is already loaded.
+// connect() must only be called after phonetics.loadCmuLookup() and loadCmuPhonemes() resolve.
 function applyWordChange(word) {
   state.currentWord = word;
   state.currentWordIndex = -1;
