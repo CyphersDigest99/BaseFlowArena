@@ -128,7 +128,10 @@ async function initializeApp() {
     ui.setDisplayedWordChangeCallback(onDisplayedWordChange);
     
     // Set up the callback for word changes (for tooltip data prefetching)
-    wordManager.setWordChangeCallback(onWordChange);
+    wordManager.setWordChangeCallback((word, prevWord) => {
+        onWordChange(word, prevWord); // existing: prefetches tooltip data
+        session.broadcastWordChange(word); // new: broadcasts to room (no-op outside session)
+    });
 
     // 1. Init UI Background
     threeBackground.initBackground(ui.elements.bgCanvas);
@@ -200,8 +203,15 @@ function setActivationMode(newMode) {
     if (previousMode === 'voice') {
         speech.stopRecognition(true);
     }
-    if (state.activationMode === 'timed') startTimedCycleInternal();
-    else if (state.activationMode === 'voice') speech.startRecognition();
+    if (state.activationMode === 'timed') {
+        startTimedCycleInternal();
+        session.broadcastCycleState(true, state.cycleSpeed);
+    } else if (state.activationMode === 'voice') {
+        speech.startRecognition();
+        session.broadcastCycleState(false, state.cycleSpeed);
+    } else {
+        session.broadcastCycleState(false, state.cycleSpeed);
+    }
     ui.updateActivationUI();
     if (state.activationMode === 'voice' || state.activationMode === 'timed') {
         fillerTicker.show();
@@ -537,7 +547,10 @@ function attachEventListeners() {
     });
 
     // Word List Source Selection
-    ui.elements.wordListSelect?.addEventListener('change', (e) => wordManager.switchWordList(e.target.value));
+    ui.elements.wordListSelect?.addEventListener('change', (e) => {
+        wordManager.switchWordList(e.target.value);
+        session.broadcastSettingsChange({ wordListFile: e.target.value });
+    });
 
     // Word Order Setting
     ui.elements.wordOrderSelect?.addEventListener('change', (e) => wordManager.setWordOrder(e.target.value));
@@ -560,7 +573,11 @@ function attachEventListeners() {
             
             // Reapply filters and get new word if current word doesn't match
             wordManager.applyFiltersAndSort();
-            
+            session.broadcastSettingsChange({
+                minSyllables: state.minSyllables,
+                maxSyllables: state.maxSyllables,
+            });
+
             // If current word is no longer valid, get a new one
             if (state.currentWord === "NO WORDS!" || !state.filteredWordList.includes(state.currentWord)) {
                 if (state.filteredWordList.length > 0) {
@@ -615,6 +632,7 @@ function attachEventListeners() {
             if (document.activeElement !== ui.elements.cycleSpeedSlider && ui.elements.cycleSpeedSlider) ui.elements.cycleSpeedSlider.value = speed;
             if (state.activationMode === 'timed') startTimedCycleInternal();
             storage.saveSettings();
+            session.broadcastCycleState(state.activationMode === 'timed', state.cycleSpeed);
         }
     };
     ui.elements.cycleSpeedSlider?.addEventListener('input', () => { if (ui.elements.cycleSpeedInput) ui.elements.cycleSpeedInput.value = ui.elements.cycleSpeedSlider.value; });
