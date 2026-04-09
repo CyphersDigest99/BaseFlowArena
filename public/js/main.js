@@ -44,6 +44,8 @@ import * as phonetics from './phonetics.js';
 import * as fillerTicker from './fillerTicker.js';
 import * as keyFinder from './keyFinder.js';
 import * as helpDrawer from './helpDrawer.js';
+import * as session from './session.js';
+import * as roles from './roles.js';
 
 // Cached word data for tooltip display and performance optimization
 let lastWordData = { synonyms: '', definition: '', word: '' };
@@ -76,6 +78,47 @@ function isAnyTooltipHovered() {
     return ui.elements.meansLikeButton?.matches(':hover') || false;
 }
 
+// --- Discord Activity Session Init ---
+// Detects whether the app is running inside a Discord Activity iframe.
+// If so, initializes the Discord SDK and connects to the PartyKit room.
+// If not, this function does nothing and the app runs in standalone mode.
+async function initDiscordSession() {
+  const isDiscordActivity = new URLSearchParams(window.location.search).has('frame_id');
+  if (!isDiscordActivity) return;
+
+  try {
+    const { DiscordSDK } = await import('@discord/embedded-app-sdk');
+    const CLIENT_ID = 'YOUR_DISCORD_CLIENT_ID'; // Replace with your Discord Application ID
+
+    const discordSdk = new DiscordSDK(CLIENT_ID);
+    await discordSdk.ready();
+    console.log('[discord] SDK ready. instanceId:', discordSdk.instanceId);
+
+    // Generate a stable user ID that survives page refresh (sessionStorage persists on refresh,
+    // which is what makes the 30-second host reconnection grace period work).
+    const SESSION_KEY = 'rhymenexus_uid';
+    let userId = sessionStorage.getItem(SESSION_KEY);
+    if (!userId) {
+      userId = crypto.randomUUID();
+      sessionStorage.setItem(SESSION_KEY, userId);
+    }
+
+    await session.connect(discordSdk.instanceId, userId);
+
+    // Wire up host-change callback: update UI whenever host status changes
+    session.setOnHostChange((isHostNow) => {
+      roles.applyRoleUI(isHostNow);
+    });
+
+    // Apply initial role UI (session.connect resolves after ROOM_STATE is received,
+    // so isHost() is accurate here)
+    roles.applyRoleUI(session.isHost());
+
+  } catch (err) {
+    console.error('[discord] Session init failed, continuing in standalone mode:', err);
+  }
+}
+
 // --- Initialization ---
 async function initializeApp() {
     console.log("--- Freestyle Flow Arena Initializing ---");
@@ -103,6 +146,9 @@ async function initializeApp() {
     ui.initTraySlots();     // Pre-fill fixed-slot pill tray with placeholders
     await Promise.all([rhyme.loadRhymeData(), phonetics.loadCmuLookup(), phonetics.loadCmuPhonemes(), wordManager.loadRhymeVocabulary()]);
     await wordManager.loadWords(); // Applies filters based on loaded blacklist
+
+    // Initialize Discord Activity session (no-op if running outside Discord)
+    await initDiscordSession();
 
     // Retroactively enrich existing rejections with phonetic context (one-time migration)
     storage.enrichExistingRejections();
