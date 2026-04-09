@@ -5,3 +5,6 @@ BaseFlowArena-1/
 .worktrees/
 # Superpowers brainstorm sessions
 .superpowers/
+# Node
+node_modules/
+package-lock.json
