@@ -20,8 +20,8 @@ The overlay covers the full browser viewport (browser chrome and OS taskbar rema
 **Overlay controls:**
 - **Config button** — top-left, opens the config panel
 - **Exit button** — top-right, closes the overlay and restores the normal app view
-- **Blacklist button** — bottom-center of the overlay, below the carousel ring. Blacklists the word currently on the front card and immediately swaps it for the next word. Uses the same blacklist mechanism as the main app.
-- **Favorite button** — bottom-center, next to the blacklist button. Favorites the word currently on the front card. Uses the same favorites mechanism as the main app.
+- **Blacklist button** — lower-left corner. Blacklists the word currently on the front card and immediately swaps it for the next word. Uses the same blacklist mechanism as the main app.
+- **Favorite button** — lower-right corner. Favorites the word currently on the front card. Uses the same favorites mechanism as the main app.
 
 ---
 
