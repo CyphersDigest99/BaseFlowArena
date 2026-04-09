@@ -82,17 +82,22 @@ export default class RhymeNexusParty implements Party.Server {
   onClose(conn: Party.Connection) {
     const userId = this.getUserId(conn);
     this.connToUser.delete(conn.id);
-    this.joinOrder = this.joinOrder.filter((id) => id !== userId);
 
-    if (this.roomState.hostId === userId) {
-      // Remember departing host for grace-period restore
-      this.prevHostId = userId;
-      this.prevHostLeftAt = Date.now();
-      this.roomState.hostId = this.joinOrder[0] ?? null;
+    // Only remove from joinOrder if this user has no other active connections
+    const stillConnected = [...this.connToUser.values()].includes(userId);
+    if (!stillConnected) {
+      this.joinOrder = this.joinOrder.filter((id) => id !== userId);
 
-      this.room.broadcast(
-        JSON.stringify({ type: "HOST_CHANGE", newHostId: this.roomState.hostId })
-      );
+      if (this.roomState.hostId === userId) {
+        // Remember departing host for grace-period restore
+        this.prevHostId = userId;
+        this.prevHostLeftAt = Date.now();
+        this.roomState.hostId = this.joinOrder[0] ?? null;
+
+        this.room.broadcast(
+          JSON.stringify({ type: "HOST_CHANGE", newHostId: this.roomState.hostId })
+        );
+      }
     }
   }
 
@@ -101,7 +106,12 @@ export default class RhymeNexusParty implements Party.Server {
     // Silently reject any message from a non-host client
     if (userId !== this.roomState.hostId) return;
 
-    const msg = JSON.parse(message) as Record<string, unknown>;
+    let msg: Record<string, unknown>;
+    try {
+      msg = JSON.parse(message) as Record<string, unknown>;
+    } catch {
+      return; // ignore malformed messages
+    }
 
     switch (msg.type as string) {
       case "WORD_CHANGE":
@@ -130,8 +140,14 @@ export default class RhymeNexusParty implements Party.Server {
           this.roomState.minSyllables = msg.minSyllables as number;
         if (msg.maxSyllables !== undefined)
           this.roomState.maxSyllables = msg.maxSyllables as number;
-        // Re-broadcast as-is (msg already contains type field)
-        this.room.broadcast(message);
+        this.room.broadcast(
+          JSON.stringify({
+            type: "SETTINGS_CHANGE",
+            wordListFile: this.roomState.wordListFile,
+            minSyllables: this.roomState.minSyllables,
+            maxSyllables: this.roomState.maxSyllables,
+          })
+        );
         break;
       }
 
