@@ -779,9 +779,17 @@
 
     <!-- --- JAVASCRIPT MODULES --- -->
     <!-- TEMP: inline script to test if basic JS runs at all -->
-    <script>document.getElementById('dbg').textContent = 'inline-js-ok';</script>
+    <script>
+      document.getElementById('dbg').textContent = 'inline-js-ok';
+      window.addEventListener('error', function(e) {
+        document.getElementById('dbg').textContent = 'ERR: ' + (e.message || '') + ' | ' + (e.filename || '');
+      });
+      window.addEventListener('unhandledrejection', function(e) {
+        document.getElementById('dbg').textContent = 'PROMISE-ERR: ' + (e.reason && e.reason.message ? e.reason.message : String(e.reason));
+      });
+    </script>
     <!-- Main game script loaded as ES6 module with defer attribute -->
-    <script type="module" src="public/js/main.js?v=2" defer></script>
+    <script type="module" src="public/js/main.js?v=3" defer></script>
 
     <!-- --- BEAT PLAYER BAR (FIXED BOTTOM) --- -->
     <div id="beat-player-bar">
