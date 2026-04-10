@@ -25,7 +25,6 @@
 import { state } from './state.js';
 import * as ui from './ui.js';
 import * as storage from './storage.js';
-import * as threeBackground from './threeBackground.js';
 import * as wordManager from './wordManager.js';
 import * as rhyme from './rhyme.js';
 import * as speech from './speech.js';
@@ -142,9 +141,6 @@ async function initializeApp() {
         onWordChange(word, prevWord); // existing: prefetches tooltip data
         session.broadcastWordChange(word); // new: broadcasts to room (no-op outside session)
     });
-
-    // 1. Init UI Background
-    threeBackground.initBackground(ui.elements.bgCanvas);
 
     // --- REMOVED AUBIO INIT ---
     // No explicit init needed for the Web Audio API approach here,
