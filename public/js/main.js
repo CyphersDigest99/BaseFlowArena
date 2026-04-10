@@ -91,7 +91,10 @@ async function initDiscordSession() {
     const CLIENT_ID = '1491729697128714310'; // Replace with your Discord Application ID
 
     const discordSdk = new DiscordSDK(CLIENT_ID);
-    await discordSdk.ready();
+    await Promise.race([
+      discordSdk.ready(),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Discord SDK ready() timed out')), 8000)),
+    ]);
     console.log('[discord] SDK ready. instanceId:', discordSdk.instanceId);
 
     // Generate a stable user ID that survives page refresh (sessionStorage persists on refresh,
