@@ -46,7 +46,7 @@ export async function connect(instanceId, userId) {
 
   let PartySocket;
   try {
-    ({ default: PartySocket } = await import('partysocket'));
+    ({ default: PartySocket } = await import('/esm/partysocket@1.0.2'));
   } catch (err) {
     throw new Error('[session] Failed to load PartySocket: ' + err.message);
   }

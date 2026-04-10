@@ -427,7 +427,7 @@ export function displayWord(word, direction = null) { // word is the word to dis
     } else if (screenWidth <= 768) {
         baseFontSize *= 0.9; // Slightly smaller on tablets
     }
-    
+
     console.log(`Calculated base font size: ${baseFontSize}em`);
     
     // Reset to calculated base size first
