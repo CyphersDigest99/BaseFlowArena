@@ -186,9 +186,7 @@ async function initializeApp() {
 
     // Initialize Discord Activity session (no-op if running outside Discord)
     await initDiscordSession();
-    dbg('5: discord done, checking mic...');
-    await checkMicCapabilities();
-    dbg('5b: mic check done, finishing app...');
+    dbg('5: discord done, finishing app...');
 
     // Retroactively enrich existing rejections with phonetic context (one-time migration)
     storage.enrichExistingRejections();
@@ -212,6 +210,8 @@ async function initializeApp() {
     dbg('6: attaching listeners...');
     attachEventListeners();
     dbg('DONE');
+    // Run mic diagnostics AFTER DONE so results aren't overwritten
+    checkMicCapabilities();
 
     // 7. Set up keyboard control system
     setupModalObserver();
