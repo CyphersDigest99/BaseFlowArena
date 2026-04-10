@@ -1,0 +1,9 @@
+node_modules
+.worktrees
+party
+partykit.json
+package.json
+package-lock.json
+*.md
+server.py
+docs
