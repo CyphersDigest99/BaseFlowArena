@@ -5309,7 +5309,7 @@ body.screen-shaking {
 
 /* --- Side panels: narrower, tighter --- */
 .discord-activity .control-panel {
-    flex: 0 0 200px;
+    flex: 0 0 240px;
     padding: 8px;
     gap: 6px;
     overflow-y: auto;
@@ -5323,12 +5323,16 @@ body.screen-shaking {
     overflow: hidden;
 }
 
-/* --- Word display: reduce min-height --- */
+/* --- Word display: fills available space --- */
 .discord-activity .word-display-wrapper {
     margin: 0 auto;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
 }
 .discord-activity #word-display-unit {
-    min-height: 220px;
+    min-height: 0;
+    flex: 1;
     padding: 0 40px;
 }
 
@@ -5369,9 +5373,9 @@ body.screen-shaking {
     display: none !important;
 }
 
-/* --- HIDDEN: syllable filter (save space) --- */
+/* --- Syllable filter: compact in Discord --- */
 .discord-activity .syllable-filter-section {
-    display: none !important;
+    padding: 4px 0;
 }
 
 /* --- Activation panel: only timed cycle visible --- */
