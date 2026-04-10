@@ -38,7 +38,9 @@
         {
             "imports": {
                 "three": "https://unpkg.com/three@0.161.0/build/three.module.js",
-                "three/addons/": "https://unpkg.com/three@0.161.0/examples/jsm/"
+                "three/addons/": "https://unpkg.com/three@0.161.0/examples/jsm/",
+                "@discord/embedded-app-sdk": "https://esm.sh/@discord/embedded-app-sdk@1.7.0",
+                "partysocket": "https://esm.sh/partysocket@1.0.2"
             }
         }
     </script>
@@ -137,7 +139,7 @@
             <!-- Word list file selection -->
             <div class="control-group">
                 <label for="word-list-select"><i class="fas fa-book"></i> Source:</label>
-                <select id="word-list-select">
+                <select id="word-list-select" data-host-only>
                     <option value="word-list.txt">Default (19K)</option>
                     <option value="curated-words.txt">Curated (705)</option>
                     <option value="scrabble-nwl2023.txt">Scrabble NWL2023 (196K)</option>
@@ -159,7 +161,7 @@
                 <div class="syllable-header">
                     <h3><i class="fas fa-sort-numeric-up"></i> Syllables</h3>
                     <!-- Reset button to clear syllable restrictions -->
-                    <button id="reset-syllables-button" class="syllable-reset-button" title="Reset to No Limits">
+                    <button id="reset-syllables-button" class="syllable-reset-button" title="Reset to No Limits" data-host-only>
                         <i class="fas fa-undo"></i>
                     </button>
                 </div>
@@ -167,7 +169,7 @@
                     <!-- Minimum syllable count filter -->
                     <div class="control-group">
                         <label for="min-syllables"><i class="fas fa-sort-numeric-down"></i> Min:</label>
-                        <select id="min-syllables" class="syllable-select">
+                        <select id="min-syllables" class="syllable-select" data-host-only>
                             <option value="0">∞</option> <!-- No minimum -->
                             <option value="1">1</option>
                             <option value="2">2</option>
@@ -180,7 +182,7 @@
                     <!-- Maximum syllable count filter -->
                     <div class="control-group">
                         <label for="max-syllables"><i class="fas fa-sort-numeric-up"></i> Max:</label>
-                        <select id="max-syllables" class="syllable-select">
+                        <select id="max-syllables" class="syllable-select" data-host-only>
                             <option value="0">∞</option> <!-- No maximum -->
                             <option value="1">1</option>
                             <option value="2">2</option>
@@ -252,7 +254,7 @@
                 <!-- --- NEW WORD DISPLAY UNIT (Three-Cell Layout) --- -->
                 <div id="word-display-unit">
                 <!-- Navigation arrows for word cycling (grid layout) -->
-                <button id="prev-word" class="word-nav-arrow side-arrow left-arrow" title="Previous Word">
+                <button id="prev-word" class="word-nav-arrow side-arrow left-arrow" title="Previous Word" data-host-only>
                     <i class="fas fa-chevron-left"></i>
                 </button>
                 <button id="up-word" class="word-nav-arrow top-bottom-arrow up-arrow" title="Previous Rhyme">
@@ -264,7 +266,7 @@
                 <button id="down-word" class="word-nav-arrow top-bottom-arrow down-arrow" title="Next Rhyme">
                     <i class="fas fa-chevron-down"></i>
                 </button>
-                <button id="next-word" class="word-nav-arrow side-arrow right-arrow" title="Next Word">
+                <button id="next-word" class="word-nav-arrow side-arrow right-arrow" title="Next Word" data-host-only>
                     <i class="fas fa-chevron-right"></i>
                 </button>
                 <!-- Top Cell: Synonyms -->
@@ -299,13 +301,13 @@
                     
                                             <!-- Search buttons row at bottom left of middle cell -->
                         <div class="search-buttons-row">
-                            <button id="search-word" class="word-action-icon search-icon" title="Search Word">
+                            <button id="search-word" class="word-action-icon search-icon" title="Search Word" data-host-only>
                                 <i class="fas fa-search"></i>
                             </button>
-                            <button id="reverse-search-word" class="word-action-icon reverse-search-icon" title="Reverse Search (Find words ending with...)">
+                            <button id="reverse-search-word" class="word-action-icon reverse-search-icon" title="Reverse Search (Find words ending with...)" data-host-only>
                                 <i class="fas fa-arrow-left"></i>
                             </button>
-                            <button id="mic-search-word" class="word-action-icon mic-search-icon" title="Mic Search (Ctrl+Click)">
+                            <button id="mic-search-word" class="word-action-icon mic-search-icon" title="Mic Search (Ctrl+Click)" data-host-only>
                                 <span class="mic-search-stack">
                                     <svg class="mic-search-glass" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
                                         <circle cx="7.5" cy="7.5" r="6" stroke="currentColor" stroke-width="1.4"/>
@@ -356,17 +358,17 @@
                 <!-- Main activation buttons for different modes -->
                 <div class="control-group activation-buttons">
                     <!-- Voice mode button with status light indicator -->
-                    <button id="voice-mode-button" class="icon-button large-button activation-button" title="Activate Voice Matching">
+                    <button id="voice-mode-button" class="icon-button large-button activation-button" title="Activate Voice Matching" data-host-only>
                         <span class="light"></span> <!-- Status light for voice activity -->
                         <i class="fas fa-microphone"></i> Voice Match
                     </button>
                     <!-- Timed mode button for automatic word cycling -->
-                    <button id="timed-mode-button" class="icon-button large-button activation-button" title="Activate Timed Cycle">
+                    <button id="timed-mode-button" class="icon-button large-button activation-button" title="Activate Timed Cycle" data-host-only>
                         <i class="fas fa-stopwatch"></i> Timed Cycle
                     </button>
                 </div>
                 <!-- Timed cycle speed controls (hidden by default) -->
-                <div id="timed-cycle-options" class="control-group" style="display: none;">
+                <div id="timed-cycle-options" class="control-group" style="display: none;" data-host-only>
                     <label for="cycle-speed"><i class="fas fa-clock"></i> Speed:</label>
                     <!-- Range slider for visual speed adjustment -->
                     <input type="range" id="cycle-speed-slider" min="1" max="30" value="10" step="1" style="flex-grow: 1; margin: 0 10px;">

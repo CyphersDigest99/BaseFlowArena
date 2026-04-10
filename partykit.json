@@ -1,0 +1,4 @@
+{
+  "name": "rhyme-nexus",
+  "main": "party/server.ts"
+}

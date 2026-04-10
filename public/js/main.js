@@ -44,6 +44,8 @@ import * as phonetics from './phonetics.js';
 import * as fillerTicker from './fillerTicker.js';
 import * as keyFinder from './keyFinder.js';
 import * as helpDrawer from './helpDrawer.js';
+import * as session from './session.js';
+import * as roles from './roles.js';
 
 // Cached word data for tooltip display and performance optimization
 let lastWordData = { synonyms: '', definition: '', word: '' };
@@ -76,6 +78,43 @@ function isAnyTooltipHovered() {
     return ui.elements.meansLikeButton?.matches(':hover') || false;
 }
 
+// --- Discord Activity Session Init ---
+// Detects whether the app is running inside a Discord Activity iframe.
+// If so, initializes the Discord SDK and connects to the PartyKit room.
+// If not, this function does nothing and the app runs in standalone mode.
+async function initDiscordSession() {
+  const isDiscordActivity = new URLSearchParams(window.location.search).has('frame_id');
+  if (!isDiscordActivity) return;
+
+  try {
+    const { DiscordSDK } = await import('@discord/embedded-app-sdk');
+    const CLIENT_ID = '1491729697128714310'; // Replace with your Discord Application ID
+
+    const discordSdk = new DiscordSDK(CLIENT_ID);
+    await discordSdk.ready();
+    console.log('[discord] SDK ready. instanceId:', discordSdk.instanceId);
+
+    // Generate a stable user ID that survives page refresh (sessionStorage persists on refresh,
+    // which is what makes the 30-second host reconnection grace period work).
+    const SESSION_KEY = 'rhymenexus_uid';
+    let userId = sessionStorage.getItem(SESSION_KEY);
+    if (!userId) {
+      userId = crypto.randomUUID();
+      sessionStorage.setItem(SESSION_KEY, userId);
+    }
+
+    // Register callback before connect() so ROOM_STATE fires it correctly during connect()
+    session.setOnHostChange((isHostNow) => {
+      roles.applyRoleUI(isHostNow);
+    });
+
+    await session.connect(discordSdk.instanceId, userId);
+
+  } catch (err) {
+    console.error('[discord] Session init failed, continuing in standalone mode:', err);
+  }
+}
+
 // --- Initialization ---
 async function initializeApp() {
     console.log("--- Freestyle Flow Arena Initializing ---");
@@ -89,7 +128,10 @@ async function initializeApp() {
     ui.setDisplayedWordChangeCallback(onDisplayedWordChange);
     
     // Set up the callback for word changes (for tooltip data prefetching)
-    wordManager.setWordChangeCallback(onWordChange);
+    wordManager.setWordChangeCallback((word, prevWord) => {
+        onWordChange(word, prevWord); // existing: prefetches tooltip data
+        session.broadcastWordChange(word); // new: broadcasts to room (no-op outside session)
+    });
 
     // 1. Init UI Background
     threeBackground.initBackground(ui.elements.bgCanvas);
@@ -103,6 +145,9 @@ async function initializeApp() {
     ui.initTraySlots();     // Pre-fill fixed-slot pill tray with placeholders
     await Promise.all([rhyme.loadRhymeData(), phonetics.loadCmuLookup(), phonetics.loadCmuPhonemes(), wordManager.loadRhymeVocabulary()]);
     await wordManager.loadWords(); // Applies filters based on loaded blacklist
+
+    // Initialize Discord Activity session (no-op if running outside Discord)
+    await initDiscordSession();
 
     // Retroactively enrich existing rejections with phonetic context (one-time migration)
     storage.enrichExistingRejections();
@@ -158,8 +203,15 @@ function setActivationMode(newMode) {
     if (previousMode === 'voice') {
         speech.stopRecognition(true);
     }
-    if (state.activationMode === 'timed') startTimedCycleInternal();
-    else if (state.activationMode === 'voice') speech.startRecognition();
+    if (state.activationMode === 'timed') {
+        startTimedCycleInternal();
+        session.broadcastCycleState(true, state.cycleSpeed);
+    } else if (state.activationMode === 'voice') {
+        speech.startRecognition();
+        session.broadcastCycleState(false, state.cycleSpeed);
+    } else {
+        session.broadcastCycleState(false, state.cycleSpeed);
+    }
     ui.updateActivationUI();
     if (state.activationMode === 'voice' || state.activationMode === 'timed') {
         fillerTicker.show();
@@ -495,7 +547,10 @@ function attachEventListeners() {
     });
 
     // Word List Source Selection
-    ui.elements.wordListSelect?.addEventListener('change', (e) => wordManager.switchWordList(e.target.value));
+    ui.elements.wordListSelect?.addEventListener('change', (e) => {
+        wordManager.switchWordList(e.target.value);
+        session.broadcastSettingsChange({ wordListFile: e.target.value });
+    });
 
     // Word Order Setting
     ui.elements.wordOrderSelect?.addEventListener('change', (e) => wordManager.setWordOrder(e.target.value));
@@ -518,7 +573,11 @@ function attachEventListeners() {
             
             // Reapply filters and get new word if current word doesn't match
             wordManager.applyFiltersAndSort();
-            
+            session.broadcastSettingsChange({
+                minSyllables: state.minSyllables,
+                maxSyllables: state.maxSyllables,
+            });
+
             // If current word is no longer valid, get a new one
             if (state.currentWord === "NO WORDS!" || !state.filteredWordList.includes(state.currentWord)) {
                 if (state.filteredWordList.length > 0) {
@@ -573,6 +632,7 @@ function attachEventListeners() {
             if (document.activeElement !== ui.elements.cycleSpeedSlider && ui.elements.cycleSpeedSlider) ui.elements.cycleSpeedSlider.value = speed;
             if (state.activationMode === 'timed') startTimedCycleInternal();
             storage.saveSettings();
+            session.broadcastCycleState(state.activationMode === 'timed', state.cycleSpeed);
         }
     };
     ui.elements.cycleSpeedSlider?.addEventListener('input', () => { if (ui.elements.cycleSpeedInput) ui.elements.cycleSpeedInput.value = ui.elements.cycleSpeedSlider.value; });
@@ -1275,7 +1335,8 @@ function selectRhymeWord(word) {
             
             // Display the selected rhyme word
             ui.displayWord(word);
-            
+            session.broadcastWordChange(word);
+
             // Close the modal
             modal.closeModal(ui.elements.rhymeFinderModal);
             keyboardState.isRhymeModalOpen = false;

@@ -13,6 +13,7 @@ import * as ui from './ui.js';
 import * as wordManager from './wordManager.js';
 import * as rhyme from './rhyme.js';
 import * as storage from './storage.js';
+import * as session from './session.js';
 
 // Reverse search state
 let reverseSearchState = {
@@ -519,6 +520,7 @@ function selectReverseWord(word) {
 
         // Update display
         ui.displayWord(word);
+        session.broadcastWordChange(word);
 
         // Load rhymes for the new word
         state.currentRhymeList = rhyme.getValidRhymesForWord(word);
@@ -570,6 +572,7 @@ function addNewWordFromReverse(word) {
 
         exitReverseSearchMode();
         ui.displayWord(word);
+        session.broadcastWordChange(word);
         state.currentRhymeList = rhyme.getValidRhymesForWord(word);
         state.currentRhymeIndex = -1;
         ui.updateRhymeNavButtons();
