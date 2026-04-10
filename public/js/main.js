@@ -88,7 +88,7 @@ async function initDiscordSession() {
 
   try {
     const { DiscordSDK } = await import('@discord/embedded-app-sdk');
-    const CLIENT_ID = 'YOUR_DISCORD_CLIENT_ID'; // Replace with your Discord Application ID
+    const CLIENT_ID = '1491729697128714310'; // Replace with your Discord Application ID
 
     const discordSdk = new DiscordSDK(CLIENT_ID);
     await discordSdk.ready();

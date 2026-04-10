@@ -10,7 +10,7 @@ import PartySocket from 'partysocket';
 // Set this to your deployed PartyKit host after running `npx partykit deploy`.
 // Format: "<project-name>.<partykit-username>.partykit.dev"
 // For local dev: "127.0.0.1:1999"
-const PARTYKIT_HOST = 'PARTYKIT_HOST_PLACEHOLDER';
+const PARTYKIT_HOST = 'rhyme-nexus.cyphersdigest99.partykit.dev';
 
 let _socket = null;
 let _isHost = false;
