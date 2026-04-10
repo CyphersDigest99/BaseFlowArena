@@ -111,7 +111,10 @@ async function initDiscordSession() {
       roles.applyRoleUI(isHostNow);
     });
 
-    await session.connect(discordSdk.instanceId, userId);
+    await Promise.race([
+      session.connect(discordSdk.instanceId, userId),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('PartyKit connect timed out')), 8000)),
+    ]);
 
   } catch (err) {
     console.error('[discord] Session init failed, continuing in standalone mode:', err);
