@@ -26,7 +26,7 @@
     <!-- Canvas Confetti - for celebration animations when user achieves goals -->
     <script src="/public/confetti.browser.min.js"></script>
     <!-- Howler.js - audio library for beat playback (must load before beatManager.js) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"></script>
+    <script src="/public/howler.min.js"></script>
     <!-- Wavesurfer.js - Commented out for Howler-only player approach -->
     <!-- <script src="https://unpkg.com/wavesurfer.js@7.6.0/dist/wavesurfer.min.js"></script> -->
     <!-- jsmediatags - for reading audio file metadata (BPM, artist, etc.) -->
@@ -37,7 +37,6 @@
     <script type="importmap">
         {
             "imports": {
-                "three": "/public/three.module.js",
                 "@discord/embedded-app-sdk": "https://esm.sh/@discord/embedded-app-sdk@1.7.0",
                 "partysocket": "https://esm.sh/partysocket@1.0.2"
             }
@@ -790,7 +789,7 @@
 
     <!-- --- JAVASCRIPT MODULES --- -->
     <!-- Main game script loaded as ES6 module with defer attribute -->
-    <script type="module" src="public/js/main.js" defer></script>
+    <script type="module" src="public/js/main.js?v=2" defer></script>
 
     <!-- --- BEAT PLAYER BAR (FIXED BOTTOM) --- -->
     <div id="beat-player-bar">

@@ -16,7 +16,7 @@
 // js/threeBackground.js
 // Handles the THREE.js background animation.
 
-import * as THREE from 'three';
+import * as THREE from '/public/three.module.js';
 
 let scene, camera, renderer, roadLines = [], roadPlane;
 const lineCount = 50;
