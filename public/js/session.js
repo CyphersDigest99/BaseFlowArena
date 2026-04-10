@@ -5,7 +5,8 @@
 import { state } from './state.js';
 import * as ui from './ui.js';
 import * as rhyme from './rhyme.js';
-import PartySocket from 'partysocket';
+// PartySocket is imported dynamically inside connect() so a blocked CDN
+// doesn't prevent session.js (and main.js) from loading at all.
 
 // Set this to your deployed PartyKit host after running `npx partykit deploy`.
 // Format: "<project-name>.<partykit-username>.partykit.dev"
@@ -40,8 +41,15 @@ export function setOnHostChange(callback) {
  * @param {string} instanceId - The Discord Activity instanceId (used as room key).
  * @param {string} userId - A stable ID for this browser session (from sessionStorage).
  */
-export function connect(instanceId, userId) {
+export async function connect(instanceId, userId) {
   _userId = userId;
+
+  let PartySocket;
+  try {
+    ({ default: PartySocket } = await import('partysocket'));
+  } catch (err) {
+    throw new Error('[session] Failed to load PartySocket: ' + err.message);
+  }
 
   return new Promise((resolve, reject) => {
     _socket = new PartySocket({
