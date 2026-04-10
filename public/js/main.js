@@ -43,7 +43,7 @@ import * as phonetics from './phonetics.js';
 import * as fillerTicker from './fillerTicker.js';
 import * as keyFinder from './keyFinder.js';
 import * as helpDrawer from './helpDrawer.js';
-import * as session from './session.js';
+import * as session from './session.js?v=2';
 import * as roles from './roles.js';
 
 // Cached word data for tooltip display and performance optimization
