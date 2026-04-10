@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-04-10
+- Discord Activity multiplayer: everyone in a voice channel sees the same word in real time
+- PartyKit server on Cloudflare Workers (rhyme-nexus.cyphersdigest99.partykit.dev) — authoritative room state, host assignment, 30s reconnection grace period
+- Host = first to join; if host disconnects, next-earliest participant auto-promotes
+- Viewer mode: all session controls dimmed/disabled; word search and search buttons host-gated; rhyme modal remains private per user
+- All host word changes broadcast: next/prev word, timed cycle, word search, reverse search, rhyme finder keyboard selection, voice search
+- Settings broadcast: word list switch, syllable filters, cycle speed
+- Standalone browser mode fully preserved — no Discord session = app behaves exactly as before
+- App rebranded to RhymeNexus; domain: rhymenex.us
+
 ## 2026-04-09
 - Fix transcript crash: `firstChild` → `firstElementChild` in `updateTranscript` (HTML comment node was crashing interim display)
 - Silence `aborted` STT error toast — Chrome-internal transient event, not user-actionable
