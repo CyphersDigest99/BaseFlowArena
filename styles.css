@@ -5271,3 +5271,129 @@ body.screen-shaking {
 [data-theme="light"] .help-drawer-title { text-shadow: none; }
 [data-theme="light"] .help-cmd { text-shadow: none; }
 [data-theme="light"] .help-kbd { text-shadow: none; }
+
+/* ==========================================================
+   DISCORD ACTIVITY LAYOUT
+   Viewport: ~1600×800, no scrolling allowed.
+   Applied when body has .discord-activity class.
+   ========================================================== */
+
+/* --- Lock to viewport --- */
+.discord-activity {
+    height: 100vh;
+    max-height: 100vh;
+    min-height: 0;
+    overflow: hidden;
+    padding: 4px;
+}
+
+/* --- Compact header --- */
+.discord-activity .game-header {
+    padding: 2px 12px;
+    margin-bottom: 4px;
+}
+.discord-activity .game-header h1 {
+    font-size: 1.2em;
+}
+.discord-activity .theme-controls {
+    display: none;
+}
+
+/* --- Game arena fills remaining space --- */
+.discord-activity .game-arena {
+    flex: 1;
+    gap: 6px;
+    overflow: hidden;
+    min-height: 0;
+}
+
+/* --- Side panels: narrower, tighter --- */
+.discord-activity .control-panel {
+    flex: 0 0 200px;
+    padding: 8px;
+    gap: 6px;
+    overflow-y: auto;
+    max-height: 100%;
+}
+
+/* --- Center stage --- */
+.discord-activity .center-stage {
+    gap: 4px;
+    min-height: 0;
+    overflow: hidden;
+}
+
+/* --- Word display: reduce min-height --- */
+.discord-activity .word-display-wrapper {
+    margin: 0 auto;
+}
+.discord-activity #word-display-unit {
+    min-height: 220px;
+    padding: 0 40px;
+}
+
+/* --- Compact panels --- */
+.discord-activity .panel {
+    padding: 8px;
+}
+.discord-activity h2 {
+    font-size: 0.95em;
+    margin: 0;
+}
+.discord-activity h3 {
+    font-size: 0.85em;
+    margin: 0;
+}
+
+/* --- HIDDEN: mic-dependent features --- */
+.discord-activity #voice-mode-button,
+.discord-activity #mic-search-word,
+.discord-activity #detect-bpm-button,
+.discord-activity #key-finder-panel,
+.discord-activity #frequency-panel,
+.discord-activity .bpm-multiplier-controls,
+.discord-activity .transcript-area {
+    display: none !important;
+}
+
+/* --- HIDDEN: non-essential panels --- */
+.discord-activity #rng-controls,
+.discord-activity #rng-display-area,
+.discord-activity .panel-left h2:has(.fa-dice) {
+    display: none !important;
+}
+
+/* --- HIDDEN: BPM beat grid (saves vertical space) --- */
+.discord-activity #four-count-container,
+.discord-activity .bpm-grid-controls {
+    display: none !important;
+}
+
+/* --- HIDDEN: syllable filter (save space) --- */
+.discord-activity .syllable-filter-section {
+    display: none !important;
+}
+
+/* --- Activation panel: only timed cycle visible --- */
+.discord-activity .activation-controls {
+    padding: 6px 8px;
+}
+
+/* --- BPM panel compact --- */
+.discord-activity .bpm-main-controls {
+    gap: 4px;
+}
+.discord-activity .bpm-adjust-controls {
+    gap: 2px;
+}
+
+/* --- Beat player bar: slightly thinner --- */
+.discord-activity #beat-player-bar {
+    height: 50px;
+}
+
+/* --- Debug overlay: keep visible during dev --- */
+.discord-activity #dbg {
+    font-size: 10px;
+    padding: 2px 6px;
+}
