@@ -3,7 +3,11 @@
 ## 2026-04-09
 - Fix transcript crash: `firstChild` → `firstElementChild` in `updateTranscript` (HTML comment node was crashing interim display)
 - Silence `aborted` STT error toast — Chrome-internal transient event, not user-actionable
+- Silence `audio-capture` STT error toast — same category as `aborted`, transient during cycle restarts
+- Remove dead `setActivationMode` reference from `onRecognitionError` (function lives in main.js, not imported in speech.js)
 - Fix speech.js regression: remove mic stream teardown from `onRecognitionEnd` (was causing infinite abort loop on voice mode restart)
+- Fix word display centering at narrow viewports: `margin: 0 auto` on `.word-display-wrapper`
+- Fix word display asymmetry at specific viewport widths: `grid-template-columns: 60px 1fr 60px` (was `auto 1fr auto`, caused sub-pixel rounding drift)
 - Help drawer: unique per-section header colors, Verdana body text, muted per-section body tones
 - Help `?` button moved from `bottom:75px` to `bottom:20px` (beat bar disabled)
 - TODO: hum-to-lock added to On Hold section

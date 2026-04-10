@@ -273,22 +273,15 @@ function onRecognitionResult(event) {
 // Handles errors from the speech recognition API
 function onRecognitionError(event) {
     console.error('Speech recognition error:', event.error, event.message);
-    if (event.error === 'aborted') return; // Chrome internal — transient, handled by onend restart
+    // Chrome throws these transiently during cycle restarts — onend handles the restart
+    if (event.error === 'aborted' || event.error === 'audio-capture') return;
     let errorMsg = `Speech Error: ${event.error}`;
     if (event.error === 'no-speech') errorMsg = 'No speech detected.';
-    else if (event.error === 'audio-capture') errorMsg = 'Mic Error. Check permissions/hardware.';
     else if (event.error === 'not-allowed') errorMsg = 'Mic access denied by user or browser setting.';
     ui.showFeedback(errorMsg, true, 4000);
 
     state.isMicActive = false; // Assume hardware stopped
     ui.updateActivationUI(); // Update button visual state
-
-    // If critical error makes voice mode unusable, revert to manual
-    if (event.error === 'not-allowed' || event.error === 'audio-capture') {
-         if (state.activationMode === 'voice') {
-             setActivationMode('manual'); // Defined in main.js, called via event handler
-         }
-    }
 }
 
 // Handles the end of speech recognition hardware (intentional or not)
