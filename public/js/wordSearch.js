@@ -13,6 +13,7 @@ import * as wordManager from './wordManager.js';
 import * as rhyme from './rhyme.js';
 import * as storage from './storage.js';
 import * as modal from './modal.js';
+import * as session from './session.js';
 
 // Search state
 let searchState = {
@@ -294,6 +295,7 @@ function handleSearchKeydown(event) {
                     state.currentRhymeIndex = -1;
                     exitSearchMode();
                     ui.displayWord(selectedSuggestion);
+                    session.broadcastWordChange(selectedSuggestion);
                     state.currentRhymeList = rhyme.getValidRhymesForWord(selectedSuggestion);
                     state.currentRhymeIndex = -1;
                     ui.updateRhymeNavButtons();
@@ -320,6 +322,7 @@ function handleSearchKeydown(event) {
                     state.currentRhymeIndex = -1;
                     exitSearchMode();
                     ui.displayWord(typedWord);
+                    session.broadcastWordChange(typedWord);
                     state.currentRhymeList = rhyme.getValidRhymesForWord(typedWord);
                     state.currentRhymeIndex = -1;
                     ui.updateRhymeNavButtons();
@@ -592,7 +595,8 @@ function confirmSearch() {
         
         // Update display after search mode is exited
         ui.displayWord(selectedWord);
-        
+        session.broadcastWordChange(selectedWord);
+
         // Load rhymes for the new word (this is what was missing!)
         state.currentRhymeList = rhyme.getValidRhymesForWord(selectedWord);
         state.currentRhymeIndex = -1;
@@ -656,7 +660,8 @@ function addNewWord(word) {
         
         // Update display after search mode is exited
         ui.displayWord(word);
-        
+        session.broadcastWordChange(word);
+
         // Load rhymes for the new word
         state.currentRhymeList = rhyme.getValidRhymesForWord(word);
         state.currentRhymeIndex = -1;
@@ -943,6 +948,7 @@ function promoteMicSearchWord(word) {
         state.currentRhymeList = [];
         state.currentRhymeIndex = -1;
         ui.displayWord(word);
+        session.broadcastWordChange(word);
         state.currentRhymeList = rhyme.getValidRhymesForWord(word);
         state.currentRhymeIndex = -1;
         ui.updateRhymeNavButtons();

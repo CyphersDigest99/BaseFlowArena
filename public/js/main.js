@@ -1335,7 +1335,8 @@ function selectRhymeWord(word) {
             
             // Display the selected rhyme word
             ui.displayWord(word);
-            
+            session.broadcastWordChange(word);
+
             // Close the modal
             modal.closeModal(ui.elements.rhymeFinderModal);
             keyboardState.isRhymeModalOpen = false;
