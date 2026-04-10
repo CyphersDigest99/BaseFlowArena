@@ -52,10 +52,9 @@ export function connect(instanceId, userId) {
 
     _socket.addEventListener('message', (event) => {
       const msg = JSON.parse(event.data);
-      // Resolve the connect() promise on first ROOM_STATE so callers can
-      // read isHost() immediately after awaiting connect().
-      if (msg.type === 'ROOM_STATE') resolve();
       handleMessage(msg);
+      // Resolve after handleMessage so _isHost is set before callers resume.
+      if (msg.type === 'ROOM_STATE') resolve();
     });
 
     _socket.addEventListener('error', (err) => {
@@ -95,6 +94,8 @@ function handleMessage(msg) {
       }
       state.minSyllables = msg.minSyllables ?? 0;
       state.maxSyllables = msg.maxSyllables ?? 0;
+      state.isCycling = msg.isCycling ?? false;
+      state.cycleSpeed = msg.cycleSpeed ?? 10;
       if (_onHostChange) _onHostChange(_isHost);
       break;
     }
@@ -115,6 +116,13 @@ function handleMessage(msg) {
         if (msg.minSyllables !== undefined) state.minSyllables = msg.minSyllables;
         if (msg.maxSyllables !== undefined) state.maxSyllables = msg.maxSyllables;
       }
+      break;
+
+    case 'CYCLE_STATE':
+      // Viewers don't run their own interval (host drives word changes via WORD_CHANGE),
+      // but we keep state in sync so a promoted host has accurate values.
+      state.isCycling = msg.isCycling;
+      state.cycleSpeed = msg.cycleSpeed;
       break;
 
     case 'HOST_CHANGE':
