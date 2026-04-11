@@ -5338,6 +5338,9 @@ body.screen-shaking {
     flex: 1;
     padding: 0 40px;
 }
+.discord-activity #word-display {
+    font-size: 48px;
+}
 
 /* --- Compact panels --- */
 .discord-activity .panel {
