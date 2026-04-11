@@ -428,6 +428,11 @@ export function displayWord(word, direction = null) { // word is the word to dis
         baseFontSize *= 0.9; // Slightly smaller on tablets
     }
 
+    // Discord Activity: bump 15% to fill the larger word display box
+    if (document.body.classList.contains('discord-activity')) {
+        baseFontSize *= 1.15;
+    }
+
     console.log(`Calculated base font size: ${baseFontSize}em`);
     
     // Reset to calculated base size first
