@@ -5309,7 +5309,7 @@ body.screen-shaking {
 
 /* --- Side panels: narrower, tighter --- */
 .discord-activity .control-panel {
-    flex: 0 0 240px;
+    flex: 0 0 260px;
     padding: 8px;
     gap: 6px;
     overflow-y: auto;
