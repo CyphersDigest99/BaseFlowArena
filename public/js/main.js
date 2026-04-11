@@ -1128,6 +1128,21 @@ function handleRhymeModalKeydown(event) {
         return;
     }
 
+    // Left/Right arrows always navigate prev/next word while the modal is open,
+    // matching the chevrons in the rhyme header. Overrides section-specific
+    // arrow behaviors so the modal feels like a continuous word browser.
+    if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+        event.preventDefault();
+        const arrowId = event.key === 'ArrowLeft' ? 'rhyme-header-prev' : 'rhyme-header-next';
+        const arrowBtn = document.getElementById(arrowId);
+        if (arrowBtn) {
+            arrowBtn.classList.add('pulse');
+            setTimeout(() => arrowBtn.classList.remove('pulse'), 300);
+            arrowBtn.click();
+        }
+        return;
+    }
+
     if (!keyboardState.focusedSection) return;
     if (keyboardState.focusedSection === 'header') {
         if (event.key === 'ArrowLeft') {

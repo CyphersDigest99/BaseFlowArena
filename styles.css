@@ -325,10 +325,10 @@ body::after {
 
 .game-header h1 {
     margin: 0;
-    font-size: 1.8em;
-    font-family: var(--font-display);
-    color: var(--primary-accent);
-    text-shadow: 0 0 5px var(--primary-accent);
+    font-size: 36px;
+    font-family: "Courier New", monospace;
+    color: rgb(227, 204, 255);
+    text-shadow: 0 0 6px rgba(227, 204, 255, 0.6);
 }
 
 /* --- Theme Controls Styling --- */
@@ -2738,18 +2738,22 @@ label.checkbox-label {
     margin-bottom: 10px;
 }
 .etymology-toggle {
-    background: transparent;
+    background: rgb(16, 66, 40);
     border: 1px solid var(--border-color);
-    color: var(--secondary-accent);
+    color: rgb(255, 237, 189);
     cursor: pointer;
     padding: 4px 12px;
     border-radius: 4px;
-    font-size: 0.75em;
-    opacity: 0.7;
-    transition: opacity 0.2s, border-color 0.2s;
+    font-size: 21px;
+    opacity: 1;
+    transition: background 0.2s, border-color 0.2s, color 0.2s;
 }
-.etymology-toggle:hover { opacity: 1; border-color: var(--primary-accent); }
-.etymology-toggle.active { opacity: 1; color: var(--primary-accent); border-color: var(--primary-accent); }
+.etymology-toggle:hover { border-color: var(--primary-accent); }
+.etymology-toggle.active {
+    color: var(--primary-accent);
+    border-color: var(--primary-accent);
+    background: rgb(10, 45, 26);
+}
 .etymology-content {
     text-align: left;
     margin-top: 8px;
@@ -2757,9 +2761,10 @@ label.checkbox-label {
     background: rgba(0,0,0,0.3);
     border: 1px solid var(--border-color);
     border-radius: 6px;
-    font-size: 0.85em;
+    font-family: monospace;
+    font-size: 13px;
     line-height: 1.5;
-    color: var(--text-color);
+    color: rgb(171, 213, 227);
     max-height: 200px;
     overflow-y: auto;
 }
@@ -2798,8 +2803,8 @@ label.checkbox-label {
     margin-bottom: 4px;
 }
 .etymology-origin-text {
-    font-style: italic;
-    color: var(--text-color);
+    font-style: normal;
+    color: inherit;
 }
 
 #rhyme-header-blacklist {
@@ -2819,7 +2824,8 @@ label.checkbox-label {
     opacity: 1;
 }
 
-#rhyme-header-prev {
+#rhyme-header-prev,
+#rhyme-header-next {
     font-size: 8px;
 }
 
@@ -3325,7 +3331,8 @@ body.screen-shaking {
     right: 10px;
     top: 50%;
     transform: translateY(-50%);
-    font-size: 1em;
+    font-size: 19px;
+    font-family: Verdana, sans-serif;
     color: var(--red-color);
     cursor: pointer;
     user-select: none;
@@ -5058,11 +5065,11 @@ body.screen-shaking {
     background: rgba(0,0,0,0.3);
 }
 .help-drawer-title {
-    font-family: var(--font-display);
-    font-size: 18px;
+    font-family: "Trebuchet MS", sans-serif;
+    font-size: 31px;
     letter-spacing: 3px;
-    color: var(--primary-accent);
-    text-shadow: 0 0 6px var(--primary-accent);
+    color: rgb(235, 255, 179);
+    text-shadow: 0 0 6px rgba(235, 255, 179, 0.5);
 }
 .help-drawer-close {
     background: none;
@@ -5113,28 +5120,12 @@ body.screen-shaking {
 }
 .help-section-header:hover { background: rgba(255,255,255,0.03); }
 .help-section-title {
-    font-family: system-ui, sans-serif;
+    font-family: monospace;
     font-size: 16px;
     letter-spacing: 0.5px;
     text-transform: uppercase;
-    color: var(--primary-accent);
+    color: rgb(204, 217, 255);
 }
-
-/* Unique color per section header — desaturated, full brightness */
-.help-section:nth-child(1) .help-section-title { color: #7ac4d0; }
-.help-section:nth-child(2) .help-section-title { color: #c8a07a; }
-.help-section:nth-child(3) .help-section-title { color: #c878a0; }
-.help-section:nth-child(4) .help-section-title { color: #a090c8; }
-.help-section:nth-child(5) .help-section-title { color: #88c070; }
-.help-section:nth-child(6) .help-section-title { color: #c8b058; }
-
-/* Body text — same hue, further desaturated, brightness held */
-.help-section:nth-child(1) .help-section-body { color: #90b8c0; }
-.help-section:nth-child(2) .help-section-body { color: #b89880; }
-.help-section:nth-child(3) .help-section-body { color: #b888a0; }
-.help-section:nth-child(4) .help-section-body { color: #9890b8; }
-.help-section:nth-child(5) .help-section-body { color: #88a878; }
-.help-section:nth-child(6) .help-section-body { color: #b8a870; }
 .help-section-arrow {
     font-size: 10px;
     color: var(--text-color);
@@ -5146,7 +5137,7 @@ body.screen-shaking {
     font-size: 14px;
     line-height: 1.45;
     font-family: Verdana, sans-serif;
-    color: #ccffc2;
+    color: rgb(204, 255, 194);
 }
 
 /* Content blocks */

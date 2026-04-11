@@ -186,6 +186,24 @@ function buildSection(section, collapseState) {
         const cs = loadCollapseState();
         cs[section.id] = nowOpen;
         saveCollapseState(cs);
+
+        // When expanding, scroll the section into view if its body spills past
+        // the bottom of the drawer — keeps the newly revealed content visible.
+        if (nowOpen) {
+            const container = wrap.closest('.help-drawer-sections');
+            if (container) {
+                requestAnimationFrame(() => {
+                    const wrapRect = wrap.getBoundingClientRect();
+                    const containerRect = container.getBoundingClientRect();
+                    if (wrapRect.bottom <= containerRect.bottom) return;
+                    const sectionTaller = wrapRect.height >= containerRect.height - 16;
+                    const scrollDelta = sectionTaller
+                        ? wrapRect.top - containerRect.top - 4
+                        : wrapRect.bottom - containerRect.bottom + 8;
+                    container.scrollBy({ top: scrollDelta, behavior: 'smooth' });
+                });
+            }
+        }
     });
 
     wrap.appendChild(header);

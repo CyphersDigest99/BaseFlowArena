@@ -250,7 +250,10 @@ export function getValidRhymesForWord(baseWord) {
 }
 
 // --- Rhyme Finder Sorting State ---
-let rhymeSortMode = 'similarity'; // 'default', 'alpha', 'phonetic', 'similarity'
+// Persist sort preference across sessions
+const RHYME_SORT_KEY = 'rhymenexus-rhyme-sort-mode';
+const _savedSort = (() => { try { return localStorage.getItem(RHYME_SORT_KEY); } catch { return null; } })();
+let rhymeSortMode = _savedSort || 'similarity'; // 'default', 'alpha', 'phonetic', 'similarity', 'random'
 
 function setRhymeSortMode(mode) {
     // If clicking the already active sort, revert to default
@@ -259,6 +262,7 @@ function setRhymeSortMode(mode) {
     } else {
         rhymeSortMode = mode;
     }
+    try { localStorage.setItem(RHYME_SORT_KEY, rhymeSortMode); } catch {}
     updateRhymeSortButtonState();
     
     // Update modal header based on new sort mode
@@ -274,7 +278,8 @@ function updateRhymeSortButtonState() {
     const btns = [
         { id: 'sort-alpha', mode: 'alpha' },
         { id: 'sort-phonetic', mode: 'phonetic' },
-        { id: 'sort-similarity', mode: 'similarity' }
+        { id: 'sort-similarity', mode: 'similarity' },
+        { id: 'sort-random', mode: 'random' },
     ];
     btns.forEach(({ id, mode }) => {
         const btn = document.getElementById(id);
@@ -286,9 +291,11 @@ function attachRhymeSortListeners() {
     const btnAlpha = document.getElementById('sort-alpha');
     const btnPhonetic = document.getElementById('sort-phonetic');
     const btnSimilarity = document.getElementById('sort-similarity');
+    const btnRandom = document.getElementById('sort-random');
     if (btnAlpha) btnAlpha.onclick = () => setRhymeSortMode('alpha');
     if (btnPhonetic) btnPhonetic.onclick = () => setRhymeSortMode('phonetic');
     if (btnSimilarity) btnSimilarity.onclick = () => setRhymeSortMode('similarity');
+    if (btnRandom) btnRandom.onclick = () => setRhymeSortMode('random');
 }
 
 // --- Temporary Rejection State (modal-local) ---
@@ -940,6 +947,13 @@ function displayRhymeList(baseWordLower) {
         rhymesToDisplay = sortByPhoneticEnding(rhymesToDisplay, baseWordLower);
     } else if (rhymeSortMode === 'similarity') {
         rhymesToDisplay = sortByRhymeSimilarity(rhymesToDisplay, state.currentWord);
+    } else if (rhymeSortMode === 'random') {
+        const arr = [...rhymesToDisplay];
+        for (let i = arr.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        rhymesToDisplay = arr;
     }
     rhymesToDisplay._totalBeforeCap = totalBeforeCap;
 
@@ -1245,32 +1259,44 @@ function sortByRhymeSimilarity(words, baseWord) {
 // --- Etymology / Word Family ---
 let etymologyCache = new Map();
 
+// Morphological suffixes that are valid word endings.
+// Used to verify that a shorter prefix is a genuine stem of the base word,
+// not just a coincidentally real word that happens to be a prefix.
+// E.g. "plumb" → "plumber" (suffix "er" ✓), but "plum" → "plump" (suffix "p" ✗).
+const MORPH_SUFFIXES = new Set([
+    's', 'es', 'd', 'ed', 'r', 'er', 'ers', 'est',
+    'ing', 'ings', 'y', 'ey', 'ly', 'ier', 'iest',
+    'ness', 'ment', 'ments', 'tion', 'tions', 'ation', 'ations',
+    'ful', 'less', 'ish', 'able', 'ible', 'ity', 'ities',
+    'al', 'ive', 'ous', 'ary', 'ory', 'age', 'ance', 'ence',
+    'ant', 'ent', 'ship', 'dom', 'hood', 'ward', 'wards',
+]);
+
 function findWordFamily(baseWord) {
     const word = baseWord.toLowerCase();
 
     // Build a set of prefixes to match against — starting with the full baseWord.
-    // Previous approach stripped suffixes aggressively and matched `may` from `mayer`,
-    // pulling in unrelated words like `maybe`, `mayhem`, `mayo`. The new approach only
-    // uses the baseWord itself plus a shorter form that is ITSELF a word in the list
-    // (e.g. "healthy" → also try "health"). This keeps the family tight to actual
-    // derivational siblings.
+    // We also look for a shorter real-word stem, but ONLY if the characters we
+    // stripped form a recognised morphological suffix. This prevents false positives
+    // like "plum" showing up in "plump"'s family (suffix "p" is not a real suffix).
     const prefixes = new Set([word]);
 
     // Build a quick lookup for wordList membership
     const wordSet = new Set(state.wordList.map(w => w.toLowerCase()));
 
-    // Find the longest proper prefix of baseWord (>= 4 chars) that is itself a word.
-    // Also handle silent-e drop cases: "educating" → stem "educat" + "e" = "educate".
+    // Find the longest proper prefix (>= 4 chars) that is itself a word AND whose
+    // relationship to baseWord is a real derivational suffix.
+    // Also handle silent-e drop: "educating" → stem "educat" + "e" = "educate".
     for (let len = word.length - 1; len >= 4; len--) {
         const candidate = word.slice(0, len);
+        const tail = word.slice(len);
+        if (!MORPH_SUFFIXES.has(tail)) continue; // Not a morphological suffix — skip
         if (wordSet.has(candidate)) {
             prefixes.add(candidate);
             break;
         }
         if (wordSet.has(candidate + 'e')) {
-            // Use the shorter stem (without e) as the prefix so all derived forms
-            // (educating, educated, education) still match. Also add the +e form
-            // so the root word itself appears in the family.
+            // Silent-e stem: "educating" → "educat" + "e" = "educate"
             prefixes.add(candidate);
             prefixes.add(candidate + 'e');
             break;
