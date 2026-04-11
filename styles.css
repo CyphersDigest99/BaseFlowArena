@@ -5315,6 +5315,9 @@ body.screen-shaking {
     overflow-y: auto;
     max-height: 100%;
 }
+.discord-activity .panel-right {
+    flex: 0 0 270px;
+}
 
 /* --- Center stage --- */
 .discord-activity .center-stage {
@@ -5378,9 +5381,12 @@ body.screen-shaking {
     padding: 4px 0;
 }
 
-/* --- Activation panel: only timed cycle visible --- */
+/* --- Activation panel: only timed cycle visible, slider always shown --- */
 .discord-activity .activation-controls {
     padding: 6px 8px;
+}
+.discord-activity #timed-cycle-options {
+    display: flex !important;
 }
 
 /* --- BPM panel compact --- */
