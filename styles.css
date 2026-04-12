@@ -2824,10 +2824,39 @@ label.checkbox-label {
     opacity: 1;
 }
 
+.rhyme-header-focus-row {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0 44px;
+}
+
 #rhyme-header-prev,
 #rhyme-header-next {
-    font-size: 8px;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--secondary-accent);
+    font-size: 1.6em;
+    padding: 4px 8px;
+    opacity: 0.7;
+    line-height: 1;
 }
+
+#rhyme-header-prev:hover,
+#rhyme-header-next:hover {
+    opacity: 1;
+    color: var(--primary-accent);
+}
+
+#rhyme-header-prev { left: 0; }
+#rhyme-header-next { right: 0; }
 
 #rhyme-header-word {
     font-size: 41px;
@@ -4284,62 +4313,37 @@ body.screen-shaking {
     opacity: 1 !important;
 }
 
-/* Reason chips */
-.feedback-chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-bottom: 12px;
+/* Flagged phoneme block — Word B, clicked by user to mark problem */
+.feedback-flagged {
+    background: rgba(255, 69, 0, 0.25) !important;
+    border-color: var(--red-color) !important;
+    color: var(--red-color) !important;
+    opacity: 1 !important;
 }
 
-.feedback-chip {
-    flex: 1 1 calc(50% - 3px);
-    text-align: center;
-    padding: 4px 10px;
-    border: 1px solid var(--primary-accent);
-    border-radius: 16px;
+/* "Not a word" escape hatch button */
+.feedback-not-a-word {
+    width: 100%;
+    padding: 6px 10px;
+    margin-bottom: 10px;
+    border: 1px solid var(--red-color);
+    border-radius: 4px;
     background: transparent;
-    color: var(--text-color);
+    color: var(--red-color);
     font-family: var(--font-main);
     font-size: 0.85em;
     cursor: pointer;
+    opacity: 0.8;
     transition: all 0.15s ease;
     user-select: none;
 }
 
-.feedback-chip:hover {
-    background: rgba(51, 255, 51, 0.1);
-}
-
-.feedback-chip.active {
-    background: var(--primary-accent);
-    color: var(--bg-color);
-    font-weight: bold;
-}
-
-/* "Just sounds wrong" — general catch-all, centered and visually separated from the 2x2 grid above */
-.feedback-chip-general {
-    flex: 0 0 calc(50% - 3px);
-    text-align: center;
-    margin: 10px auto 0 auto;
-}
-
-/* "Not a real word" — distinct concern, full-width at the bottom */
-.feedback-chip-solo {
-    flex: 0 0 100%;
-    text-align: center;
-    margin-top: 6px;
-    border-color: var(--red-color);
-    color: var(--red-color);
-    opacity: 0.8;
-}
-
-.feedback-chip-solo:hover {
+.feedback-not-a-word:hover {
     background: rgba(255, 69, 0, 0.12);
     opacity: 1;
 }
 
-.feedback-chip-solo.active {
+.feedback-not-a-word.active {
     background: var(--red-color);
     color: var(--bg-color);
     opacity: 1;

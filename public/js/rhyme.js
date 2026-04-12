@@ -25,6 +25,7 @@ import * as modal from './modal.js';
 import * as storage from './storage.js'; // Need saveSettings
 import * as phonetics from './phonetics.js';
 import * as wordManager from './wordManager.js'; // For delegating blacklist-from-modal flow (cycle is safe: only accessed at click time)
+import { animate } from './anime.esm.min.js';
 
 // --- Score cache: avoids re-scoring in getTierInfo/sort after getValidRhymesForWord ---
 let rhymeScoreCache = new Map();
@@ -154,9 +155,9 @@ function createModalHeaderHTML(baseWord, rhymeSortMode, rhymeList) {
         <div style="margin: 8px 0;">${patternDisplay}</div>
         <div>in</div>
         <div class="rhyme-header-focus-row">
-            <button id="rhyme-header-prev" class="rhyme-header-nav" tabindex="-1" aria-label="Previous word"><i class='fas fa-chevron-left'></i></button>
+            <button id="rhyme-header-prev" class="rhyme-header-nav" tabindex="-1" aria-label="Previous word"><i class='fas fa-angle-left'></i></button>
             <span id="rhyme-header-word" class="rhyme-header-word" tabindex="0">${baseWord.toUpperCase()}</span>
-            <button id="rhyme-header-next" class="rhyme-header-nav" tabindex="-1" aria-label="Next word"><i class='fas fa-chevron-right'></i></button>
+            <button id="rhyme-header-next" class="rhyme-header-nav" tabindex="-1" aria-label="Next word"><i class='fas fa-angle-right'></i></button>
         </div>
     `;
 }
@@ -374,7 +375,8 @@ export function persistTempRejections() {
             rejected: wordLower,
             base_context: baseContext,
             rejected_context: phonetics.getVowelContext(wordLower),
-            reasons: fb?.reasons || [],
+            flaggedPhonemes: fb?.flaggedPhonemes || [],
+            notAWord: fb?.notAWord || false,
             remark: fb?.remark || '',
             skipped: !fb,
             timestamp: new Date().toISOString().split('T')[0]
@@ -385,17 +387,7 @@ export function persistTempRejections() {
     tempRejected.clear();
 }
 
-// --- Feedback Card Reason Chips ---
-const FEEDBACK_REASONS = [
-    { code: 'beginning_different', label: 'Beginning throws it off' },
-    { code: 'ending_different', label: 'Endings sound different' },
-    { code: 'syllable_mismatch', label: 'Wrong syllable count' },
-    { code: 'stressed_vowel', label: 'Stressed sounds don\'t match' },
-    { code: 'sounds_wrong', label: 'Just sounds wrong', modifier: 'general' },
-    { code: 'not_a_word', label: 'Not a real word', modifier: 'solo' },
-];
-
-function renderPhonemeComparison(comparison, baseWord, rejectedWord) {
+function renderPhonemeComparison(comparison, baseWord, rejectedWord, flagState) {
     const section = document.createElement('div');
     section.className = 'feedback-phoneme-section';
 
@@ -449,8 +441,10 @@ function renderPhonemeComparison(comparison, baseWord, rejectedWord) {
         }
     }
 
-    for (const pair of comparison.pairs) {
-        // Word 1 block
+    for (let i = 0; i < comparison.pairs.length; i++) {
+        const pair = comparison.pairs[i];
+
+        // Word 1 block (static — reference only)
         if (pair.p1) {
             const block1 = document.createElement('span');
             block1.className = pair.p1.isVowel ? 'feedback-vowel-block' : 'feedback-consonant-block';
@@ -464,13 +458,28 @@ function renderPhonemeComparison(comparison, baseWord, rejectedWord) {
             row1.appendChild(empty);
         }
 
-        // Word 2 block
+        // Word 2 block (clickable — user flags problem phonemes)
         if (pair.p2) {
             const block2 = document.createElement('span');
             block2.className = pair.p2.isVowel ? 'feedback-vowel-block' : 'feedback-consonant-block';
             block2.textContent = pair.p2.clean;
             if (pair.mismatch) block2.classList.add('feedback-mismatch');
             else if (pair.match) block2.classList.add('feedback-match-good');
+            block2.style.cursor = 'pointer';
+            block2.addEventListener('click', () => {
+                const existing = flagState.flaggedPhonemes.findIndex(fp => fp.index === i);
+                if (existing >= 0) {
+                    flagState.flaggedPhonemes.splice(existing, 1);
+                    block2.classList.remove('feedback-flagged');
+                } else {
+                    flagState.flaggedPhonemes.push({
+                        b: pair.p2.clean,
+                        a: pair.p1 ? pair.p1.clean : null,
+                        index: i,
+                    });
+                    block2.classList.add('feedback-flagged');
+                }
+            });
             row2.appendChild(block2);
         } else {
             const empty = document.createElement('span');
@@ -507,7 +516,11 @@ function showFeedbackCard(baseWord, rejectedWord) {
     const closeBtn = document.createElement('button');
     closeBtn.className = 'feedback-card-close';
     closeBtn.textContent = '\u00d7';
-    closeBtn.onclick = () => closeFeedbackCard(true);
+    closeBtn.onclick = () => {
+        tempRejected.delete(rejectedWordLower);
+        displayRhymeList(baseWordLower);
+        closeFeedbackCard(false);
+    };
     card.appendChild(closeBtn);
 
     // Header: word pair + match %
@@ -527,37 +540,22 @@ function showFeedbackCard(baseWord, rejectedWord) {
     card.appendChild(header);
 
     // Phoneme comparison
+    const flagState = { flaggedPhonemes: [] };
     if (comparison) {
-        card.appendChild(renderPhonemeComparison(comparison, baseWord, rejectedWord));
+        card.appendChild(renderPhonemeComparison(comparison, baseWord, rejectedWord, flagState));
     }
 
-    // Reason chips
-    const chipsContainer = document.createElement('div');
-    chipsContainer.className = 'feedback-chips';
-    const selectedReasons = new Set();
-
-    for (const reason of FEEDBACK_REASONS) {
-        const chip = document.createElement('button');
-        chip.className = reason.modifier ? `feedback-chip feedback-chip-${reason.modifier}` : 'feedback-chip';
-        chip.textContent = reason.label;
-        chip.type = 'button';
-        chip.addEventListener('click', () => {
-            if (selectedReasons.has(reason.code)) {
-                selectedReasons.delete(reason.code);
-                chip.classList.remove('active');
-            } else {
-                selectedReasons.add(reason.code);
-                chip.classList.add('active');
-            }
-        });
-        chip.addEventListener('dblclick', () => {
-            selectedReasons.add(reason.code);
-            chip.classList.add('active');
-            closeFeedbackCard(true);
-        });
-        chipsContainer.appendChild(chip);
-    }
-    card.appendChild(chipsContainer);
+    // "Not a word" escape hatch
+    const notAWordRef = { active: false };
+    const notAWordBtn = document.createElement('button');
+    notAWordBtn.className = 'feedback-not-a-word';
+    notAWordBtn.textContent = 'not a word';
+    notAWordBtn.type = 'button';
+    notAWordBtn.addEventListener('click', () => {
+        notAWordRef.active = true;
+        closeFeedbackCard(true);
+    });
+    card.appendChild(notAWordBtn);
 
     // Remark input
     const remark = document.createElement('input');
@@ -579,7 +577,8 @@ function showFeedbackCard(baseWord, rejectedWord) {
     // Store references for closeFeedbackCard
     backdrop._feedbackState = {
         rejectedWordLower,
-        selectedReasons,
+        flagState,
+        notAWordRef,
         remarkInput: remark,
         keyHandler,
     };
@@ -598,14 +597,16 @@ function closeFeedbackCard(saveFeedback) {
     }
 
     if (saveFeedback && backdrop._feedbackState) {
-        const { rejectedWordLower, selectedReasons, remarkInput } = backdrop._feedbackState;
-        const reasons = Array.from(selectedReasons);
+        const { rejectedWordLower, flagState, notAWordRef, remarkInput } = backdrop._feedbackState;
+        const flaggedPhonemes = flagState.flaggedPhonemes;
+        const notAWord = notAWordRef.active;
         const remarkText = remarkInput.value.trim();
-        const hadFeedback = reasons.length > 0 || remarkText.length > 0;
+        const hadFeedback = flaggedPhonemes.length > 0 || notAWord || remarkText.length > 0;
 
         // Always write to pendingFeedback so persistTempRejections knows card was shown
         pendingFeedback.set(rejectedWordLower, {
-            reasons,
+            flaggedPhonemes,
+            notAWord,
             remark: remarkText,
         });
 
@@ -809,9 +810,22 @@ function createRhymeListItem(rhymeWord, baseWordLower, tierInfo = null) {
                 showFeedbackCard(state.currentWord, rhymeWord);
             }
 
-            // Re-render
+            // Animate the item out, then re-render once it's gone
             const baseWordLower = state.currentWord?.toLowerCase();
-            displayRhymeList(baseWordLower);
+            const startHeight = li.offsetHeight;
+            li.style.overflow = 'hidden';
+            animate(li, {
+                opacity: [1, 0],
+                translateX: [0, 40],
+                height: [startHeight, 0],
+                paddingTop: 0,
+                paddingBottom: 0,
+                marginTop: 0,
+                marginBottom: 0,
+                duration: 220,
+                easing: 'easeInQuad',
+                onComplete: () => displayRhymeList(baseWordLower),
+            });
         };
         li.appendChild(x);
     }
@@ -1365,7 +1379,7 @@ function setupEtymologySection(baseWord) {
         familyEl.addEventListener('click', (e) => {
             const wordSpan = e.target.closest('.etymology-family-word');
             if (!wordSpan) return;
-            const clickedWord = wordSpan.textContent.trim();
+            const clickedWord = wordSpan.dataset.word || wordSpan.textContent.trim();
             const idx = state.currentRhymeList.indexOf(clickedWord);
             if (idx !== -1) state.currentRhymeIndex = idx;
             ui.displayWord(clickedWord);
@@ -1391,10 +1405,24 @@ function setupEtymologySection(baseWord) {
         // Word family (synchronous)
         const family = findWordFamily(baseWord);
         if (family.length > 0) {
+            // Merge plural duplicates: if "word" and "words" both appear, show "word/s" as one chip
+            const familyLowerSet = new Set(family.map(w => w.toLowerCase()));
+            const skipSet = new Set();
+            const chips = family.reduce((acc, w) => {
+                const lower = w.toLowerCase();
+                if (skipSet.has(lower)) return acc;
+                if (familyLowerSet.has(lower + 's')) {
+                    acc.push({ display: w + '/s', word: w });
+                    skipSet.add(lower + 's');
+                } else {
+                    acc.push({ display: w, word: w });
+                }
+                return acc;
+            }, []);
             familyEl.innerHTML = `
                 <div class="etymology-family-label">Word Family</div>
                 <div class="etymology-family-words">
-                    ${family.map(w => `<span class="etymology-family-word">${w}</span>`).join('')}
+                    ${chips.map(c => `<span class="etymology-family-word" data-word="${c.word}">${c.display}</span>`).join('')}
                 </div>`;
         } else {
             familyEl.innerHTML = '<div class="etymology-family-label">Word Family</div><div style="opacity:0.5">No related forms found in word list</div>';
@@ -1556,6 +1584,9 @@ function navigateWordInModal(direction) {
     updateModalHeader();
     displayRhymeList(newWord.toLowerCase());
     setupEtymologySection(newWord);
+
+    // Always scroll back to top when navigating to a new word
+    if (ui.elements.rhymeFinderModal) ui.elements.rhymeFinderModal.scrollTop = 0;
 
     // Update the manual-rhyme placeholder to reflect the new word
     if (ui.elements.manualRhymeInput) {
