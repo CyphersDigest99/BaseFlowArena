@@ -184,15 +184,10 @@ export const elements = {
     bpmAdjustPlus: document.getElementById('bpm-adjust-plus'),
     bpmAdjustMinus: document.getElementById('bpm-adjust-minus'),
     stopBpmButton: document.getElementById('stop-bpm-button'),
-    fourCountContainer: document.getElementById('four-count-container'),
-    addRowButton: document.getElementById('add-row-button'),
-    removeRowButton: document.getElementById('remove-row-button'),
-    addColButton: document.getElementById('add-col-button'),
-    removeColButton: document.getElementById('remove-col-button'),
-    rowCountDisplay: document.getElementById('row-count-display'),
-    colCountDisplay: document.getElementById('col-count-display'),
-    // BPM Multiplier Buttons (Need selector)
-    multiplierButtons: document.querySelectorAll('.multiplier-btn'), // Use querySelectorAll
+    bpmCrossContainer: document.getElementById('bpm-cross-container'),
+    resyncBpmButton: document.getElementById('resync-bpm-button'),
+    xMultiplierInput: document.getElementById('bpm-x-multiplier'),
+    yMultiplierInput: document.getElementById('bpm-y-multiplier'),
 
     // Beat Player Controls - Audio beat playback interface
     beatPlayPauseButton: document.getElementById('beat-play-pause'),
@@ -571,46 +566,6 @@ export function updateBpmIndicator(bpmValue) {
     }
 }
 
-// Updates beat grid visual indicators for current beat position
-export function updateBeatGridVisuals(currentBeatIndex, totalBoxes) {
-    if(!elements.fourCountContainer) return;
-    const boxes = elements.fourCountContainer.querySelectorAll('.beat-box');
-    if (boxes.length !== totalBoxes) {
-        // console.warn("Beatbox visual update skipped: count mismatch.");
-        return;
-    }
-    boxes.forEach((box, index) => {
-        box.classList.toggle('active', index === currentBeatIndex);
-    });
-}
-
-// Rebuilds the beat grid with specified rows and columns
-export function rebuildBeatGrid(rows, cols) {
-    if(!elements.fourCountContainer) return;
-    elements.fourCountContainer.innerHTML = '';
-    elements.fourCountContainer.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
-    const totalBoxes = rows * cols;
-    if (totalBoxes <= 0 || totalBoxes > 64) return;
-    for (let i = 0; i < totalBoxes; i++) {
-        const box = document.createElement('div');
-        box.classList.add('beat-box');
-        elements.fourCountContainer.appendChild(box);
-    }
-    if(elements.rowCountDisplay) elements.rowCountDisplay.textContent = rows;
-    if(elements.colCountDisplay) elements.colCountDisplay.textContent = cols;
-    
-    // Reattach click listener to the first beat box for resync
-    const firstBeatBox = elements.fourCountContainer.querySelector('.beat-box:first-child');
-    if (firstBeatBox) {
-        firstBeatBox.addEventListener('click', () => {
-            // Import bpm module dynamically to avoid circular dependency
-            import('./bpm.js').then(bpmModule => {
-                bpmModule.resyncAnimation();
-                showFeedback('Beat grid resynced!', false, 1000);
-            });
-        });
-    }
-}
 
 // Triggers screen shake animation effect
 export function triggerScreenShake() {

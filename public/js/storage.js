@@ -20,7 +20,7 @@
 
 import { state } from './state.js';
 import * as ui from './ui.js';
-import { updateGrid } from './bpm.js'; // For updating grid visuals after load/reset
+import { setBpm } from './bpm.js'; // For starting ball animation after settings load
 import * as phonetics from './phonetics.js';
 
 const STORAGE_KEY = 'freestyleArenaSettings_v6'; // Increment version for word list persistence
@@ -69,10 +69,9 @@ function deserializeNestedSets(serializedObj) {
 export function saveSettings() {
     try {
         const settingsToSave = {
-            beatGridRows: state.beatGridRows,
-            beatGridCols: state.beatGridCols,
             bpm: state.bpm,
-            bpmMultiplier: state.bpmMultiplier,
+            xMultiplier: state.xMultiplier,
+            yMultiplier: state.yMultiplier,
             wordOrderMode: state.wordOrderMode,
             cycleSpeed: state.cycleSpeed,
             minSyllables: state.minSyllables,
@@ -127,10 +126,9 @@ export function loadSettings() {
         if (savedSettings) {
              const parsedData = JSON.parse(savedSettings);
 
-             state.beatGridRows = parsedData.beatGridRows ?? 1;
-             state.beatGridCols = parsedData.beatGridCols ?? 4;
              state.bpm = parsedData.bpm ?? 0;
-             state.bpmMultiplier = parsedData.bpmMultiplier ?? 1; // Default multiplier is 1x
+             state.xMultiplier = parsedData.xMultiplier ?? 1;
+             state.yMultiplier = parsedData.yMultiplier ?? 1;
              state.wordOrderMode = parsedData.wordOrderMode || 'random';
              state.cycleSpeed = parsedData.cycleSpeed ?? 10;
              state.minSyllables = parsedData.minSyllables ?? 0;
@@ -190,15 +188,14 @@ export function loadSettings() {
 function applyLoadedSettingsToUI() {
     ui.updateActivationUI();
     ui.updateBpmIndicator(state.bpm);
-    updateGrid(); // Rebuild beat grid (this is imported from bpm.js)
+    if (state.bpm > 0) setBpm(state.bpm); // Start ball animation if BPM was saved
     ui.displayFrequencies(state.wordFrequencies);
 
-    // Update multiplier button visuals
-    document.querySelectorAll('.multiplier-btn').forEach(btn => {
-        const btnMultiplierValue = parseInt(btn.dataset.multiplier);
-        // A button is selected if its value matches state.bpmMultiplier, AND state.bpmMultiplier is NOT 1.
-        btn.classList.toggle('selected', btnMultiplierValue === state.bpmMultiplier.toString() && state.bpmMultiplier !== 1);
-    });
+    // Sync axis multiplier inputs
+    const xInput = document.getElementById('bpm-x-multiplier');
+    const yInput = document.getElementById('bpm-y-multiplier');
+    if (xInput) xInput.value = state.xMultiplier;
+    if (yInput) yInput.value = state.yMultiplier;
 }
 
 // --- Retroactive Enrichment ---
@@ -242,10 +239,9 @@ export function resetToDefaults(saveAfterReset = true) {
     state.blacklist = new Set();
     state.favorites = new Set();
     state.wordFrequencies = {};
-    state.beatGridRows = 1;
-    state.beatGridCols = 4;
     state.bpm = 0;
-    state.bpmMultiplier = 1; // Default multiplier is 1x (no button selected)
+    state.xMultiplier = 1;
+    state.yMultiplier = 1;
     state.wordOrderMode = 'random';
     state.cycleSpeed = 10;
     state.minSyllables = 0;
@@ -286,10 +282,9 @@ export function exportSettings() {
             version: '1.0',
             timestamp: new Date().toISOString(),
             settings: {
-                beatGridRows: state.beatGridRows,
-                beatGridCols: state.beatGridCols,
                 bpm: state.bpm,
-                bpmMultiplier: state.bpmMultiplier,
+                xMultiplier: state.xMultiplier,
+                yMultiplier: state.yMultiplier,
                 wordOrderMode: state.wordOrderMode,
                 cycleSpeed: state.cycleSpeed,
                 minSyllables: state.minSyllables,
@@ -343,10 +338,9 @@ export function importSettings(jsonData) {
         const settings = importData.settings;
         
         // Apply imported settings
-        state.beatGridRows = settings.beatGridRows ?? 1;
-        state.beatGridCols = settings.beatGridCols ?? 4;
         state.bpm = settings.bpm ?? 0;
-        state.bpmMultiplier = settings.bpmMultiplier ?? 1;
+        state.xMultiplier = settings.xMultiplier ?? 1;
+        state.yMultiplier = settings.yMultiplier ?? 1;
         state.wordOrderMode = settings.wordOrderMode || 'random';
         state.cycleSpeed = settings.cycleSpeed ?? 10;
         state.minSyllables = settings.minSyllables ?? 0;
