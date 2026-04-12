@@ -152,11 +152,6 @@ async function initializeApp() {
     console.log("--- Freestyle Flow Arena Initializing ---");
     dbg('1: app start');
 
-    // Detect Discord Activity context and apply compact layout class
-    if (new URLSearchParams(window.location.search).has('frame_id')) {
-        document.body.classList.add('discord-activity');
-    }
-
     // Ensure tooltip starts in unpinned state
     state.tooltip.isPinned = false;
     state.tooltip.displayMode = 'both';
