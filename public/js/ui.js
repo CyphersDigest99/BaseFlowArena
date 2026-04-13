@@ -517,8 +517,8 @@ export function updateWordDisplayAnimation() {
 
 // Updates activation mode UI elements and controls visibility
 export function updateActivationUI() {
-    if (!elements.voiceModeButton || !elements.timedModeButton || !elements.timedCycleOptionsDiv) return;
-    elements.voiceModeButton.classList.toggle('active', state.activationMode === 'voice');
+    if (!elements.timedModeButton || !elements.timedCycleOptionsDiv) return;
+    if (elements.voiceModeButton) elements.voiceModeButton.classList.toggle('active', state.activationMode === 'voice');
     elements.timedModeButton.classList.toggle('active', state.activationMode === 'timed');
     elements.timedCycleOptionsDiv.style.display = (state.activationMode === 'timed') ? 'flex' : 'none';
     if (elements.cycleSpeedInput) elements.cycleSpeedInput.value = state.cycleSpeed;
