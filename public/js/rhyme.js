@@ -149,7 +149,7 @@ function createModalHeaderHTML(baseWord, rhymeSortMode, rhymeList) {
     const isBlacklisted = state.blacklist.has(baseWord.toUpperCase());
     return `
         <button id="rhyme-header-blacklist" class="word-action-icon blacklist-icon${isBlacklisted ? ' active' : ''}" title="Blacklist Word"><i class="fas fa-ban"></i></button>
-        <button id="rhyme-header-pin" class="word-action-icon pin-mode-btn${isSelectionMode ? ' active' : ''}" title="${isSelectionMode ? 'Seal selections' : 'Pin rhymes to top'}"><i class="fas fa-star"></i></button>
+        <button id="rhyme-header-pin" class="word-action-icon pin-mode-btn${state.favorites.has(baseWordLower) ? ' active' : ''}" title="${state.favorites.has(baseWordLower) ? 'Remove from favorites' : 'Add to favorites'}"><i class="fas fa-star"></i></button>
         <div>${countLabel} ${wordText}</div>
         <div>sound like the</div>
         <div style="margin: 8px 0;">${patternDisplay}</div>
@@ -305,6 +305,20 @@ let tempRejected = new Set();
 // --- Pin Selection State (modal-local) ---
 let isSelectionMode = false;
 let pendingPins = new Set();
+
+// --- Rhyme Modal Toast ---
+// Shows a brief notification inside the rhyme modal (above the modal overlay)
+function showRhymeToast(message, isError = false) {
+    const toast = document.getElementById('rhyme-modal-toast');
+    if (!toast) return;
+    toast.textContent = message;
+    toast.className = `rhyme-modal-toast ${isError ? 'error' : 'success'}`;
+    clearTimeout(toast._timeout);
+    toast._timeout = setTimeout(() => {
+        toast.textContent = '';
+        toast.className = 'rhyme-modal-toast';
+    }, 2500);
+}
 
 // --- Plural Collapse Map (rebuilt each displayRhymeList call) ---
 // Maps wordLower → display string (e.g. "critic" → "critic/s")
@@ -1528,25 +1542,21 @@ function attachHeaderNavHandlers() {
         pinBtn.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            const baseWordLower = state.currentWord?.toLowerCase();
-            if (!baseWordLower) return;
+            const word = state.currentWord;
+            if (!word) return;
 
-            if (!isSelectionMode) {
-                // Enter selection mode — pre-populate with existing pins
-                isSelectionMode = true;
-                pendingPins = new Set(state.pinnedRhymes[baseWordLower] || []);
+            const isFav = state.favorites.has(word);
+            if (isFav) {
+                state.favorites.delete(word);
+                showRhymeToast(`"${word.toUpperCase()}" un-favorited.`);
             } else {
-                // Seal — commit pending pins
-                if (pendingPins.size > 0) {
-                    state.pinnedRhymes[baseWordLower] = new Set(pendingPins);
-                } else {
-                    delete state.pinnedRhymes[baseWordLower];
-                }
-                isSelectionMode = false;
-                pendingPins = new Set();
-                storage.saveSettings();
+                state.favorites.add(word);
+                showRhymeToast(`"${word.toUpperCase()}" favorited!`);
             }
-            displayRhymeList(baseWordLower);
+            storage.saveSettings();
+            pinBtn.classList.toggle('active', state.favorites.has(word));
+            // Sync main page favorite button
+            ui.elements.favoriteButton?.classList.toggle('active', state.favorites.has(word));
         });
     }
 }
