@@ -96,6 +96,12 @@ async function initDiscordSession() {
     ]);
     console.log('[discord] SDK ready. instanceId:', discordSdk.instanceId);
 
+    // Patch fetch/XHR so requests to the PartyKit host route through Discord's proxy.
+    // The prefix '/partykit' must match the URL Mapping added in the Discord portal.
+    discordSdk.patchUrlMappings([
+      { prefix: '/partykit', target: 'rhyme-nexus.cyphersdigest99.partykit.dev' },
+    ]);
+
     // Generate a stable user ID that survives page refresh (sessionStorage persists on refresh,
     // which is what makes the 30-second host reconnection grace period work).
     const SESSION_KEY = 'rhymenexus_uid';
