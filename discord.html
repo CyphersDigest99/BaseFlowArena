@@ -40,7 +40,7 @@
 
     <!-- --- GAME HEADER & STATS --- -->
     <header class="game-header">
-        <h1>RhymeNexus</h1>
+        <h1>RhymeNexus <span id="app-version" style="font-size:0.45em;opacity:0.45;font-weight:400;letter-spacing:0.05em;vertical-align:middle;"></span></h1>
         <!-- Theme Controls Container -->
         <div class="theme-controls">
             <button id="theme-dark" class="theme-button" data-theme="dark">
@@ -648,6 +648,15 @@
     <!-- --- JAVASCRIPT MODULES --- -->
     <!-- Main game script loaded as ES6 module with defer attribute -->
     <script type="module" src="public/js/main.js?v=8" defer></script>
+    <script>
+      fetch('/version.json?_=' + Date.now())
+        .then(r => r.json())
+        .then(({v, d}) => {
+          const el = document.getElementById('app-version');
+          if (el) el.textContent = v + ' · ' + d;
+        })
+        .catch(() => {});
+    </script>
 
     <!-- --- BEAT PLAYER BAR (FIXED BOTTOM) --- -->
     <div id="beat-player-bar">

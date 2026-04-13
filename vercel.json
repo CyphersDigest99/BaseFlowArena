@@ -1,11 +1,7 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "**/*",
-      "use": "@vercel/static"
-    }
-  ],
+  "buildCommand": "node -e \"const fs=require('fs'); fs.writeFileSync('version.json', JSON.stringify({v:(process.env.VERCEL_GIT_COMMIT_SHA||'dev').slice(0,7),d:new Date().toISOString().slice(0,10)}))\"",
+  "outputDirectory": ".",
   "rewrites": [
     {
       "source": "/api/(.*)",
@@ -25,6 +21,15 @@
     }
   ],
   "headers": [
+    {
+      "source": "/version.json",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store"
+        }
+      ]
+    },
     {
       "source": "/js/(.*)\\.js",
       "headers": [

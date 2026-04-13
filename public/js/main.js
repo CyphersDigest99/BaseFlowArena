@@ -126,37 +126,9 @@ async function initDiscordSession() {
   }
 }
 
-// TEMP: debug overlay helper
-function dbg(msg) { const el = document.getElementById('dbg'); if (el) el.textContent = msg; console.log('[dbg]', msg); }
-
-// --- Discord mic diagnostics (temporary) ---
-async function checkMicCapabilities() {
-    if (!new URLSearchParams(window.location.search).has('frame_id')) return;
-    const results = [];
-    // 1. Check if mediaDevices exists
-    results.push('mediaDevices:' + !!navigator.mediaDevices);
-    // 2. Check permission state
-    try {
-        const perm = await navigator.permissions.query({ name: 'microphone' });
-        results.push('perm:' + perm.state);
-    } catch (e) { results.push('perm-err:' + e.message); }
-    // 3. Try getUserMedia
-    try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        results.push('gUM:OK');
-        stream.getTracks().forEach(t => t.stop());
-    } catch (e) { results.push('gUM-err:' + e.name + ':' + e.message); }
-    // 4. Check SpeechRecognition
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    results.push('SR:' + (SR ? 'exists' : 'missing'));
-    dbg('MIC: ' + results.join(' | '));
-    console.log('[mic-diag]', results.join(' | '));
-}
-
 // --- Initialization ---
 async function initializeApp() {
     console.log("--- Freestyle Flow Arena Initializing ---");
-    dbg('1: app start');
 
     // Ensure tooltip starts in unpinned state
     state.tooltip.isPinned = false;
@@ -179,15 +151,11 @@ async function initializeApp() {
     // 2. Load Settings, Rhyme Data, CMU Lookup, CMU Phonemes, Word List
     storage.loadSettings(); // Loads ALL settings, applies defaults, updates relevant UI
     ui.initTraySlots();     // Pre-fill fixed-slot pill tray with placeholders
-    dbg('2: loading data...');
     await Promise.all([rhyme.loadRhymeData(), phonetics.loadCmuLookup(), phonetics.loadCmuPhonemes(), wordManager.loadRhymeVocabulary()]);
-    dbg('3: data loaded, loading words...');
     await wordManager.loadWords(); // Applies filters based on loaded blacklist
-    dbg('4: words loaded, discord init...');
 
     // Initialize Discord Activity session (no-op if running outside Discord)
     await initDiscordSession();
-    dbg('5: discord done, finishing app...');
 
     // Retroactively enrich existing rejections with phonetic context (one-time migration)
     storage.enrichExistingRejections();
@@ -208,11 +176,7 @@ async function initializeApp() {
     ui.initializeThemeSystem();
 
     // 6. Attach Event Listeners
-    dbg('6: attaching listeners...');
     attachEventListeners();
-    dbg('DONE');
-    // Run mic diagnostics AFTER DONE so results aren't overwritten
-    checkMicCapabilities();
 
     // 7. Set up keyboard control system
     setupModalObserver();
