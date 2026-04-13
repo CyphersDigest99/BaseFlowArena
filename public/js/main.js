@@ -684,25 +684,30 @@ function attachEventListeners() {
     ui.elements.stopBpmButton?.addEventListener('click', bpm.stopBpm);
     // Detect BPM Button - Listener points to the corrected handleDetectBpmClick
     ui.elements.detectBpmButton?.addEventListener('click', handleDetectBpmClick);
-    // Grid Controls
-    ui.elements.addRowButton?.addEventListener('click', () => bpm.updateRowCount(1));
-    ui.elements.removeRowButton?.addEventListener('click', () => bpm.updateRowCount(-1));
-    ui.elements.addColButton?.addEventListener('click', () => bpm.updateColumnCount(1));
-    ui.elements.removeColButton?.addEventListener('click', () => bpm.updateColumnCount(-1));
-
-    // Clickable first beat box for resync
-    const firstBeatBox = document.querySelector('#four-count-container .beat-box:first-child');
-    if (firstBeatBox) {
-        firstBeatBox.addEventListener('click', () => {
-            bpm.resyncAnimation();
-            ui.showFeedback('Beat grid resynced!', false, 1000);
-        });
-    }
-    // Multiplier Buttons
-    ui.elements.multiplierButtons.forEach(button => {
-        button.addEventListener('click', (event) => {
-            const multiplier = event.target.dataset.multiplier;
-            if (multiplier) bpm.setMultiplier(multiplier);
+    // Cross container click to resync
+    ui.elements.bpmCrossContainer?.addEventListener('click', () => bpm.resyncAnimation());
+    // Dedicated sync button
+    ui.elements.resyncBpmButton?.addEventListener('click', () => bpm.resyncAnimation());
+    // Axis multiplier inputs
+    ui.elements.xMultiplierInput?.addEventListener('change', e => bpm.setXMultiplier(e.target.value));
+    ui.elements.yMultiplierInput?.addEventListener('change', e => bpm.setYMultiplier(e.target.value));
+    // Dev toolbar toggle
+    document.getElementById('bpm-dev-toggle')?.addEventListener('click', () => {
+        document.getElementById('bpm-dev-toolbar')?.classList.toggle('open');
+        document.getElementById('bpm-dev-toggle')?.classList.toggle('active');
+    });
+    // Dev sliders
+    [
+        { id: 'dev-wall-gap', key: 'wallGap', valId: 'dev-wall-gap-val' },
+        { id: 'dev-stagger',  key: 'stagger',  valId: 'dev-stagger-val'  },
+        { id: 'dev-swing',    key: 'swing',    valId: 'dev-swing-val'    },
+        { id: 'dev-glow',     key: 'glow',     valId: 'dev-glow-val'     },
+    ].forEach(({ id, key, valId }) => {
+        document.getElementById(id)?.addEventListener('input', e => {
+            const v = e.target.value;
+            const display = document.getElementById(valId);
+            if (display) display.textContent = key === 'swing' ? parseFloat(v).toFixed(1) : v;
+            bpm.setDevSetting(key, v);
         });
     });
     // --- END BPM CONTROLS ---

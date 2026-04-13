@@ -71,14 +71,13 @@ export const state = {
 
     // BPM / Rhythm - Beat detection and timing
     bpm: 0, // Current detected beats per minute
-	bpmMultiplier: 1, // Default multiplier is 1x (no button selected)
+	xMultiplier: 1,  // X axis bounces per beat
+	yMultiplier: 1,  // Y axis bounces per beat
 	isDetectingBpm: false, // Flag for UI feedback during BPM detection
     bpmClickTimestamps: [], // Array of click times for BPM calculation
     BPM_AVERAGE_COUNT: 10, // Number of clicks to average for BPM
-    beatIntervalId: null, // Timer ID for beat synchronization
-    currentBeat: 0, // Current beat position in the grid
-    beatGridRows: 1, // Number of rows in the beat grid
-    beatGridCols: 4, // Number of columns in the beat grid
+    beatIntervalId: null, // True when ball animation is running, null when stopped
+    currentBeat: 0, // Current beat counter
     isBpmLockedShaking: false, // For word display buzz effect
 
     // Gamification - User engagement metrics
