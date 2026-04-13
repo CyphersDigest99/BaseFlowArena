@@ -5392,6 +5392,13 @@ body.screen-shaking {
     display: none !important;
 }
 
+/* --- HIDDEN: BPM dev controls --- */
+.discord-activity #bpm-dev-toggle,
+.discord-activity #bpm-dev-toolbar,
+.discord-activity .bpm-axis-row {
+    display: none !important;
+}
+
 
 /* --- Syllable filter: compact in Discord --- */
 .discord-activity .syllable-filter-section {
