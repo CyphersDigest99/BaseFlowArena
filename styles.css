@@ -5392,10 +5392,6 @@ body.screen-shaking {
     display: none !important;
 }
 
-/* --- HIDDEN: BPM cross container (saves vertical space in Discord) --- */
-.discord-activity #bpm-cross-container {
-    display: none !important;
-}
 
 /* --- Syllable filter: compact in Discord --- */
 .discord-activity .syllable-filter-section {
