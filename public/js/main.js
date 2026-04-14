@@ -201,7 +201,7 @@ async function initializeApp() {
 
 // --- Activation Mode Control ---
 function setActivationMode(newMode) {
-    if (!ui.elements.voiceModeButton || !ui.elements.timedModeButton) return;
+    if (!ui.elements.timedModeButton) return;
     if (state.activationMode === newMode) newMode = 'manual';
     const previousMode = state.activationMode;
     if (previousMode === newMode) return;
