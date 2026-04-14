@@ -29,7 +29,7 @@ export async function fetchMeansLike(word) {
 
     try {
         // Query Datamuse API for words with similar meaning
-        const response = await fetch(`https://api.datamuse.com/words?ml=${encodeURIComponent(word)}`);
+        const response = await fetch(`/datamuse/words?ml=${encodeURIComponent(word)}`);
         
         if (!response.ok) {
             // Handle HTTP errors

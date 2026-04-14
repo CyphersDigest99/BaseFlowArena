@@ -100,6 +100,8 @@ async function initDiscordSession() {
     // The prefix '/partykit' must match the URL Mapping added in the Discord portal.
     discordSdk.patchUrlMappings([
       { prefix: '/partykit', target: 'rhyme-nexus.cyphersdigest99.partykit.dev' },
+      { prefix: '/datamuse', target: 'api.datamuse.com' },
+      { prefix: '/dictapi',  target: 'api.dictionaryapi.dev' },
     ]);
 
     // Generate a stable user ID that survives page refresh (sessionStorage persists on refresh,

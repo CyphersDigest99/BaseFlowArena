@@ -30,7 +30,7 @@ async function fetchSynonyms(word) {
 
     try {
         // Query Datamuse API for synonyms
-        const response = await fetch(`https://api.datamuse.com/words?rel_syn=${encodeURIComponent(word)}`);
+        const response = await fetch(`/datamuse/words?rel_syn=${encodeURIComponent(word)}`);
         
         if (!response.ok) {
             // Handle HTTP errors
@@ -70,7 +70,7 @@ async function fetchDefinition(word) {
 
     try {
         // Query dictionaryapi.dev for definition
-        const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`);
+        const response = await fetch(`/dictapi/api/v2/entries/en/${encodeURIComponent(word)}`);
         
         if (!response.ok) {
             if (response.status === 404) {

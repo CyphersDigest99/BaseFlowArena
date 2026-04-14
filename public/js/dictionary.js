@@ -59,7 +59,7 @@ export async function getWordDefinition(word) {
     
     try {
         // Use Datamuse API first (faster, no API key needed)
-        const response = await fetch(`https://api.datamuse.com/words?sp=${wordLower}&md=d&max=1`);
+        const response = await fetch(`/datamuse/words?sp=${wordLower}&md=d&max=1`);
         
         if (response.ok) {
             const data = await response.json();
@@ -79,7 +79,7 @@ export async function getWordDefinition(word) {
         const timeoutId = setTimeout(() => controller.abort(), 1500); // 1.5 second timeout
         
         try {
-            const dictResponse = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${wordLower}`, {
+            const dictResponse = await fetch(`/dictapi/api/v2/entries/en/${wordLower}`, {
                 signal: controller.signal
             });
             clearTimeout(timeoutId);
