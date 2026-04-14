@@ -53,7 +53,8 @@ async function fetchSynonyms(word) {
     } catch (error) {
         // Log and handle network or parsing errors
         console.error('Error fetching synonyms:', error);
-        return "Unable to fetch synonyms.";
+        // DIAGNOSTIC: surface actual error so we can see it in the UI
+        return `[DBG] ${error.message || error}`;
     }
 }
 
@@ -105,7 +106,8 @@ async function fetchDefinition(word) {
     } catch (error) {
         // Log and handle network or parsing errors
         console.error('Error fetching definition:', error);
-        return "Unable to fetch definition.";
+        // DIAGNOSTIC: surface actual error so we can see it in the UI
+        return `[DBG] ${error.message || error}`;
     }
 }
 

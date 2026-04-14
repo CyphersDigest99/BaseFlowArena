@@ -103,6 +103,7 @@ async function initDiscordSession() {
       { prefix: '/datamuse', target: 'api.datamuse.com' },
       { prefix: '/dictapi',  target: 'api.dictionaryapi.dev' },
     ]);
+    console.log('[discord] patchUrlMappings applied: /datamuse → api.datamuse.com, /dictapi → api.dictionaryapi.dev');
 
     // Generate a stable user ID that survives page refresh (sessionStorage persists on refresh,
     // which is what makes the 30-second host reconnection grace period work).
