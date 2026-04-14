@@ -23,7 +23,7 @@
 
 // Import modules
 import { state } from './state.js';
-import * as ui from './ui.js';
+import * as ui from './ui.js?v=14';
 import * as storage from './storage.js';
 import * as wordManager from './wordManager.js';
 import * as rhyme from './rhyme.js';
@@ -33,7 +33,7 @@ import * as rng from './rng.js';
 import * as modal from './modal.js';
 import * as autoBPM from './autoBPM.js'; // Import the Web Audio API version
 // datamuse.js no longer used directly — related words fetched via wordApi.js
-import * as wordApi from './wordApi.js'; // Import the new word API module
+import * as wordApi from './wordApi.js?v=14'; // Import the new word API module
 import * as beatManager from './beatManager.js'; // Import the beat player module
 import { openRhymeFinderModalWithSort } from './rhyme.js';
 import { getPlaylist, initializeBeatPlayer } from './beatManager.js';
@@ -501,19 +501,19 @@ function attachEventListeners() {
             if (displayedWord && displayedWord !== lastWordData.word) {
                 // If we don't have data for the current word, fetch it first
                 prefetchWordData(displayedWord).then(() => {
-                    ui.updateTooltipView(getTopCellText(), lastWordData.definition);
+                    ui.updateTooltipView(getTopCellText(), lastWordData.definition ?? '');
                 });
             } else {
-                ui.updateTooltipView(getTopCellText(), lastWordData.definition);
+                ui.updateTooltipView(getTopCellText(), lastWordData.definition ?? '');
             }
         } else {
             ui.updateTooltipView();
         }
-        
+
         // Force update tooltip text immediately after click
         setTimeout(() => {
             if (state.tooltip.isPinned) {
-                ui.updateTooltipView(getTopCellText(), lastWordData.definition);
+                ui.updateTooltipView(getTopCellText(), lastWordData.definition ?? '');
             }
         }, 10);
     });
@@ -1036,8 +1036,8 @@ async function onDisplayedWordChange(newWord, previousWord) {
         await prefetchWordData(newWord);
         tooltipCurrentWord = newWord;
         
-        // Update the pinned tooltip view
-        ui.updateTooltipView(getTopCellText(), lastWordData.definition);
+        // Update the pinned tooltip view (pass '' not null so stale content clears)
+        ui.updateTooltipView(getTopCellText(), lastWordData.definition ?? '');
     } else {
         console.log(`Tooltip not hovered or word didn't change, skipping update`);
     }
