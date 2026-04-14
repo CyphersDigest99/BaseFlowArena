@@ -1,88 +1,81 @@
 #!/usr/bin/env python3
 """
-Development HTTP Server for BaseFlowArena
+Development HTTP Server for BaseFlowArena / RhymeNexus
 
-This module provides a simple HTTP server for local development of the BaseFlowArena
-application. It serves static files from the current directory and includes
-development-friendly features like cache prevention headers.
-
-Features:
-- Serves files from the script's directory
-- Prevents browser caching during development
-- Configurable network access (localhost vs network)
-- Graceful shutdown on Ctrl+C
-- Security-focused defaults (localhost-only by default)
+Serves static files and proxies API routes that Vercel handles in production.
+Proxy routes mirror vercel.json rewrites so local dev matches production behavior.
 
 Usage:
-    python server.py
-    
-    The server will start on http://localhost:8000/ and serve all files
-    in the current directory, making the BaseFlowArena application accessible
-    for development and testing.
-
-Dependencies:
-    - Python 3.x standard library (http.server, socketserver, os)
-    - No external dependencies required
-
-Security Notes:
-    - Default configuration binds to localhost only for security
-    - Change ADDRESS to "0.0.0.0" only if network access is needed
-    - Intended for development use only, not production deployment
+    python server.py            # port 8000 (discord branch)
+    PORT=8001 python server.py  # port 8001 (main branch)
 """
 
 import http.server
 import socketserver
 import os
+import urllib.request
+import urllib.parse
 
-# --- SERVER CONFIGURATION ---
-PORT = int(os.environ.get('PORT', 8000))  # Standard development port
-DIRECTORY = os.path.dirname(__file__)  # Serve from the script's directory
+PORT = int(os.environ.get('PORT', 8000))
+DIRECTORY = os.path.dirname(os.path.abspath(__file__))
 
-# --- CUSTOM HTTP REQUEST HANDLER ---
+# Mirrors vercel.json rewrites — prefix -> target base URL
+API_PROXIES = {
+    '/datamuse/': 'https://api.datamuse.com/',
+    '/dictapi/':  'https://api.dictionaryapi.dev/',
+}
+
 class Handler(http.server.SimpleHTTPRequestHandler):
-    """
-    Custom HTTP request handler that extends SimpleHTTPRequestHandler
-    to add development-friendly headers and serve from a specific directory.
-    """
-    
     def __init__(self, *args, **kwargs):
-        """Initialize handler with the specified directory."""
         super().__init__(*args, directory=DIRECTORY, **kwargs)
 
+    def do_GET(self):
+        # Check if this path should be proxied to an external API
+        for prefix, target_base in API_PROXIES.items():
+            if self.path.startswith(prefix):
+                remainder = self.path[len(prefix):]
+                upstream_url = target_base + remainder
+                try:
+                    req = urllib.request.Request(
+                        upstream_url,
+                        headers={'User-Agent': 'RhymeNexus-DevServer/1.0'}
+                    )
+                    with urllib.request.urlopen(req, timeout=5) as resp:
+                        body = resp.read()
+                        self.send_response(resp.status)
+                        self.send_header('Content-Type', resp.headers.get('Content-Type', 'application/json'))
+                        self.send_header('Access-Control-Allow-Origin', '*')
+                        self.end_headers()
+                        self.wfile.write(body)
+                except Exception as e:
+                    self.send_error(502, f'Proxy error: {e}')
+                return
+
+        # Fall through to normal static file serving
+        super().do_GET()
+
     def end_headers(self):
-        """
-        Override end_headers to add cache prevention headers.
-        This ensures fresh content during development by preventing
-        browser caching of static files.
-        """
-        # Add headers to prevent caching during development
         self.send_header('Cache-Control', 'no-store, no-cache, must-revalidate')
         self.send_header('Pragma', 'no-cache')
         self.send_header('Expires', '0')
         super().end_headers()
 
-# --- NETWORK CONFIGURATION ---
-# Ensure the server binds to localhost only for security unless specified otherwise
-# Use 0.0.0.0 to allow access from other devices on the network if needed,
-# but localhost is safer for typical local development.
-ADDRESS = "localhost"  # Default: localhost only (secure)
-# ADDRESS = "0.0.0.0"  # Uncomment to allow network access (less secure)
+    def log_message(self, format, *args):
+        # Suppress noisy static file logs, keep proxy logs
+        path = args[0] if args else ''
+        is_proxy = any(path.startswith(p) for p in API_PROXIES)
+        if is_proxy or (args and '404' in str(args)):
+            super().log_message(format, *args)
 
-# --- SERVER INITIALIZATION ---
-# allow_reuse_address prevents "port already in use" after a crash/restart
 socketserver.TCPServer.allow_reuse_address = True
-httpd = socketserver.TCPServer((ADDRESS, PORT), Handler)
+httpd = socketserver.TCPServer(('localhost', PORT), Handler)
 
-# --- SERVER STARTUP ---
-print(f"Serving HTTP on http://{ADDRESS}:{PORT}/ from directory '{DIRECTORY}'...")
-print("Press Ctrl+C to stop the server.")
+print(f"Dev server: http://localhost:{PORT}/  (proxying /datamuse/ and /dictapi/)")
+print("Press Ctrl+C to stop.")
 
-# --- SERVER EXECUTION ---
 try:
-    # Start the server and keep it running
     httpd.serve_forever()
 except KeyboardInterrupt:
-    # Graceful shutdown on Ctrl+C
     print("\nServer stopped.")
     httpd.shutdown()
     httpd.server_close()

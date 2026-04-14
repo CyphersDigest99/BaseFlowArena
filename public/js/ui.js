@@ -913,21 +913,35 @@ export function hideSubtext() {
     }
 }
 
+// Shrinks font size until el fits within its parent cell's available height
+function fitTextToCell(el) {
+    el.style.fontSize = ''; // Reset to CSS default first
+    const parent = el.parentElement;
+    if (!parent) return;
+
+    const parentStyles = getComputedStyle(parent);
+    const parentPaddingV = parseFloat(parentStyles.paddingTop) + parseFloat(parentStyles.paddingBottom);
+    const availableHeight = parent.clientHeight - parentPaddingV;
+    if (availableHeight <= 0 || el.offsetHeight <= availableHeight) return;
+
+    let sizePx = parseFloat(getComputedStyle(el).fontSize);
+    const minSizePx = 11;
+    while (el.offsetHeight > availableHeight && sizePx > minSizePx) {
+        sizePx -= 1;
+        el.style.fontSize = sizePx + 'px';
+    }
+}
+
 // Shows synonyms in the tooltip area
-export function showSynonyms(synonyms) {
+export function showSynonyms(text) {
     const el = elements.synonymsContent;
     if (!el) return;
-    
-    // Handle "no results" messages gracefully
-    const trimmedSynonyms = synonyms ? synonyms.trim() : '';
-    const isEmptyOrNoResults = !trimmedSynonyms || 
-                               trimmedSynonyms.toLowerCase().includes('no synonyms found') ||
-                               trimmedSynonyms.toLowerCase().includes('no results') ||
-                               trimmedSynonyms.toLowerCase().includes('not found');
-    
-    if (!isEmptyOrNoResults) {
-        el.textContent = trimmedSynonyms;
+
+    const trimmed = text ? text.trim() : '';
+    if (trimmed) {
+        el.textContent = trimmed;
         el.classList.add('visible');
+        fitTextToCell(el);
     } else {
         el.textContent = '';
         el.classList.remove('visible');
@@ -947,24 +961,19 @@ export function hideSynonyms() {
 export function showDefinition(definition) {
     const el = elements.definitionContent;
     if (!el) return;
-    
+
     // Handle "no results" messages gracefully
     const trimmedDefinition = definition ? definition.trim() : '';
-    const isEmptyOrNoResults = !trimmedDefinition || 
+    const isEmptyOrNoResults = !trimmedDefinition ||
                                trimmedDefinition.toLowerCase().includes('no definition found') ||
                                trimmedDefinition.toLowerCase().includes('no results') ||
                                trimmedDefinition.toLowerCase().includes('not found');
-    
+
     if (!isEmptyOrNoResults) {
         el.textContent = trimmedDefinition;
         el.classList.add('visible');
-        // Dynamic font size: shrink if doesn't fit
         el.classList.remove('shrink');
-        setTimeout(() => {
-            if (el.scrollWidth > el.clientWidth) {
-                el.classList.add('shrink');
-            }
-        }, 10);
+        fitTextToCell(el);
     } else {
         el.textContent = '';
         el.classList.remove('visible');
@@ -992,13 +1001,13 @@ export function updateTooltipView(synonyms = null, definition = null) {
         hideDefinition();
         elements.meansLikeButton.innerHTML = '<i class="fas fa-book"></i>';
         elements.meansLikeButton.classList.remove('pinned');
-        elements.meansLikeButton.title = 'Show definition and synonyms';
+        elements.meansLikeButton.title = 'Show synonyms & definition';
         return;
     }
-    
+
     // Pinned - show tooltip and update icon based on display mode
     elements.meansLikeButton.classList.add('pinned');
-    
+
     // Update icon and title based on display mode - always show next action
     switch (state.tooltip.displayMode) {
         case 'both':
@@ -1015,7 +1024,7 @@ export function updateTooltipView(synonyms = null, definition = null) {
             break;
         case 'definition':
             elements.meansLikeButton.innerHTML = '<i class="fas fa-paragraph"></i>';
-            elements.meansLikeButton.title = 'Show both definition and synonyms';
+            elements.meansLikeButton.title = 'Show all';
             hideSynonyms();
             if (definition !== null) showDefinition(definition);
             break;

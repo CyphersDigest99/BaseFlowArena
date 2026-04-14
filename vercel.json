@@ -8,6 +8,14 @@
       "destination": "/api/$1"
     },
     {
+      "source": "/datamuse/(.*)",
+      "destination": "https://api.datamuse.com/$1"
+    },
+    {
+      "source": "/dictapi/(.*)",
+      "destination": "https://api.dictionaryapi.dev/$1"
+    },
+    {
       "source": "/tos.html",
       "destination": "/tos.html"
     },

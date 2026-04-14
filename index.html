@@ -16,7 +16,7 @@
     <!-- Apply saved theme before first paint to prevent flash of wrong theme -->
     <script>try{document.documentElement.setAttribute('data-theme',localStorage.getItem('preferred-theme')||'dark')}catch(e){}</script>
     <!-- --- STYLESHEETS --- -->
-    <link rel="stylesheet" href="styles.css?v=8">
+    <link rel="stylesheet" href="styles.css?v=9">
     <!-- Font Awesome for icons - provides comprehensive icon library for UI elements -->
     <link rel="stylesheet" href="/public/fa/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -282,7 +282,7 @@
                     <button id="favorite-word" class="word-action-icon favorite-icon" title="Favorite Word">
                         <i class="far fa-star"></i> <i class="fas fa-star solid-star"></i>
                     </button>
-                    <button id="means-like-button" class="word-action-icon means-like-icon" title="Show Synonyms & Definition">
+                    <button id="means-like-button" class="word-action-icon means-like-icon" title="Show synonyms & definition">
                         <i class="fas fa-book"></i>
                     </button>
                     <div id="word-subtext" class="word-subtext"></div>
@@ -645,7 +645,7 @@
 
     <!-- --- JAVASCRIPT MODULES --- -->
     <!-- Main game script loaded as ES6 module with defer attribute -->
-    <script type="module" src="public/js/main.js?v=12" defer></script>
+    <script type="module" src="public/js/main.js?v=14" defer></script>
     <script>
       fetch('/version.json?_=' + Date.now())
         .then(r => r.json())
