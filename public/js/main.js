@@ -32,7 +32,7 @@ import * as bpm from './bpm.js';
 import * as rng from './rng.js';
 import * as modal from './modal.js';
 import * as autoBPM from './autoBPM.js'; // Import the Web Audio API version
-import * as datamuse from './datamuse.js'; // Import the Datamuse API module
+// datamuse.js no longer used directly — related words fetched via wordApi.js
 import * as wordApi from './wordApi.js'; // Import the new word API module
 import * as beatManager from './beatManager.js'; // Import the beat player module
 import { openRhymeFinderModalWithSort } from './rhyme.js';
@@ -47,7 +47,7 @@ import * as session from './session.js?v=2';
 import * as roles from './roles.js';
 
 // Cached word data for tooltip display and performance optimization
-let lastWordData = { synonyms: '', definition: '', word: '' };
+let lastWordData = { related: null, synonyms: null, definition: null, word: '' };
 let tooltipCurrentWord = ''; // Tracks which word the tooltip is currently showing
 
 // Helper function to get the currently displayed word (moved to module scope)
@@ -55,10 +55,18 @@ function getCurrentlyDisplayedWord() {
     return ui.elements.wordDisplay?.dataset.word || ui.elements.wordDisplay?.textContent || state.currentWord;
 }
 
+// Combine synonyms + related words for the top cell display
+function getTopCellText() {
+    const parts = [];
+    if (lastWordData.synonyms) parts.push(lastWordData.synonyms);
+    if (lastWordData.related) parts.push(lastWordData.related);
+    return parts.join('\n') || '';
+}
+
 // Prefetch synonyms/definition for the current word to improve tooltip responsiveness
 async function prefetchWordData(word) {
     if (!word || word === 'NO WORDS!') {
-        lastWordData = { synonyms: '', definition: '', word: word };
+        lastWordData = { related: null, synonyms: null, definition: null, word: word };
         return;
     }
     try {
@@ -66,7 +74,7 @@ async function prefetchWordData(word) {
         lastWordData = { ...data, word };
     } catch (e) {
         console.error(`Error fetching word data for "${word}":`, e);
-        lastWordData = { synonyms: '', definition: '', word };
+        lastWordData = { related: null, synonyms: null, definition: null, word };
     }
 }
 
@@ -442,7 +450,7 @@ function attachEventListeners() {
         const displayedWord = getCurrentlyDisplayedWord();
         tooltipCurrentWord = displayedWord;
         // Show cached data immediately
-        ui.showSynonyms(lastWordData.synonyms);
+        ui.showSynonyms(getTopCellText());
         ui.showDefinition(lastWordData.definition);
         // Fetch fresh data in background
         if (displayedWord && displayedWord !== lastWordData.word) {
@@ -450,7 +458,7 @@ function attachEventListeners() {
             await prefetchWordData(word);
             // Only update if still hovered and word matches
             if (isAnyTooltipHovered() && tooltipCurrentWord === word) {
-                ui.showSynonyms(lastWordData.synonyms);
+                ui.showSynonyms(getTopCellText());
                 ui.showDefinition(lastWordData.definition);
             }
         }
@@ -525,10 +533,10 @@ function attachEventListeners() {
             if (displayedWord && displayedWord !== lastWordData.word) {
                 // If we don't have data for the current word, fetch it first
                 prefetchWordData(displayedWord).then(() => {
-                    ui.updateTooltipView(lastWordData.synonyms, lastWordData.definition ?? '');
+                    ui.updateTooltipView(getTopCellText(), lastWordData.definition ?? '');
                 });
             } else {
-                ui.updateTooltipView(lastWordData.synonyms, lastWordData.definition ?? '');
+                ui.updateTooltipView(getTopCellText(), lastWordData.definition ?? '');
             }
         } else {
             ui.updateTooltipView();
@@ -537,7 +545,7 @@ function attachEventListeners() {
         // Force update tooltip text immediately after click
         setTimeout(() => {
             if (state.tooltip.isPinned) {
-                ui.updateTooltipView(lastWordData.synonyms, lastWordData.definition ?? '');
+                ui.updateTooltipView(getTopCellText(), lastWordData.definition ?? '');
             }
         }, 10);
     });
@@ -1015,7 +1023,7 @@ async function onWordChange(newWord) {
         setTimeout(() => {
             // Only show if still hovered and word matches
             if (isAnyTooltipHovered() && tooltipCurrentWord === displayedWord) {
-                ui.showSynonyms(lastWordData.synonyms);
+                ui.showSynonyms(getTopCellText());
                 ui.showDefinition(lastWordData.definition);
             }
         }, 50);
@@ -1025,38 +1033,22 @@ async function onWordChange(newWord) {
 // Handle displayed word changes (for tooltip updates) - Manages tooltip state during word navigation
 async function onDisplayedWordChange(newWord, previousWord) {
     console.log(`onDisplayedWordChange called: "${previousWord}" -> "${newWord}"`);
-    
+
     // Only update tooltip if it's currently being shown and the word actually changed
-    if (isAnyTooltipHovered() && newWord !== previousWord) {
-        console.log(`Tooltip is hovered, updating for word change: "${previousWord}" -> "${newWord}"`);
-        
-        // Clear current tooltip data
-        ui.hideSynonyms();
-        ui.hideDefinition();
-        
-        // Fetch new data for the displayed word
+    if ((isAnyTooltipHovered() || state.tooltip.isPinned) && newWord !== previousWord) {
+        // Fade out stale text immediately while fetching new data
+        if (ui.elements.synonymsContent) ui.elements.synonymsContent.style.color = 'transparent';
+        if (ui.elements.definitionContent) ui.elements.definitionContent.style.color = 'transparent';
+
         await prefetchWordData(newWord);
         tooltipCurrentWord = newWord;
-        
-        // Show new data after a brief delay to allow fade-out
-        setTimeout(() => {
-            // Only show if still hovered and word matches
-            if (isAnyTooltipHovered() && tooltipCurrentWord === newWord) {
-                console.log(`Showing updated tooltip for: "${newWord}"`);
-                ui.showSynonyms(lastWordData.synonyms);
-                ui.showDefinition(lastWordData.definition);
-            }
-        }, 50);
-    } else if (state.tooltip.isPinned && newWord !== previousWord) {
-        // Tooltip is pinned - update it with new data
-        console.log(`Tooltip is pinned, updating for word change: "${previousWord}" -> "${newWord}"`);
-        
-        // Fetch new data for the displayed word
-        await prefetchWordData(newWord);
-        tooltipCurrentWord = newWord;
-        
-        // Update the pinned tooltip view
-        ui.updateTooltipView(lastWordData.synonyms, lastWordData.definition ?? '');
+
+        if (state.tooltip.isPinned) {
+            ui.updateTooltipView(getTopCellText(), lastWordData.definition ?? '');
+        } else if (isAnyTooltipHovered() && tooltipCurrentWord === newWord) {
+            ui.showSynonyms(getTopCellText());
+            ui.showDefinition(lastWordData.definition);
+        }
     } else {
         console.log(`Tooltip not hovered or word didn't change, skipping update`);
     }
@@ -1071,7 +1063,7 @@ export async function updateTooltipForDisplayedWord() {
             tooltipCurrentWord = displayedWord;
             // Only update if still hovered and word matches
             if (isAnyTooltipHovered() && tooltipCurrentWord === displayedWord) {
-                ui.showSynonyms(lastWordData.synonyms);
+                ui.showSynonyms(getTopCellText());
                 ui.showDefinition(lastWordData.definition);
             }
         }

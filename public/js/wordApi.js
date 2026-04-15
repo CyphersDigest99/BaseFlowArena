@@ -1,136 +1,107 @@
 /**
- * @fileoverview Word Data Fetcher (Synonyms & Definitions)
+ * @fileoverview Word Data Fetcher (Related Words, Synonyms & Definitions)
  *
- * This module provides functions to fetch synonyms (from Datamuse API) and definitions
- * (from dictionaryapi.dev) for a given word. It supports parallel fetching and returns
- * concise, user-friendly results for use in the UI or word exploration features.
- *
- * Key responsibilities:
- * - Fetch synonyms for a word from Datamuse API
- * - Fetch definitions for a word from dictionaryapi.dev
- * - Provide a unified function to fetch both in parallel
- * - Handle API/network errors and edge cases gracefully
+ * Fetches three types of word data for tooltip display:
+ * - Related words from Datamuse API (ml= query, topic expansion)
+ * - Synonyms + definitions from dictionaryapi.dev (single request)
  *
  * Dependencies: fetch API, Datamuse API, dictionaryapi.dev
  */
 
-// js/wordApi.js
-// Handles fetching synonyms from Datamuse and definitions from dictionaryapi.dev
-
 /**
- * Fetches synonyms from Datamuse API
- * @param {string} word - The word to find synonyms for
- * @returns {Promise<string>} - A comma-separated string of synonyms or an error message
+ * Fetches related words (topic expansion) from Datamuse "means like" endpoint.
+ * @param {string} word
+ * @returns {Promise<string|null>} Comma-separated related words, or null
  */
-async function fetchSynonyms(word) {
-    if (!word || word === "NO WORDS!") {
-        // Handle missing or invalid input
-        return "No word available.";
-    }
+async function fetchRelated(word) {
+    if (!word || word === "NO WORDS!") return null;
 
     try {
-        // Query Datamuse API for synonyms
-        const response = await fetch(`https://api.datamuse.com/words?rel_syn=${encodeURIComponent(word)}`);
-        
-        if (!response.ok) {
-            // Handle HTTP errors
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
+        const response = await fetch(`/datamuse/words?ml=${encodeURIComponent(word)}&max=6`);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
         const data = await response.json();
-        
-        if (!Array.isArray(data) || data.length === 0) {
-            // No results found
-            return "No synonyms found.";
-        }
-        
-        // Extract the "word" property from the first 5 results
-        const maxResults = Math.min(5, data.length);
-        const synonyms = data.slice(0, maxResults).map(item => item.word);
-        
-        return synonyms.join(', ');
-        
+        if (!Array.isArray(data) || data.length === 0) return null;
+
+        return data.slice(0, 5).map(item => item.word).join(', ');
     } catch (error) {
-        // Log and handle network or parsing errors
-        console.error('Error fetching synonyms:', error);
-        return "Unable to fetch synonyms.";
+        console.error('Error fetching related words:', error);
+        return null;
     }
 }
 
 /**
- * Fetches definition from dictionaryapi.dev
- * @param {string} word - The word to find definition for
- * @returns {Promise<string>} - The definition or an error message
+ * Fetches definition AND synonyms from dictionaryapi.dev in a single request.
+ * @param {string} word
+ * @returns {Promise<{definition: string|null, synonyms: string|null}>}
  */
-async function fetchDefinition(word) {
-    if (!word || word === "NO WORDS!") {
-        // Handle missing or invalid input
-        return "No word available.";
-    }
+async function fetchDefinitionData(word) {
+    if (!word || word === "NO WORDS!") return { definition: null, synonyms: null };
 
     try {
-        // Query dictionaryapi.dev for definition
-        const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`);
-        
+        const response = await fetch(`/dictapi/api/v2/entries/en/${encodeURIComponent(word)}`);
+
         if (!response.ok) {
-            if (response.status === 404) {
-                // No definition found for this word
-                return "No definition found.";
-            }
-            // Handle HTTP errors
-            throw new Error(`HTTP error! status: ${response.status}`);
+            if (response.status === 404) return { definition: null, synonyms: null };
+            throw new Error(`HTTP ${response.status}`);
         }
-        
+
         const data = await response.json();
-        
-        if (!Array.isArray(data) || data.length === 0) {
-            // No results found
-            return "No definition found.";
-        }
-        
-        // Get the first entry and its first meaning
+        if (!Array.isArray(data) || data.length === 0) return { definition: null, synonyms: null };
+
         const entry = data[0];
-        if (!entry.meanings || entry.meanings.length === 0) {
-            return "No definition found.";
+        let definition = null;
+        let synonyms = null;
+
+        // Extract definition from first meaning with a definition
+        if (entry.meanings) {
+            for (const meaning of entry.meanings) {
+                if (!definition && meaning.definitions?.length > 0) {
+                    definition = meaning.definitions[0].definition;
+                }
+            }
+
+            // Collect synonyms from all meanings (meaning-level + definition-level)
+            const allSyns = new Set();
+            for (const meaning of entry.meanings) {
+                for (const s of (meaning.synonyms || [])) allSyns.add(s);
+                for (const d of (meaning.definitions || [])) {
+                    for (const s of (d.synonyms || [])) allSyns.add(s);
+                }
+            }
+            // Filter out multi-word phrases, keep concise single words
+            const filtered = [...allSyns].filter(s => !s.includes(' ')).slice(0, 5);
+            if (filtered.length > 0) {
+                synonyms = filtered.join(', ');
+            }
         }
-        
-        const meaning = entry.meanings[0];
-        if (!meaning.definitions || meaning.definitions.length === 0) {
-            return "No definition found.";
-        }
-        
-        // Return the first definition
-        return meaning.definitions[0].definition;
-        
+
+        return { definition, synonyms };
     } catch (error) {
-        // Log and handle network or parsing errors
         console.error('Error fetching definition:', error);
-        return "Unable to fetch definition.";
+        return { definition: null, synonyms: null };
     }
 }
 
 /**
- * Fetches both synonyms and definition in parallel
- * @param {string} word - The word to get data for
- * @returns {Promise<Object>} - Object with synonyms and definition
+ * Fetches related words, synonyms, and definition in parallel.
+ * @param {string} word
+ * @returns {Promise<{related: string|null, synonyms: string|null, definition: string|null}>}
  */
 export async function fetchWordData(word) {
     try {
-        const [synonyms, definition] = await Promise.all([
-            fetchSynonyms(word),
-            fetchDefinition(word)
+        const [related, dictData] = await Promise.all([
+            fetchRelated(word),
+            fetchDefinitionData(word)
         ]);
-        
+
         return {
-            synonyms,
-            definition
+            related,
+            synonyms: dictData.synonyms,
+            definition: dictData.definition
         };
     } catch (error) {
-        // Log and handle errors in parallel fetching
         console.error('Error fetching word data:', error);
-        return {
-            synonyms: "Unable to fetch synonyms.",
-            definition: "Unable to fetch definition."
-        };
+        return { related: null, synonyms: null, definition: null };
     }
-} 
+}

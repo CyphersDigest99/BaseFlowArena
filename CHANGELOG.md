@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-04-14
+- Cherry-pick shared improvements from discord branch to main
+- Add Datamuse/DictAPI proxy rewrites in vercel.json and server.py (local dev matches production)
+- wordApi.js: full replace with improved API module (related words + synonyms + definition in one call)
+- Tooltip fitTextToCell: auto-shrink font via scrollHeight vs clientHeight measurement (visibility:hidden during measure)
+- Tooltip fade-out on word change: set color:transparent while fetching, restore on data arrival
+- showSynonyms/showDefinition: keep cell visible when pinned even if empty; clear inline color/fontSize on hide
+- Top cell now shows combined synonyms + related words via getTopCellText()
+- CSS: .word-info-content gets text-wrap:balance, flex centering, box-sizing; top/bottom cells use align-items:stretch
+- CSS: #synonyms-content and #definition-content get color transition, remove display:block; drop #definition-content.shrink rule
+- Fix vercel.json JS cache header: source pattern corrected to /public/js/, cache policy changed to no-cache
+- Bump styles.css?v=9, main.js?v=8
+
 ## 2026-04-10
 - Discord Activity multiplayer: everyone in a voice channel sees the same word in real time
 - PartyKit server on Cloudflare Workers (rhyme-nexus.cyphersdigest99.partykit.dev) — authoritative room state, host assignment, 30s reconnection grace period

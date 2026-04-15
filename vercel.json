@@ -20,13 +20,21 @@
       "destination": "/privacy.html"
     },
     {
+      "source": "/datamuse/(.*)",
+      "destination": "https://api.datamuse.com/$1"
+    },
+    {
+      "source": "/dictapi/(.*)",
+      "destination": "https://api.dictionaryapi.dev/$1"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
   ],
   "headers": [
     {
-      "source": "/js/(.*)\\.js",
+      "source": "/public/js/(.*)\\.js",
       "headers": [
         {
           "key": "Content-Type",
@@ -34,7 +42,7 @@
         },
         {
           "key": "Cache-Control",
-          "value": "public, max-age=31536000, immutable"
+          "value": "no-cache"
         }
       ]
     },

@@ -958,24 +958,47 @@ export function hideSubtext() {
     }
 }
 
+// Shrinks font size until the element's content fits within its parent height.
+// Uses visibility:hidden during measurement to prevent visual flicker.
+function fitTextToCell(el) {
+    if (!el.parentElement) return;
+
+    el.style.visibility = 'hidden';
+    el.style.fontSize = '';
+
+    // Element has fixed height from flex stretch — shrink font until content fits
+    if (el.scrollHeight > el.clientHeight) {
+        let sizePx = parseFloat(getComputedStyle(el).fontSize);
+        const minSizePx = 8;
+        while (el.scrollHeight > el.clientHeight && sizePx > minSizePx) {
+            sizePx -= 1;
+            el.style.fontSize = sizePx + 'px';
+        }
+    }
+
+    el.style.visibility = '';
+}
+
 // Shows synonyms in the tooltip area
-export function showSynonyms(synonyms) {
+export function showSynonyms(text) {
     const el = elements.synonymsContent;
     if (!el) return;
-    
-    // Handle "no results" messages gracefully
-    const trimmedSynonyms = synonyms ? synonyms.trim() : '';
-    const isEmptyOrNoResults = !trimmedSynonyms || 
-                               trimmedSynonyms.toLowerCase().includes('no synonyms found') ||
-                               trimmedSynonyms.toLowerCase().includes('no results') ||
-                               trimmedSynonyms.toLowerCase().includes('not found');
-    
-    if (!isEmptyOrNoResults) {
-        el.textContent = trimmedSynonyms;
+
+    const trimmed = text ? text.trim() : '';
+    if (trimmed) {
+        el.textContent = trimmed;
+        el.style.color = '';
         el.classList.add('visible');
+        fitTextToCell(el);
     } else {
         el.textContent = '';
-        el.classList.remove('visible');
+        el.style.color = '';
+        el.style.fontSize = '';
+        if (state.tooltip.isPinned) {
+            el.classList.add('visible');
+        } else {
+            el.classList.remove('visible');
+        }
     }
 }
 
@@ -984,6 +1007,8 @@ export function hideSynonyms() {
     const el = elements.synonymsContent;
     if (el) {
         el.textContent = '';
+        el.style.fontSize = '';
+        el.style.color = '';
         el.classList.remove('visible');
     }
 }
@@ -992,28 +1017,32 @@ export function hideSynonyms() {
 export function showDefinition(definition) {
     const el = elements.definitionContent;
     if (!el) return;
-    
+
     // Handle "no results" messages gracefully
     const trimmedDefinition = definition ? definition.trim() : '';
-    const isEmptyOrNoResults = !trimmedDefinition || 
+    const isEmptyOrNoResults = !trimmedDefinition ||
                                trimmedDefinition.toLowerCase().includes('no definition found') ||
                                trimmedDefinition.toLowerCase().includes('no results') ||
                                trimmedDefinition.toLowerCase().includes('not found');
-    
+
+    console.log(`[showDefinition] text="${trimmedDefinition?.slice(0,40)}" empty=${isEmptyOrNoResults} elVisible=${el.classList.contains('visible')}`);
+
     if (!isEmptyOrNoResults) {
         el.textContent = trimmedDefinition;
+        el.style.color = '';
         el.classList.add('visible');
-        // Dynamic font size: shrink if doesn't fit
         el.classList.remove('shrink');
-        setTimeout(() => {
-            if (el.scrollWidth > el.clientWidth) {
-                el.classList.add('shrink');
-            }
-        }, 10);
+        fitTextToCell(el);
     } else {
         el.textContent = '';
-        el.classList.remove('visible');
+        el.style.color = '';
+        el.style.fontSize = '';
         el.classList.remove('shrink');
+        if (state.tooltip.isPinned) {
+            el.classList.add('visible');
+        } else {
+            el.classList.remove('visible');
+        }
     }
 }
 
@@ -1022,6 +1051,7 @@ export function hideDefinition() {
     const el = elements.definitionContent;
     if (el) {
         el.textContent = '';
+        el.style.fontSize = '';
         el.classList.remove('visible');
         el.classList.remove('shrink');
     }

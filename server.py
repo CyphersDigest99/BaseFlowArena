@@ -33,10 +33,18 @@ Security Notes:
 import http.server
 import socketserver
 import os
+import urllib.request
+import urllib.parse
 
 # --- SERVER CONFIGURATION ---
 PORT = int(os.environ.get('PORT', 8000))  # Standard development port
-DIRECTORY = os.path.dirname(__file__)  # Serve from the script's directory
+DIRECTORY = os.path.dirname(os.path.abspath(__file__))  # Serve from the script's directory
+
+# Mirrors vercel.json rewrites — prefix -> target base URL
+API_PROXIES = {
+    '/datamuse/': 'https://api.datamuse.com/',
+    '/dictapi/':  'https://api.dictionaryapi.dev/',
+}
 
 # --- CUSTOM HTTP REQUEST HANDLER ---
 class Handler(http.server.SimpleHTTPRequestHandler):
@@ -44,10 +52,35 @@ class Handler(http.server.SimpleHTTPRequestHandler):
     Custom HTTP request handler that extends SimpleHTTPRequestHandler
     to add development-friendly headers and serve from a specific directory.
     """
-    
+
     def __init__(self, *args, **kwargs):
         """Initialize handler with the specified directory."""
         super().__init__(*args, directory=DIRECTORY, **kwargs)
+
+    def do_GET(self):
+        # Check if this path should be proxied to an external API
+        for prefix, target_base in API_PROXIES.items():
+            if self.path.startswith(prefix):
+                remainder = self.path[len(prefix):]
+                upstream_url = target_base + remainder
+                try:
+                    req = urllib.request.Request(
+                        upstream_url,
+                        headers={'User-Agent': 'RhymeNexus-DevServer/1.0'}
+                    )
+                    with urllib.request.urlopen(req, timeout=5) as resp:
+                        body = resp.read()
+                        self.send_response(resp.status)
+                        self.send_header('Content-Type', resp.headers.get('Content-Type', 'application/json'))
+                        self.send_header('Access-Control-Allow-Origin', '*')
+                        self.end_headers()
+                        self.wfile.write(body)
+                except Exception as e:
+                    self.send_error(502, f'Proxy error: {e}')
+                return
+
+        # Fall through to normal static file serving
+        super().do_GET()
 
     def end_headers(self):
         """
