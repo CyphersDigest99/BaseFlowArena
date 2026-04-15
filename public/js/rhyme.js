@@ -1622,6 +1622,9 @@ function getDisplayedWord() {
     return state.currentWord;
 }
 
+// Track the last word the modal was opened for, to preserve scroll on reopen
+let _lastModalWord = null;
+
 // --- Show Rhyme Finder Modal ---
 // Opens the rhyme finder modal and populates it with rhymes for the current word
 export function showRhymeFinder() {
@@ -1680,6 +1683,13 @@ export function showRhymeFinder() {
     setupEtymologySection(baseWord);
 
     modal.openModal(ui.elements.rhymeFinderModal);
+
+    // Reset scroll after modal is visible (scrollTop is ignored on display:none elements)
+    if (baseWordLower !== _lastModalWord) {
+        if (ui.elements.rhymeFinderModal) ui.elements.rhymeFinderModal.scrollTop = 0;
+        if (ui.elements.rhymeResultsList) ui.elements.rhymeResultsList.scrollTop = 0;
+    }
+    _lastModalWord = baseWordLower;
 }
 
 // --- addManualRhyme (EXPORTED) ---

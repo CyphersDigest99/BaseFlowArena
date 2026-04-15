@@ -23,7 +23,7 @@
 
 // Import modules
 import { state } from './state.js';
-import * as ui from './ui.js?v=14';
+import * as ui from './ui.js';
 import * as storage from './storage.js';
 import * as wordManager from './wordManager.js';
 import * as rhyme from './rhyme.js';
@@ -33,7 +33,7 @@ import * as rng from './rng.js';
 import * as modal from './modal.js';
 import * as autoBPM from './autoBPM.js'; // Import the Web Audio API version
 // datamuse.js no longer used directly — related words fetched via wordApi.js
-import * as wordApi from './wordApi.js?v=14'; // Import the new word API module
+import * as wordApi from './wordApi.js'; // Import the new word API module
 import * as beatManager from './beatManager.js'; // Import the beat player module
 import { openRhymeFinderModalWithSort } from './rhyme.js';
 import { getPlaylist, initializeBeatPlayer } from './beatManager.js';
@@ -1008,36 +1008,20 @@ async function onDisplayedWordChange(newWord, previousWord) {
     console.log(`onDisplayedWordChange called: "${previousWord}" -> "${newWord}"`);
     
     // Only update tooltip if it's currently being shown and the word actually changed
-    if (isAnyTooltipHovered() && newWord !== previousWord) {
-        console.log(`Tooltip is hovered, updating for word change: "${previousWord}" -> "${newWord}"`);
-        
-        // Clear current tooltip data
-        ui.hideSynonyms();
-        ui.hideDefinition();
-        
-        // Fetch new data for the displayed word
+    if ((isAnyTooltipHovered() || state.tooltip.isPinned) && newWord !== previousWord) {
+        // Fade out stale text immediately while fetching new data
+        if (ui.elements.synonymsContent) ui.elements.synonymsContent.style.color = 'transparent';
+        if (ui.elements.definitionContent) ui.elements.definitionContent.style.color = 'transparent';
+
         await prefetchWordData(newWord);
         tooltipCurrentWord = newWord;
-        
-        // Show new data after a brief delay to allow fade-out
-        setTimeout(() => {
-            // Only show if still hovered and word matches
-            if (isAnyTooltipHovered() && tooltipCurrentWord === newWord) {
-                console.log(`Showing updated tooltip for: "${newWord}"`);
-                ui.showSynonyms(getTopCellText());
-                ui.showDefinition(lastWordData.definition);
-            }
-        }, 50);
-    } else if (state.tooltip.isPinned && newWord !== previousWord) {
-        // Tooltip is pinned - update it with new data
-        console.log(`Tooltip is pinned, updating for word change: "${previousWord}" -> "${newWord}"`);
-        
-        // Fetch new data for the displayed word
-        await prefetchWordData(newWord);
-        tooltipCurrentWord = newWord;
-        
-        // Update the pinned tooltip view (pass '' not null so stale content clears)
-        ui.updateTooltipView(getTopCellText(), lastWordData.definition ?? '');
+
+        if (state.tooltip.isPinned) {
+            ui.updateTooltipView(getTopCellText(), lastWordData.definition ?? '');
+        } else if (isAnyTooltipHovered() && tooltipCurrentWord === newWord) {
+            ui.showSynonyms(getTopCellText());
+            ui.showDefinition(lastWordData.definition);
+        }
     } else {
         console.log(`Tooltip not hovered or word didn't change, skipping update`);
     }

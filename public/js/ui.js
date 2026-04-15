@@ -915,21 +915,27 @@ export function hideSubtext() {
 
 // Shrinks font size until el fits within its parent cell's available height
 function fitTextToCell(el) {
-    el.style.fontSize = ''; // Reset to CSS default first
     const parent = el.parentElement;
     if (!parent) return;
+
+    // Hide during measurement to prevent visual stutter from font-size reset
+    el.style.visibility = 'hidden';
+    el.style.fontSize = '';
 
     const parentStyles = getComputedStyle(parent);
     const parentPaddingV = parseFloat(parentStyles.paddingTop) + parseFloat(parentStyles.paddingBottom);
     const availableHeight = parent.clientHeight - parentPaddingV;
-    if (availableHeight <= 0 || el.offsetHeight <= availableHeight) return;
 
-    let sizePx = parseFloat(getComputedStyle(el).fontSize);
-    const minSizePx = 11;
-    while (el.offsetHeight > availableHeight && sizePx > minSizePx) {
-        sizePx -= 1;
-        el.style.fontSize = sizePx + 'px';
+    if (availableHeight > 0 && el.offsetHeight > availableHeight) {
+        let sizePx = parseFloat(getComputedStyle(el).fontSize);
+        const minSizePx = 11;
+        while (el.offsetHeight > availableHeight && sizePx > minSizePx) {
+            sizePx -= 1;
+            el.style.fontSize = sizePx + 'px';
+        }
     }
+
+    el.style.visibility = '';
 }
 
 // Shows synonyms in the tooltip area
@@ -940,10 +946,12 @@ export function showSynonyms(text) {
     const trimmed = text ? text.trim() : '';
     if (trimmed) {
         el.textContent = trimmed;
+        el.style.color = '';
         el.classList.add('visible');
         fitTextToCell(el);
     } else {
         el.textContent = '';
+        el.style.color = '';
         el.classList.remove('visible');
     }
 }
@@ -953,6 +961,8 @@ export function hideSynonyms() {
     const el = elements.synonymsContent;
     if (el) {
         el.textContent = '';
+        el.style.fontSize = '';
+        el.style.color = '';
         el.classList.remove('visible');
     }
 }
@@ -969,13 +979,17 @@ export function showDefinition(definition) {
                                trimmedDefinition.toLowerCase().includes('no results') ||
                                trimmedDefinition.toLowerCase().includes('not found');
 
+    console.log(`[showDefinition] text="${trimmedDefinition?.slice(0,40)}" empty=${isEmptyOrNoResults} elVisible=${el.classList.contains('visible')}`);
+
     if (!isEmptyOrNoResults) {
         el.textContent = trimmedDefinition;
+        el.style.color = '';
         el.classList.add('visible');
         el.classList.remove('shrink');
         fitTextToCell(el);
     } else {
         el.textContent = '';
+        el.style.color = '';
         el.classList.remove('visible');
         el.classList.remove('shrink');
     }
@@ -986,6 +1000,7 @@ export function hideDefinition() {
     const el = elements.definitionContent;
     if (el) {
         el.textContent = '';
+        el.style.fontSize = '';
         el.classList.remove('visible');
         el.classList.remove('shrink');
     }

@@ -39,7 +39,7 @@
       ]
     },
     {
-      "source": "/js/(.*)\\.js",
+      "source": "/public/js/(.*)\\.js",
       "headers": [
         {
           "key": "Content-Type",
@@ -47,7 +47,7 @@
         },
         {
           "key": "Cache-Control",
-          "value": "public, max-age=31536000, immutable"
+          "value": "no-cache"
         }
       ]
     },

@@ -594,8 +594,12 @@ export function setActiveWord(word) {
 
 
 // --- Word Actions (Blacklist/Favorite) ---
+let _lastBlacklistTime = 0;
 // Toggles blacklist status of displayed word (base word or rhyme)
 export function toggleBlacklist() {
+    const now = Date.now();
+    if (now - _lastBlacklistTime < 250) return;
+    _lastBlacklistTime = now;
     const wordToToggle = ui.elements.wordDisplay?.dataset.word || ui.elements.wordDisplay?.textContent;
     if (!wordToToggle || wordToToggle === "NO WORDS!" || wordToToggle === "LOADING..." || wordToToggle === "ERROR") {
         console.warn("Cannot blacklist invalid displayed word."); return;
