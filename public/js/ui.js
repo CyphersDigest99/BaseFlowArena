@@ -913,23 +913,18 @@ export function hideSubtext() {
     }
 }
 
-// Shrinks font size until el fits within its parent cell's available height
+// Shrinks font size until text fits within its fixed-height container (max 2 lines)
 function fitTextToCell(el) {
-    const parent = el.parentElement;
-    if (!parent) return;
+    if (!el.parentElement) return;
 
-    // Hide during measurement to prevent visual stutter from font-size reset
     el.style.visibility = 'hidden';
     el.style.fontSize = '';
 
-    const parentStyles = getComputedStyle(parent);
-    const parentPaddingV = parseFloat(parentStyles.paddingTop) + parseFloat(parentStyles.paddingBottom);
-    const availableHeight = parent.clientHeight - parentPaddingV;
-
-    if (availableHeight > 0 && el.offsetHeight > availableHeight) {
+    // Element has fixed height from flex stretch — shrink font until content fits
+    if (el.scrollHeight > el.clientHeight) {
         let sizePx = parseFloat(getComputedStyle(el).fontSize);
-        const minSizePx = 11;
-        while (el.offsetHeight > availableHeight && sizePx > minSizePx) {
+        const minSizePx = 8;
+        while (el.scrollHeight > el.clientHeight && sizePx > minSizePx) {
             sizePx -= 1;
             el.style.fontSize = sizePx + 'px';
         }
@@ -952,7 +947,12 @@ export function showSynonyms(text) {
     } else {
         el.textContent = '';
         el.style.color = '';
-        el.classList.remove('visible');
+        el.style.fontSize = '';
+        if (state.tooltip.isPinned) {
+            el.classList.add('visible');
+        } else {
+            el.classList.remove('visible');
+        }
     }
 }
 
@@ -990,8 +990,13 @@ export function showDefinition(definition) {
     } else {
         el.textContent = '';
         el.style.color = '';
-        el.classList.remove('visible');
+        el.style.fontSize = '';
         el.classList.remove('shrink');
+        if (state.tooltip.isPinned) {
+            el.classList.add('visible');
+        } else {
+            el.classList.remove('visible');
+        }
     }
 }
 
