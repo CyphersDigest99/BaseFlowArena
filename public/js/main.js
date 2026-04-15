@@ -525,10 +525,10 @@ function attachEventListeners() {
             if (displayedWord && displayedWord !== lastWordData.word) {
                 // If we don't have data for the current word, fetch it first
                 prefetchWordData(displayedWord).then(() => {
-                    ui.updateTooltipView(lastWordData.synonyms, lastWordData.definition);
+                    ui.updateTooltipView(lastWordData.synonyms, lastWordData.definition ?? '');
                 });
             } else {
-                ui.updateTooltipView(lastWordData.synonyms, lastWordData.definition);
+                ui.updateTooltipView(lastWordData.synonyms, lastWordData.definition ?? '');
             }
         } else {
             ui.updateTooltipView();
@@ -537,7 +537,7 @@ function attachEventListeners() {
         // Force update tooltip text immediately after click
         setTimeout(() => {
             if (state.tooltip.isPinned) {
-                ui.updateTooltipView(lastWordData.synonyms, lastWordData.definition);
+                ui.updateTooltipView(lastWordData.synonyms, lastWordData.definition ?? '');
             }
         }, 10);
     });
@@ -1056,7 +1056,7 @@ async function onDisplayedWordChange(newWord, previousWord) {
         tooltipCurrentWord = newWord;
         
         // Update the pinned tooltip view
-        ui.updateTooltipView(lastWordData.synonyms, lastWordData.definition);
+        ui.updateTooltipView(lastWordData.synonyms, lastWordData.definition ?? '');
     } else {
         console.log(`Tooltip not hovered or word didn't change, skipping update`);
     }
