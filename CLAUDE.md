@@ -1,5 +1,15 @@
 # BaseFlowArena - Claude Code Context
 
+## Branch & Deployment Protocol (READ BEFORE COMMITTING)
+
+This repo has **two branches** (`main` and `discord`) that deploy to **two separate Vercel projects** with different wiring. Before committing or pushing on either branch, **review `docs/architecture.md`** to confirm:
+- The change belongs on the branch you're committing to (shared vs. branch-specific)
+- Any API additions update all three proxy locations (vercel.json, server.py, Discord Developer Portal)
+- Cache-bust is done at HTML entry points only, never on ES module imports
+- One-way merge: `main → discord` only, never the reverse
+
+The architecture doc has the current deployment wiring (GitHub Action, `VERCEL_TOKEN`, Ignored Build Step) and a recovery table for common failures. Consult it when anything about branches, Vercel, or deploys comes up.
+
 ## Project Overview
 BaseFlowArena is a web-based freestyle rap training application with intelligent word prompts, real-time BPM detection, voice recognition, and a curated beat library.
 

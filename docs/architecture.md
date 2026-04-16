@@ -2,62 +2,168 @@
 
 ## Two-Branch, Two-App Model
 
-This repo contains **two distinct applications** on separate branches. They share most JS modules but have different `index.html` and `styles.css` roots.
+This repo contains **two distinct applications** on separate branches. They share most JS modules but have different `index.html` roots and some CSS.
 
 | | `main` branch | `discord` branch |
 |---|---|---|
 | **App** | Full RhymeNexus | Discord Activity |
-| **URL** | rhymenex.us | discord.rhymenex.us |
-| **Vercel project** | `base-flow-arena` | `rhymenexus-discord` |
-| **Local dev** | `python server.py` (port 8000) ✅ default | `python server.py` on discord branch |
-| **Layout** | Full — voice, live feed, BPM detect, mic search, key finder | Stripped — no mic-dependent features, compact `discord-activity` body class |
+| **Public URL** | rhymenex.us | discord.rhymenex.us |
+| **Vercel project** | `base-flow-arena` (prj_6C21nZxhwiMZO41hBa0BUL9Tl4eT) | `rhymenexus-discord` (prj_wHRPblGTvTozCvcwOTThPzlSwpyS) |
+| **Local dev** | `python server.py` → port 8000 (default) | `python server.py` on discord branch → port 8000 |
+| **Layout** | Full — voice, live feed, BPM detect, mic search, key finder | Stripped — no mic features, compact `body.discord-activity` layout |
 | **Multiplayer** | No | Yes — PartyKit + Discord SDK |
+| **Vercel team** | Chris R's projects (team_FLeB6fr1dFji5a2iZLqbwTJO) | Same team |
 
 ## Why Two Branches
 
-The Discord Activity runs inside a small Discord iframe. Features that require a microphone (voice match, BPM detect, live feed) don't make sense there — the user is already talking in a Discord voice channel. The stripped-down build keeps the Activity focused.
+The Discord Activity runs inside a small Discord iframe (~1600×800). Features that require a microphone (voice match, BPM detect, live feed) don't make sense there — the user is already talking in a Discord voice channel. The stripped-down build keeps the Activity focused.
 
-## Merge Direction
+## Merge / Change Protocol
 
-**One-way only: `main` → `discord`.**  
-When features ship on `main`, cherry-pick or merge them into `discord` if they apply to the Activity. Never merge `discord` back into `main` — the Discord-specific layout changes (removed elements, PartyKit code, Discord SDK init) must not bleed into the main app.
+**One-way only: `main` → `discord`.** Never merge `discord` back into `main`.
 
-## API Calls
+### Changes that belong on `main` only
+- Features requiring mic/speech (voice match, BPM detect, key finder, live feed)
+- Full-width/desktop-only layout
+- Anything using Web Speech API
 
-Both branches use **relative URLs** for external APIs (`/datamuse/...`, `/dictapi/...`). These are handled differently per environment:
+### Changes that belong on `discord` only
+- `public/js/session.js` (PartyKit multiplayer)
+- Discord SDK initialization in `main.js`
+- `patchUrlMappings` calls
+- `body.discord-activity` compact CSS rules
+- `.github/workflows/deploy-discord.yml` (this file must NOT exist on main)
+- Removed UI elements specific to the Activity build
+
+### Changes shared by both (most work)
+- Word data, rhyme scoring, tooltip improvements
+- Most UI polish, styling of shared components
+- API proxy configuration (see API section below)
+- Word lists, dictionaries
+
+### How to apply a shared change to both
+1. Develop + commit on `main` first (or `discord` if that's where you're testing)
+2. Use an agent to surgically apply the same edits to the other branch — **do not cherry-pick or merge full commits**, because divergent files (`index.html`, `main.js`, `styles.css`, `vercel.json`) have branch-specific content that would get overwritten
+3. Each file change must be reviewed to keep branch-specific code intact
+
+## API Proxying
+
+Both branches use **relative URLs** for external APIs (`/datamuse/...`, `/dictapi/...`). Three environments, three proxies:
 
 | Environment | How `/datamuse/...` resolves |
 |---|---|
-| **Vercel (production)** | `vercel.json` rewrites proxy to `api.datamuse.com` |
-| **Discord Activity (in Discord)** | Discord's root mapping routes through `discord.rhymenex.us` → Vercel → rewrite |
-| **localhost** | `server.py` proxy routes forward to `api.datamuse.com` |
+| **Vercel production** | `vercel.json` rewrites proxy to `api.datamuse.com` |
+| **Discord Activity (inside Discord)** | Discord's root URL mapping → `discord.rhymenex.us` → Vercel → rewrite |
+| **localhost** | `server.py` `API_PROXIES` dict forwards to `api.datamuse.com` |
 
-If you add a new external API, you must update **three places**: `vercel.json` rewrites, `server.py` `API_PROXIES`, and (for Discord) `patchUrlMappings` in `public/js/main.js`.
+**Adding a new external API requires updating three places:**
+1. `vercel.json` — add a rewrite block **before** the catch-all `/(.*) → /index.html`
+2. `server.py` — add entry to `API_PROXIES` dict
+3. Discord Developer Portal → URL Mappings (e.g. `/datamuse` → `api.datamuse.com`)
 
 ## Local Development
 
-**Default workflow — always start here:**
-
 ```bash
+# Full app (default)
 git checkout main
-python server.py        # http://localhost:8000 — full app
+python server.py        # http://localhost:8000
+
+# Discord Activity build
+git checkout discord
+python server.py        # http://localhost:8000
 ```
 
-`main` is where the product lives. Port 8000 on `main` is the primary dev environment. This is the right place to build new features, fix bugs, and test the full app.
+Port 8000 always. Branch determines what you see. The local server proxies APIs automatically — no Vercel CLI, tunnel, or Discord launch needed for most work. To actually test inside Discord, you need `npm run dev` (Cloudflared tunnel) — see Discord Activity section below.
 
-**Discord Activity workflow — only when working on discord-specific things:**
+## Deployment — How Each Branch Reaches Production
+
+### `main` → `rhymenex.us` (simple)
+- `base-flow-arena` Vercel project is connected to the GitHub repo
+- Every push to `main` auto-deploys to `rhymenex.us`
+- No manual steps
+
+### `discord` → `discord.rhymenex.us` (GitHub Action + CLI)
+- `rhymenexus-discord` Vercel project serves this domain but was created via CLI, not "Import from Git" → Vercel's UI has **no "Production Branch" setting** for this project
+- Deploy is done via **GitHub Action** at `.github/workflows/deploy-discord.yml`:
+  - Triggers on push to `discord` branch
+  - Runs `npx vercel deploy --prod --yes --token $VERCEL_TOKEN`
+  - Uses env vars `VERCEL_ORG_ID` (team_FLeB6fr1dFji5a2iZLqbwTJO) and `VERCEL_PROJECT_ID` (prj_wHRPblGTvTozCvcwOTThPzlSwpyS) to target the correct project
+  - `VERCEL_TOKEN` is a GitHub repository secret (name: `VERCEL_TOKEN`)
+
+### Critical: Ignored Build Step on `rhymenexus-discord`
+Because `rhymenexus-discord` also has the GitHub repo connected (for PR comments and commit statuses), Vercel will by default try to deploy **every branch**, including `main` — overwriting the discord production deployment.
+
+To prevent this, the project has an **Ignored Build Step** configured under Settings → General:
+
+```
+[ "$VERCEL_GIT_COMMIT_REF" = "discord" ]
+```
+
+This shell expression returns exit 0 (build proceeds) only when the branch is `discord`. Any other branch returns exit 1 (build skipped). The GitHub Action's `vercel deploy --prod` bypasses this check.
+
+**If you ever see `discord.rhymenex.us` running main-branch code**, check:
+1. Ignored Build Step is still configured on `rhymenexus-discord` project
+2. GitHub Action on the latest discord push succeeded (`gh run list --limit 5`)
+3. Vercel deployments for `rhymenexus-discord` — the most recent `target: "production"` should be a `discord` branch commit
+
+### Recovery: manually promote correct deployment
+If the wrong commit ends up as production on `rhymenexus-discord`:
 
 ```bash
-git checkout discord
-python server.py        # http://localhost:8000 — Discord Activity build
+# Find the correct discord deployment ID via Vercel dashboard or MCP
+# Temporarily point local .vercel/project.json at rhymenexus-discord
+echo '{"projectId":"prj_wHRPblGTvTozCvcwOTThPzlSwpyS","orgId":"team_FLeB6fr1dFji5a2iZLqbwTJO"}' > .vercel/project.json
+
+# Promote the correct deployment
+vercel promote <deployment-id> --scope team_FLeB6fr1dFji5a2iZLqbwTJO --yes
+
+# Restore project.json
+# (keep a .vercel/project.json.bak of the base-flow-arena one)
 ```
 
-Switch to the `discord` branch only when you're specifically working on Discord Activity features (PartyKit sync, layout changes for the iframe, Discord SDK). Switch back to `main` when done.
+## Discord Activity Configuration
 
-The local server proxies `/datamuse/` and `/dictapi/` to the real APIs automatically on both branches. No Vercel CLI or tunnel needed for basic feature work.
+### Discord Developer Portal
+- App set up in Discord developer portal
+- **URL Mappings** (required for all external calls from inside the Activity):
+  - `/` → `discord.rhymenex.us` (root mapping)
+  - `/datamuse` → `api.datamuse.com`
+  - `/dictapi` → `api.dictionaryapi.dev`
+  - `/partykit` → PartyKit host for multiplayer
+- Adding a new external API here is the 3rd of the 3 places to update (see API Proxying)
 
-## Deploying the Discord Activity
+### Runtime initialization
+- `public/js/main.js` detects Activity context via `window.location.hostname === 'discord.com'` or `frame_id` URL param
+- If in Activity: sets `body.discord-activity` class, imports/initializes Discord SDK, calls `patchUrlMappings` to rewrite absolute URLs, connects PartyKit session
+- If not in Activity (e.g. direct visit to `discord.rhymenex.us`): runs as standalone web app without SDK
 
-Pushes to the `discord` branch deploy automatically to the `base-flow-arena` Vercel project as a **preview** deployment. The `rhymenexus-discord` project (which serves `discord.rhymenex.us`) must be deployed separately — currently done manually.
+### Multiplayer (PartyKit)
+- `public/js/session.js` — handles connect/broadcast/receive
+- PartyKit server hosted separately (see PartyKit project)
+- Activated only inside Discord Activity context
 
-**TODO:** Wire `rhymenexus-discord` to auto-deploy from the `discord` branch on GitHub so pushes reach `discord.rhymenex.us` automatically.
+## Cache-Busting Strategy
+
+**The trap:** Adding `?v=N` to individual ES module imports (`import './ui.js?v=14'`) **creates a separate module instance** per unique URL. If `main.js` imports `./ui.js?v=14` and `wordManager.js` imports `./ui.js`, they get two different copies of the ui module with separate state — callbacks set on one are invisible to the other.
+
+**Correct approach:**
+- Cache-bust only the HTML-level entry points: `styles.css?v=N`, `main.js?v=N` in `index.html`
+- ES module imports inside JS files must use plain relative paths (no `?v=`)
+- For production cache busting without `?v=`, `vercel.json` headers set:
+  ```json
+  {
+    "source": "/public/js/(.*)\\.js",
+    "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
+  }
+  ```
+  This forces the browser to revalidate JS files on every request, picking up fresh code after deploys.
+
+## Quick Reference — When Things Break
+
+| Symptom | Likely cause | Fix |
+|---|---|---|
+| Discord Activity shows stale code | Vercel/Discord browser cache | Bump `main.js?v=N` and `styles.css?v=N` in `index.html` |
+| Callback/state from main.js invisible in other modules | Split module instances from `?v=` on imports | Remove `?v=` from ES module imports, keep only on HTML `<script>`/`<link>` |
+| Discord Activity runs main-branch UI | `rhymenexus-discord` deployed main branch | Check Ignored Build Step; promote correct discord deployment |
+| API 404 in Activity only | Missing Discord URL mapping for that API | Add mapping in Developer Portal |
+| Tooltip def/syn doesn't fetch on localhost | `server.py` API_PROXIES dict missing route | Add to dict, restart server |
