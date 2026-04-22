@@ -93,13 +93,13 @@ Port 8000 always. Branch determines what you see. The local server proxies APIs 
 ### Critical: Ignored Build Step on `rhymenexus-discord`
 Because `rhymenexus-discord` also has the GitHub repo connected (for PR comments and commit statuses), Vercel will by default try to deploy **every branch**, including `main` — overwriting the discord production deployment.
 
-To prevent this, the project has an **Ignored Build Step** configured under Settings → General:
+To prevent this, the project has an **Ignored Build Step** configured under Settings → Git (Behavior: Custom):
 
 ```
-[ "$VERCEL_GIT_COMMIT_REF" = "discord" ]
+[ "$VERCEL_GIT_COMMIT_REF" != "discord" ]
 ```
 
-This shell expression returns exit 0 (build proceeds) only when the branch is `discord`. Any other branch returns exit 1 (build skipped). The GitHub Action's `vercel deploy --prod` bypasses this check.
+Vercel's Ignored Build Step semantics are counterintuitive: **exit 1 = build proceeds**, **exit 0 = build skipped**. So the test must be `!=` — when the branch is `discord`, the test fails (exit 1) and the build proceeds; for `main` or anything else, the test succeeds (exit 0) and the build is skipped. Using `=` silently inverts it and lets `main` overwrite `discord.rhymenex.us`. The GitHub Action's `vercel deploy --prod` bypasses this check entirely.
 
 **If you ever see `discord.rhymenex.us` running main-branch code**, check:
 1. Ignored Build Step is still configured on `rhymenexus-discord` project
@@ -162,8 +162,9 @@ vercel promote <deployment-id> --scope team_FLeB6fr1dFji5a2iZLqbwTJO --yes
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
-| Discord Activity shows stale code | Vercel/Discord browser cache | Bump `main.js?v=N` and `styles.css?v=N` in `index.html` |
+| Discord Activity shows stale code (HTML entry changed) | Vercel/Discord browser cache of `index.html` | Bump `main.js?v=N` and `styles.css?v=N` in `index.html` |
+| Discord Activity shows stale code (JS module changed, entry already reloaded) | Discord Web caches ES modules under their original URL; bumping entry doesn't invalidate them | **DevTools on the Activity → Application → Storage → Clear site data → close/reopen Activity.** Do NOT add `?v=` to a single module import — see next row. |
 | Callback/state from main.js invisible in other modules | Split module instances from `?v=` on imports | Remove `?v=` from ES module imports, keep only on HTML `<script>`/`<link>` |
-| Discord Activity runs main-branch UI | `rhymenexus-discord` deployed main branch | Check Ignored Build Step; promote correct discord deployment |
+| Discord Activity runs main-branch UI | `rhymenexus-discord` deployed main branch | Check Ignored Build Step command is `[ "$VERCEL_GIT_COMMIT_REF" != "discord" ]` (note `!=`, not `=` — Vercel exit 1 = build, exit 0 = skip); promote correct discord deployment |
 | API 404 in Activity only | Missing Discord URL mapping for that API | Add mapping in Developer Portal |
 | Tooltip def/syn doesn't fetch on localhost | `server.py` API_PROXIES dict missing route | Add to dict, restart server |
