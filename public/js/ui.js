@@ -958,6 +958,56 @@ export function hideSubtext() {
     }
 }
 
+const scrambleTimers = new WeakMap();
+function scrambleReveal(container) {
+    const prev = scrambleTimers.get(container);
+    if (prev) cancelAnimationFrame(prev);
+    const pool = 'abcdefghijklmnopqrstuvwxyz';
+    const targets = container.querySelectorAll('.def-word, .synonym-pill');
+    if (!targets.length) return;
+
+    const allChars = [];
+    const items = [];
+    targets.forEach(el => {
+        const text = el.textContent;
+        const start = allChars.length;
+        for (let i = 0; i < text.length; i++) allChars.push({ char: text[i], el, idx: i });
+        items.push({ el, final: text, len: text.length, start });
+        el.textContent = text.replace(/[a-zA-Z]/g, '_');
+    });
+
+    const total = allChars.length;
+    const cyclesPerChar = 3;
+    const msPerCycle = 18;
+    const startTime = performance.now();
+    const totalDuration = (total + cyclesPerChar) * msPerCycle;
+
+    function tick(now) {
+        const elapsed = now - startTime;
+        const waveFront = elapsed / msPerCycle;
+
+        items.forEach(item => {
+            const chars = item.final.split('');
+            const result = chars.map((c, i) => {
+                if (!/[a-zA-Z]/.test(c)) return c;
+                const dist = waveFront - (item.start + i);
+                if (dist >= cyclesPerChar) return c;
+                if (dist <= 0) return '_';
+                return pool[Math.floor(Math.random() * pool.length)];
+            });
+            item.el.textContent = result.join('');
+        });
+
+        if (elapsed < totalDuration) {
+            scrambleTimers.set(container, requestAnimationFrame(tick));
+        } else {
+            items.forEach(it => { it.el.textContent = it.final; });
+            scrambleTimers.delete(container);
+        }
+    }
+    scrambleTimers.set(container, requestAnimationFrame(tick));
+}
+
 // Shrinks font size until the element's content fits within its parent height.
 // Uses visibility:hidden during measurement to prevent visual flicker.
 function fitTextToCell(el) {
@@ -979,20 +1029,35 @@ function fitTextToCell(el) {
     el.style.visibility = '';
 }
 
-// Shows synonyms in the tooltip area
+// Shows synonyms as clickable pills in the tooltip area
 export function showSynonyms(text) {
     const el = elements.synonymsContent;
     if (!el) return;
 
     const trimmed = text ? text.trim() : '';
     if (trimmed) {
-        el.textContent = trimmed;
+        el.innerHTML = '';
+        el.style.fontSize = '';
+        const wrapper = document.createElement('span');
+        wrapper.className = 'synonym-pills-wrapper';
+        const words = trimmed.split(',').map(w => w.trim()).filter(Boolean);
+        words.forEach((word, i) => {
+            const pill = document.createElement('span');
+            pill.className = `synonym-pill syn-color-${i % 5}`;
+            pill.textContent = word;
+            pill.dataset.word = word;
+            wrapper.appendChild(pill);
+        });
+        el.appendChild(wrapper);
         el.style.color = '';
+        el.style.opacity = '';
         el.classList.add('visible');
         fitTextToCell(el);
+        scrambleReveal(wrapper);
     } else {
-        el.textContent = '';
+        el.innerHTML = '';
         el.style.color = '';
+        el.style.opacity = '';
         el.style.fontSize = '';
         if (state.tooltip.isPinned) {
             el.classList.add('visible');
@@ -1006,8 +1071,6 @@ export function showSynonyms(text) {
 export function hideSynonyms() {
     const el = elements.synonymsContent;
     if (el) {
-        el.textContent = '';
-        el.style.fontSize = '';
         el.style.color = '';
         el.classList.remove('visible');
     }
@@ -1028,13 +1091,29 @@ export function showDefinition(definition) {
     console.log(`[showDefinition] text="${trimmedDefinition?.slice(0,40)}" empty=${isEmptyOrNoResults} elVisible=${el.classList.contains('visible')}`);
 
     if (!isEmptyOrNoResults) {
-        el.textContent = trimmedDefinition;
+        el.innerHTML = '';
+        const wrapper = document.createElement('span');
+        wrapper.className = 'def-words-wrapper';
+        const tokens = trimmedDefinition.match(/[a-zA-Z'-]+|[^a-zA-Z'-]+/g) || [];
+        tokens.forEach(token => {
+            if (/^[a-zA-Z'-]{2,}$/.test(token)) {
+                const span = document.createElement('span');
+                span.className = 'def-word';
+                span.dataset.word = token;
+                span.textContent = token;
+                wrapper.appendChild(span);
+            } else {
+                wrapper.appendChild(document.createTextNode(token));
+            }
+        });
+        el.appendChild(wrapper);
         el.style.color = '';
         el.classList.add('visible');
         el.classList.remove('shrink');
         fitTextToCell(el);
+        scrambleReveal(wrapper);
     } else {
-        el.textContent = '';
+        el.innerHTML = '';
         el.style.color = '';
         el.style.fontSize = '';
         el.classList.remove('shrink');
@@ -1050,7 +1129,7 @@ export function showDefinition(definition) {
 export function hideDefinition() {
     const el = elements.definitionContent;
     if (el) {
-        el.textContent = '';
+        el.innerHTML = '';
         el.style.fontSize = '';
         el.classList.remove('visible');
         el.classList.remove('shrink');

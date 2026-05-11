@@ -413,6 +413,22 @@ function attachEventListeners() {
         }
     });
 
+    // Synonym pill click — set clicked synonym as the active word
+    document.getElementById('synonyms-content')?.addEventListener('click', (e) => {
+        const pill = e.target.closest('.synonym-pill');
+        if (!pill) return;
+        const word = pill.dataset.word;
+        if (word) wordManager.setActiveWord(word);
+    });
+
+    // Definition word click — set clicked word as the active word
+    document.getElementById('definition-content')?.addEventListener('click', (e) => {
+        const span = e.target.closest('.def-word');
+        if (!span) return;
+        const word = span.dataset.word;
+        if (word) wordManager.setActiveWord(word);
+    });
+
     // Clear feed button — single click clears transcript, double-click also clears word tray
     const clearFeedBtn = document.getElementById('clear-feed-btn');
     clearFeedBtn?.addEventListener('click', () => {
@@ -1036,8 +1052,9 @@ async function onDisplayedWordChange(newWord, previousWord) {
 
     // Only update tooltip if it's currently being shown and the word actually changed
     if ((isAnyTooltipHovered() || state.tooltip.isPinned) && newWord !== previousWord) {
-        // Fade out stale text immediately while fetching new data
-        if (ui.elements.synonymsContent) ui.elements.synonymsContent.style.color = 'transparent';
+        // Fade out stale content immediately while fetching new data
+        const synWrap = ui.elements.synonymsContent?.firstElementChild;
+        if (synWrap) synWrap.style.opacity = '0';
         if (ui.elements.definitionContent) ui.elements.definitionContent.style.color = 'transparent';
 
         await prefetchWordData(newWord);
